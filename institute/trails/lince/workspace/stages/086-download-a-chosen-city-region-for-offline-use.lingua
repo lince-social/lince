@@ -1,0 +1,23 @@
+Stage 086 — Download a chosen city region for offline use (@ws-stage-086: 0, is #chapter, #part-of @workspace-stages: 86) { r_7SWTJGPBRT7G303GPHV6NCK3DF
+**Status** Pending verification.
+
+## Capability
+
+Select sources, layers, footprint and budget. Preview cost and attribution, pin known coverage and support cancellable, resumable acquisition.
+
+## Completion checks
+
+- [ ] Interrupt and resume a bounded real-city download. Disconnect and open the pack, with partial tiles and unknown source detail visible.
+
+## Implementation references
+
+**Provider handoffs** [085 · Geography](085-navigate-the-same-scale-range-in-an-invented-world.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Offline city and local place coverage](../features/Offline-City.lingua) · [06.T01](../features/Offline-City.lingua#task-06t01) · [06.T02](../features/Offline-City.lingua#task-06t02)
+
+Use the applicable fixture, tolerances and recovery cases in [06 · Offline coverage](../contracts/Offline-coverage-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 085](085-navigate-the-same-scale-range-in-an-invented-world.lingua) · [Next · 087](087-find-and-revisit-a-place-within-a-city-budget.lingua)
+} r_7SWTJGPBRT7G303GPHV6NCK3DF

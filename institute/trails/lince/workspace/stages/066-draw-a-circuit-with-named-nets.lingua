@@ -1,0 +1,23 @@
+Stage 066 — Draw a circuit with named nets (@ws-stage-066: 0, is #chapter, #part-of @workspace-stages: 66) { r_3DQ83K8HQMAQ01MBGXJR643PSG
+**Status** Pending verification.
+
+## Capability
+
+Place components from B43 and map symbol pins to logical terminals, pads and optional model pins. Wire and disconnect them in the native schematic editor.
+
+## Completion checks
+
+- [ ] Compare the saved net graph to an independently specified circuit, including a crossing without a junction, and follow a selected terminal after reopen.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua)
+
+[Electronic definitions and schematics](../features/Schematics.lingua) · [11a.T01](../features/Schematics.lingua#task-11at01) · [11a.T02](../features/Schematics.lingua#task-11at02) · [11a.T03](../features/Schematics.lingua#task-11at03)
+
+Use the applicable fixture, tolerances and recovery cases in [11a · Electronic design](../contracts/Electronic-design-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 065](065-exchange-a-building-and-a-linked-issue.lingua) · [Next · 067](067-route-a-board-from-its-schematic.lingua)
+} r_3DQ83K8HQMAQ01MBGXJR643PSG

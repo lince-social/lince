@@ -1,0 +1,21 @@
+Stage 091 — Drape a registered image on terrain (@ws-stage-091: 0, is #chapter, #part-of @workspace-stages: 91) { r_0K7T8KP5S4T9KSG5NYBAM2W612
+**Status** Pending verification.
+
+## Capability
+
+Use the actual model-candidate path to map an image onto a supplied terrain surface with known georeferencing or local controls.
+
+## Completion checks
+
+- [ ] Overlay the result and check withheld landmark alignment, no-data edges and cancellation. Reopen both photographic and draped candidates through the ordinary loader.
+
+## Implementation references
+
+[Scene reconstruction from supplied images](../features/Scene-Reconstruction.lingua) · [RCN.T03](../features/Scene-Reconstruction.lingua#task-rcnt03) · [RCN.T04](../features/Scene-Reconstruction.lingua#task-rcnt04) · [RCN.T05](../features/Scene-Reconstruction.lingua#task-rcnt05) · [RCN.T06](../features/Scene-Reconstruction.lingua#task-rcnt06)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 090](090-build-a-mesh-from-supplied-photographs.lingua) · [Next · 092](092-generate-an-editable-scene-candidate-from-a-prompt.lingua)
+} r_0K7T8KP5S4T9KSG5NYBAM2W612

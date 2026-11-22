@@ -1,0 +1,23 @@
+Stage 060 — Keep solid-face references through a rebuild (@ws-stage-060: 0, is #chapter, #part-of @workspace-stages: 60) { r_7WWE3HY6N89DFN2QQDBZH594NS
+**Status** Pending verification.
+
+## Capability
+
+Use the selected kernel’s operation history for face selections, downstream features and exchange or replay. Handle ambiguity, worker cancellation and recovery.
+
+## Completion checks
+
+- [ ] Resize the bracket and find the same supported face after rebuild. Split the face, identify the ambiguous reference and repair it before using the result.
+
+## Implementation references
+
+[Exact CAD and dimensioned sketches](../features/Cad.lingua) · [10.T04](../features/Cad.lingua#task-10t04) · [10.T05](../features/Cad.lingua#task-10t05)
+
+Use the applicable fixture, tolerances and recovery cases in [10 · Exact CAD](../contracts/Exact-CAD-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [10 · Exact CAD](../contracts/Exact-CAD-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 059](059-make-a-dimensioned-solid-from-a-sketch.lingua) · [Next · 061](061-drive-a-hatchs-travel-from-its-cad-dimensions.lingua)
+} r_7WWE3HY6N89DFN2QQDBZH594NS

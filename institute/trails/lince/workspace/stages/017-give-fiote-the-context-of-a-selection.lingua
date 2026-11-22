@@ -1,0 +1,23 @@
+Stage 017 — Give Fiote the context of a selection (@ws-stage-017: 0, is #chapter, #part-of @workspace-stages: 17) { r_5ZWAAPGQS15B8NPR5J6V2C48QK
+**Status** Pending verification.
+
+## Capability
+
+Expose units, local frame, bounds, identities and permitted nearby items as a bounded, revisioned selection with continuation handles.
+
+## Completion checks
+
+- [ ] Ask about the same selection from two permissions. Show omitted coverage and reject an expired continuation after the target changes.
+
+## Implementation references
+
+**Provider handoffs** [012 · Agent](012-delegate-a-bounded-edit-to-fiote.lingua) · [014 · Selection](014-connect-typed-ports.lingua)
+
+[Structured workspace context](../features/Agent-Context.lingua) · [04.T06](../features/Agent-Context.lingua#task-04t06)
+
+Use the applicable fixture, tolerances and recovery cases in [04 · Selection and interface](../contracts/Selection-and-interface-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 016](016-query-only-the-authorized-part-of-a-scene.lingua) · [Next · 018](018-open-a-coarse-scene-and-refine-it-on-demand.lingua)
+} r_5ZWAAPGQS15B8NPR5J6V2C48QK

@@ -1,0 +1,23 @@
+Stage 106 — Generate draft work from a model quantity (@ws-stage-106: 0, is #chapter, #part-of @workspace-stages: 106) { r_5W77CQEJTTKZ5J2VZ2YN909KRT
+**Status** Pending verification.
+
+## Capability
+
+Connect a selected design takeoff to an explicit work recipe. Regenerate unaccepted Needs or tasks after a source change while preserving manual fields.
+
+## Completion checks
+
+- [ ] Add one component and inspect the expected draft difference. A manually overridden field survives refresh and a late result cannot overwrite it.
+
+## Implementation references
+
+**Provider handoffs** [105 · Operations](105-preview-the-consequences-of-a-delay.lingua) · [063 · Takeoff](063-read-a-revisioned-quantity-from-a-design.lingua) · [017 · Agent Context](017-give-fiote-the-context-of-a-selection.lingua)
+
+[Model-derived work and reconciliation](../features/Linked-Work.lingua) · [13.T05](../features/Linked-Work.lingua#task-13t05)
+
+Use the applicable fixture, tolerances and recovery cases in [13 · Operational workflow](../contracts/Operational-workflow-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 105](105-preview-the-consequences-of-a-delay.lingua) · [Next · 107](107-reconcile-a-design-change-with-accepted-work.lingua)
+} r_5W77CQEJTTKZ5J2VZ2YN909KRT

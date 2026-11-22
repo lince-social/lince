@@ -1,0 +1,23 @@
+Stage 082 — Replace a selected region of a place (@ws-stage-082: 0, is #chapter, #part-of @workspace-stages: 82) { r_5QH5V2RYF37BH13MZM2E0R83RA
+**Status** Pending verification.
+
+## Capability
+
+Draw a footprint and vertical interval or select objects. Preview Add, Overlay or Replace by purpose, then switch geometry, appearance and support coherently.
+
+## Completion checks
+
+- [ ] Refine a home inside a broader neighborhood, lower visual detail and inspect the seam and preserved mounts. Cancel or undo and recover the earlier accepted region.
+
+Use additive or replacement purposes independently for appearance and walkable support. Commit overlapping home and neighborhood revisions in both priority orders. At a coarse view, an accepted replacement must still cover the obsolete home.
+
+## Implementation references
+
+[Curated scenes, regional refinement and reusable places](../features/World-Composition.lingua) · [WCO.T07](../features/World-Composition.lingua#task-wcot07) · [WCO.T08](../features/World-Composition.lingua#task-wcot08)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 081](081-review-a-new-revision-of-a-curated-place.lingua) · [Next · 083](083-move-a-fragment-into-a-different-world.lingua)
+} r_5QH5V2RYF37BH13MZM2E0R83RA

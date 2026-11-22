@@ -1,0 +1,20 @@
+Stage 183 — Measure a circuit’s AC response (@ws-stage-183: 0, is #chapter, #part-of @workspace-stages: 183) { r_00N87RRPP6QG8APG3790N486WW
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Add a separately scoped small-signal analysis to the workbench with an identified operating point, reference terminal, sweep and supported models.
+
+## Completion checks
+
+- [ ] Compare a reference filter’s gain and phase with independent values and reject an unsupported linearization.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](119-run-a-repeatable-circuit-experiment.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 182](182-measure-a-simulated-tissue-response.lingua) · [Next · 184](184-estimate-noise-over-a-frequency-band.lingua)
+} r_00N87RRPP6QG8APG3790N486WW

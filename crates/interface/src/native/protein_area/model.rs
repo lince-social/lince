@@ -35,7 +35,8 @@ pub struct Config {
     pub shader_effects: bool,
     #[serde(default)]
     pub shader_placement: crate::native::shader_effects::FloatingSettings,
-    #[serde(default)]
+    /// Legacy source-only preset and saved input. New Areas store this in graph_layout.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub motion: Option<crate::native::protein_motion::Settings>,
     #[serde(default)]
     pub fiote: bool,

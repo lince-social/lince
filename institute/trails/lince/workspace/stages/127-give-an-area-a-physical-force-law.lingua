@@ -1,0 +1,21 @@
+Stage 127 — Give an Area a physical force law (@ws-stage-127: 0, is #chapter, #part-of @workspace-stages: 127) { r_30VZG4TG83N2948D92M1D202SB
+**Status** Pending verification.
+
+## Capability
+
+Bind a supported force or local gravity override to the Area using declared units, axes, wake and immunity policy.
+
+## Completion checks
+
+- [ ] Compare the trajectory of an eligible body with one outside the Area. Change the binding, observe the expected wake and record the applied force.
+
+## Implementation references
+
+[Rigid bodies joints and authored forces](../features/Rigid.lingua) · [18.T02](../features/Rigid.lingua#task-18t02)
+
+Use the applicable fixture, tolerances and recovery cases in [18 · Rigid and articulated physics](../contracts/Rigid-and-articulated-physics-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 126](126-run-a-rigid-body-with-a-joint.lingua) · [Next · 128](128-run-two-physical-domains-with-independent-clocks.lingua)
+} r_30VZG4TG83N2948D92M1D202SB

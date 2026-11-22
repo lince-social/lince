@@ -1,0 +1,23 @@
+Stage 120 — Run analog and digital parts on one clock (@ws-stage-120: 0, is #chapter, #part-of @workspace-stages: 120) { r_5MZ90W23D57ARYNA0N0ENJPKHN
+**Status** Pending verification.
+
+## Capability
+
+Admit a versioned evaluator, model dialect and terminal order. Implement supported digital drivers, analog thresholds, impedances and event ordering on the circuit timebase.
+
+## Completion checks
+
+- [ ] Exercise an open-drain line with a pull-up, conflicting drivers and an analog threshold crossing. Check voltage, timing and 0/1/X/Z against independent references.
+
+## Implementation references
+
+**Provider handoffs** [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua)
+
+[Mixed signal circuits and reusable electrical models](../features/Mixed-Signal-Circuits.lingua) · [MSG.T01](../features/Mixed-Signal-Circuits.lingua#task-msgt01) · [MSG.T02](../features/Mixed-Signal-Circuits.lingua#task-msgt02)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 119](119-run-a-repeatable-circuit-experiment.lingua) · [Next · 121](121-build-a-reusable-electrical-subcircuit.lingua)
+} r_5MZ90W23D57ARYNA0N0ENJPKHN

@@ -1,0 +1,23 @@
+Stage 100 — Unfold a sheet-metal part (@ws-stage-100: 0, is #chapter, #part-of @workspace-stages: 100) { r_4VX5K535DWQK0FSC3YN2GMCFR9
+**Status** Pending verification.
+
+## Capability
+
+Select the supported sheet and bend assumptions and expose the resulting flat pattern in the existing feature history.
+
+## Completion checks
+
+- [ ] Unfold and refold a known part, compare lengths to the documented allowance and flag an unsupported bend.
+
+## Implementation references
+
+**Provider handoffs** [065 · Building](065-exchange-a-building-and-a-linked-issue.lingua) · [085 · Geography](085-navigate-the-same-scale-range-in-an-invented-world.lingua)
+
+[Manufacturing and civil geometry profiles](../features/Manufacturing-Civil.lingua) · [11.T04](../features/Manufacturing-Civil.lingua#task-11t04)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 099](099-reconstruct-changing-geometry-from-live-cameras.lingua) · [Next · 101](101-author-a-repeated-material-structure.lingua)
+} r_4VX5K535DWQK0FSC3YN2GMCFR9

@@ -1,0 +1,23 @@
+Stage 042 — Keep a character controllable while anatomical detail unloads (@ws-stage-042: 0, is #chapter, #part-of @workspace-stages: 42) { r_4JRHV7AV7RNS2QS6Z484VSNYRD
+**Status** Pending verification.
+
+## Capability
+
+Select coverage, appearance and calculation independently on B41. Connect the existing rig, motion, Fiote annotations and per-view budgets.
+
+## Completion checks
+
+- [ ] Walk a low-detail occurrence while another viewer inspects its anatomy. Close the detailed view, measure release and recover the edited pose and annotation after reopening.
+
+## Implementation references
+
+**Provider handoffs** [039 · Character Motion](039-play-an-authored-movement-clip.lingua) · [040 · Anatomy](040-annotate-a-structure-on-an-anatomical-reference.lingua) · [041 · Agent Authoring](041-furnish-a-room-with-fiote-and-continue-by-hand.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Character detail policy and composed acceptance](../features/Character-Integration.lingua) · [11.T10](../features/Character-Integration.lingua#task-11t10) · [11.T11](../features/Character-Integration.lingua#task-11t11)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 041](041-furnish-a-room-with-fiote-and-continue-by-hand.lingua) · [Next · 043](043-look-out-from-a-selected-object.lingua)
+} r_4JRHV7AV7RNS2QS6Z484VSNYRD

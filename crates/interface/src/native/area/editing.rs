@@ -23,6 +23,7 @@ pub(crate) enum Edit<'a> {
     Scale(f32),
     Immunity(Immunity),
     ForceMode(ForceMode),
+    Layout(super::graph_layout::Settings),
     Crossing { enter: bool, changes: RecordChanges },
 }
 
@@ -48,6 +49,7 @@ impl Edit<'_> {
             Self::Sorting(value) => area.sorting != *value,
             Self::Scale(value) => area.scale != *value,
             Self::Immunity(value) => area.immunity != *value,
+            Self::Layout(value) => area.graph_settings() != Some(value),
             Self::ForceMode(value) => area.force_mode != *value,
             Self::Crossing { enter, changes } => {
                 (if *enter {
@@ -85,6 +87,7 @@ impl Edit<'_> {
             Self::Sorting(value) => area.sorting = value,
             Self::Scale(value) => area.scale = value,
             Self::Immunity(value) => area.immunity = value,
+            Self::Layout(value) => area.graph_layout = Some(value),
             Self::ForceMode(value) => area.force_mode = value,
             Self::Crossing { enter, changes } => {
                 let target = if enter {
@@ -122,6 +125,7 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
         &area.changes.leave,
     );
     let (center, size) = edit.map_or((area.center, area.size), |edit| edit.geometry(area));
+    let mut layout = area.graph_layout.as_ref().or_else(|| area.graph_settings());
     let mut rule_override = None;
     if let Some(edit) = edit {
         match edit {
@@ -132,6 +136,7 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
                 }
                 rule_override = Some((*index, *value));
             }
+            Edit::Layout(value) => layout = Some(value),
             Edit::Radius(value) => radius = *value,
             Edit::Depth(value) => depth = *value,
             Edit::Target(value) => target = *value,
@@ -190,6 +195,7 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
         && area.sound.as_ref().is_none_or(SoundArea::valid)
         && enter.validate()
         && leave.validate()
+        && layout.is_none_or(super::graph_layout::Settings::valid)
         && area.creation.valid()
         && area.change_filter.as_ref().is_none_or(Config::valid)
         && (0.05..=20.0).contains(&scale)

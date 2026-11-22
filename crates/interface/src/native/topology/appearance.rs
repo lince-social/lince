@@ -43,7 +43,7 @@ pub(crate) struct Applied;
 #[derive(Component)]
 pub(crate) struct LitEffectOutput(Entity);
 
-const CANVAS_UNITS_PER_METER: f32 = 100.0;
+pub(crate) const CANVAS_UNITS_PER_METER: f32 = 100.0;
 
 #[derive(Resource, Default)]
 struct Runtime {

@@ -4,9 +4,7 @@ Park (@park-development: 0, is #chapter) { r_0PCR2DTXNGTQGBE6RBWR0ECTXW
 ## Cannot test with the current binary alone
 
 - [ ] **P104 · Laboratory report import.** In Park's Laboratory, paste the full path to a real JSON/JSONL report and click Load Park report. Verify the revision, results and missing measurements are shown.
-- [ ] **P142 · Mandatory Laboratory case.** Run the optimized probe containing the focus-plugin registration fix. Verify the first Protein filter case passes with readable choices, successful selection, and the expected Record. Probe `077349d4` stopped before opening the filter because it registered `PointerFocusPlugin` twice.
 - [ ] **P134 R08 · Capture privacy.** With the matching private capture fixture, hold a capture across a source retirement or authorization change. Verify the pending frame exposes no retired private pixels.
-- [ ] **P134 R09 · Save and recovery.** With the matching isolated crash/reopen fixture, explicitly save one IDE document, leave a separate draft, and verify the saved contents and the draft recover independently.
 
 ## Per-binary cycle
 

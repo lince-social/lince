@@ -1,0 +1,23 @@
+Stage 059 — Make a dimensioned solid from a sketch (@ws-stage-059: 0, is #chapter, #part-of @workspace-stages: 59) { r_7QBQT5C0P0YWKPJTTBP3AJ9NAJ
+**Status** Pending verification.
+
+## Capability
+
+Exercise the bounded kernel candidates through one constrained sketch, extrusion and Boolean. Expose dimensions, degrees of freedom, feature history and failed-feature recovery in the native editor.
+
+## Completion checks
+
+- [ ] Change a bracket dimension and compare its hole, thickness and volume with the independent reference. Overconstrain the sketch and recover the last accepted solid.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Exact CAD and dimensioned sketches](../features/Cad.lingua) · [10.T01](../features/Cad.lingua#task-10t01) · [10.T02](../features/Cad.lingua#task-10t02) · [10.T03](../features/Cad.lingua#task-10t03)
+
+Use the applicable fixture, tolerances and recovery cases in [10 · Exact CAD](../contracts/Exact-CAD-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 058](058-compare-two-authored-object-behaviors.lingua) · [Next · 060](060-keep-solid-face-references-through-a-rebuild.lingua)
+} r_7QBQT5C0P0YWKPJTTBP3AJ9NAJ

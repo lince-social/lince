@@ -1,0 +1,22 @@
+Stage 180 — Predict motion for a specified articulated model (@ws-stage-180: 0, is #chapter, #part-of @workspace-stages: 180) { r_1H3J3EBBSGJGQ5JG18YYK04YH4
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Give a separately scoped forward model known initial conditions, inputs and validation data. Expose the predicted motion and assumptions against the existing rig.
+
+## Completion checks
+
+- [ ] Compare the declared motion against an independent time history and assess sensitivity to the supported inputs and time step.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Musculoskeletal and tissue studies](../features/Biomechanics.lingua) · [21.T10](../features/Biomechanics.lingua#task-21t10)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 179](179-estimate-joint-loads-from-a-measured-motion.lingua) · [Next · 181](181-estimate-a-supported-muscle-force.lingua)
+} r_1H3J3EBBSGJGQ5JG18YYK04YH4

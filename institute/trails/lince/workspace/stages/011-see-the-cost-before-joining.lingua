@@ -1,0 +1,21 @@
+Stage 011 — See the cost before joining (@ws-stage-011: 0, is #chapter, #part-of @workspace-stages: 11) { r_46HKATA31KJSMCZ9XF8R612C6W
+**Status** Pending verification.
+
+## Capability
+
+Preflight the tiny shared document against declared network, memory and continuing budgets. Show known values, estimates and missing coverage in the entry control.
+
+## Completion checks
+
+- [ ] Use B33 to exercise admission, downgrade, partial entry and refusal under caps. Reconnect after a lost reply without charging or applying the same request twice.
+
+## Implementation references
+
+[Tiny-document hosting and access](../features/Hosting.lingua) · [02.T07](../features/Hosting.lingua#task-02t07)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 010](010-invite-someone-to-a-tiny-document.lingua) · [Next · 012](012-delegate-a-bounded-edit-to-fiote.lingua)
+} r_46HKATA31KJSMCZ9XF8R612C6W

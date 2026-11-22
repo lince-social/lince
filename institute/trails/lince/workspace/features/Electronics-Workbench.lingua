@@ -1,0 +1,39 @@
+Electronic instruments and repeatable experiments (@ws-electronics-workbench: 0, is #chapter, #part-of @workspace-development, #requires @ws-numerical-runtime) { r_158C53FRYK92QV277DA65GBTMT
+Status pending. Owner refinement, 2026-11-22. Make circuit behavior observable and experiments repeatable through ordinary Workspace tools. A user can attach measurements, inspect why a circuit failed, tune parameters and retain a useful experiment with a reusable circuit.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts and research](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and ownership
+
+Consume [Numerical runtime](Numerical-Runtime.lingua)'s actual DC/transient evaluator, source mappings, numerical clock, Run/Pause/Step/Reset, bounded results and one execution authority. Extend its existing tools and activity/trace/job paths. Own instrument semantics, electronic experiment profiles and their native proof. Shared clock/result/schema changes remain with their provider owner. Reuse generic authoring-trial concepts without depending on completed procedural appearance or creating another experiment runtime.
+
+Deliver analog instruments and DC/transient experiments first on a schematic. Breadboards, PCB layout, firmware and mechanical simulation are consumers/parallel branches with their own gates. The full electronics contract joins actual outputs. Instruments can appear as ordinary panels/components in 2D, 3D or HUD layouts; a modeled workbench is optional presentation.
+
+## Ordered work
+
+### Task EWB.T01
+
+- [ ] Attach a persistent probe to stable terminals, differential node pairs or supported branches using native click/drag/numeric selection. Show reference, current direction, quantity/unit, run/model revision, simulated time and freshness. Cross-select a trace to its source and follow mapped source updates; deleted or ambiguous attachments need repair. Distinguish a nonloading numerical observer from a modeled instrument: finite input impedance, inserted current shunt or active resistance-test source changes the circuit through an explicit accepted operation. Implement one actual loading-meter model and its independent reference. Avoid an implicit globally shared ground; separately isolated solve groups require valid references. Closing a panel releases observation demand according to policy without silently deleting a circuit element or stopping another activity.
+
+### Task EWB.T02
+
+- [ ] Extend time plots with channels, differential voltage/current, edge/level trigger, pre/post-trigger window, pause/cursors and units. Capture from the numerical/event timebase, independently of rendering and animated current dots. Bound samples/bytes/history and preserve extrema or mark loss when display decimation would hide short pulses. Show requested versus achieved capture rate, numerical step and simulated-time/wall-time ratio. First proof uses actual DC/transient data and known timing/amplitudes. Digital traces/VCD and protocol decoders consume Mixed Signal/Firmware exports at the join. Frequency spectra, AC small-signal/noise analyses and audio paths advertise separate implemented method support; an FFT of rendered frames is not an electrical measurement.
+
+### Task EWB.T03
+
+- [ ] Deliver a source-linked diagnostic workflow for missing return/reference, unintended short/open, contradictory ideal sources, missing/incompatible model, nonconvergence and out-of-domain parameters. Separate design checks, solver failure, rating violation and modeled permanent damage. Show last valid values with their age, mark failed values unavailable, and navigate to implicated nets/components. Implement one explicit threshold-plus-dwell fault policy in simulated time, with named parameters, clear condition and reset semantics; describe it as an imposed failure rule unless validated physical damage is modeled. Pause on a selected condition preserves inspectable state. Repairing a source and resetting damage, restarting a run and restoring a checkpoint are distinct operations. No universal current limit or universal burn-out behavior is inferred for all parts.
+
+### Task EWB.T04
+
+- [ ] Package a bounded experiment with circuit/part/model revisions, supported analysis, parameter overrides and units, initial conditions, stimulus timeline, observations, assertions/tolerances, stop criteria and resource limits. Supply native controls to vary a source or component value, preview and run a finite parameter sweep, compare results and explicitly adopt a chosen design change. Transient tuning is either a declared supported live change at a synchronized boundary or an explicit restart. Assertions check independently defined output ranges/timing and report incomplete sampling or unsupported observations. Keep trial effects isolated from live source and external actions. An example circuit can carry this experiment as executable evidence, an exercise or a regression case; a learning campaign is ordinary content over these capabilities.
+
+### Task EWB.T05
+
+- [ ] Prove the native path on a known divider and RC circuit: attach ideal and loading probes, recover the loading difference, trigger/cursor a transient, tune a value, run a bounded sweep and diagnose a deliberate open/short/model failure. Cross a known threshold for shorter and longer than its specified dwell, assert the exact fault time, pause on that condition and verify reset-failure versus power-cycle/restart effects against independent expected state. Include a short pulse that display decimation must preserve or flag, target edits during a job, stale results, cancellation and two views. Save/reopen an experiment and its permitted results offline, rerun with captured inputs, compare against analytic references and export supported numeric traces. Record time/error, source correspondence, sample/drop limits, peak buffers, responsiveness and last-demand release. Respect edit-panel-geometry and readable controls. Publish actual units/model limits and uncertainty, not only attractive traces.
+
+## Handoff and further analyses
+
+Expose verified probe/instrument descriptors, source mappings, time/capture semantics, experiment/scenario operations, fault policies, actual trace formats and measured limits. [Mixed signal](Mixed-Signal-Circuits.lingua) and [Firmware](Firmware-Devices.lingua) supply digital/protocol events for the full contract; neither gates this analog export.
+
+AC/noise/FFT and offline or live audio are later explicit method profiles through this owner and existing media adapters. Pin analysis equations, sample-rate conversion/anti-aliasing, reference/gain/units, buffering and achieved deadlines; a prerecorded stimulus is useful before live audio. Pause/overrun must visibly stop or report missing output according to policy. Those profiles require actual implementation and evidence before advertisement. Network/equipment connections remain separately authorized capabilities. Current outcome is unbuilt and unverified.
+} r_158C53FRYK92QV277DA65GBTMT

@@ -1,0 +1,22 @@
+Stage 174 — Inspect a coupled power and heat reference (@ws-stage-174: 0, is #chapter, #part-of @workspace-stages: 174) { r_3AWC7F7WQGABEH3N6AVM45CRVN
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select one bounded civilian power and thermal study and expose the supported heat observable, model boundary and independent reference.
+
+## Completion checks
+
+- [ ] Check the energy and time alignment at the interface, expose unavailable data and recover both sides consistently after a failed exchange. Further kinetics or hydraulic methods require their own scoped proof.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Nuclear transport and coupled power studies](../features/Nuclear.lingua) · [21.T07](../features/Nuclear.lingua#task-21t07)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 173](173-track-a-reference-inventory-through-time.lingua) · [Next · 175](175-locate-a-body-at-a-specified-epoch.lingua)
+} r_3AWC7F7WQGABEH3N6AVM45CRVN

@@ -1,0 +1,23 @@
+Stage 148 — Switch a thermal model to a lumped approximation (@ws-stage-148: 0, is #chapter, #part-of @workspace-stages: 148) { r_6WWZWG3G48JJVFBSMH9HFSZWAG
+**Status** Pending verification.
+
+## Capability
+
+Expose the supported lumped and spatial models, equivalent stored energy, mapping error and operating bounds. Carry state through the existing transition service.
+
+## Completion checks
+
+- [ ] Switch during heating and compare stored energy and the observable temperature with a fine reference. Reject a transition outside the validated range.
+
+## Implementation references
+
+[Verified elasticity and thermal models](../features/Continuum.lingua) · [19.T05](../features/Continuum.lingua#task-19t05)
+
+Use the applicable fixture, tolerances and recovery cases in [19 · Continuum and thermal](../contracts/Continuum-and-thermal-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [19 · Continuum and thermal](../contracts/Continuum-and-thermal-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 147](147-follow-heating-or-cooling-over-time.lingua) · [Next · 149](149-minimize-a-bounded-molecular-structure.lingua)
+} r_6WWZWG3G48JJVFBSMH9HFSZWAG

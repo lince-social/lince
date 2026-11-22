@@ -1,0 +1,7 @@
+[physics]
+enabled = false
+
+[rules]
+paused = false
+max_pending = 64
+max_repeats = 4

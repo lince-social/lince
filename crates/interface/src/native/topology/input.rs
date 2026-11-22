@@ -48,6 +48,7 @@ pub struct PointerState {
     pub drag: Option<(Entity, DVec3)>,
     resize: Option<super::resizing::Gesture>,
     pending_drag: Option<(Entity, Vec2, DVec3)>,
+    scene_drag_root: Option<Entity>,
     last: Vec2,
     pan: Option<Vec2>,
     zoom: Option<(Entity, Vec2)>,
@@ -509,12 +510,25 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
         super::set_position(world, entity, point);
         world.resource_mut::<PointerState>().drag = None;
     }
+    let escape = world.resource::<ButtonInput<KeyCode>>().just_pressed(KeyCode::Escape);
+    if (escape || world.resource::<PointerState>().drag.is_none())
+        && let Some(root) = world.resource_mut::<PointerState>().scene_drag_root.take()
+    {
+        crate::native::edit_mode::scene::bridge::finish(world, root, false);
+        world.resource_mut::<PointerState>().drag = None;
+    }
     let events: Vec<_> = cursor
         .read(world.resource::<Messages<PointerInput>>())
         .filter(|e| e.pointer_id == PointerId::Mouse)
         .cloned()
         .collect();
     for event in events {
+        if matches!(event.action, PointerAction::Press(_) | PointerAction::Release(_) | PointerAction::Cancel)
+            && let Some(root) = world.resource_mut::<PointerState>().scene_drag_root.take()
+        {
+            crate::native::edit_mode::scene::bridge::finish(world, root, matches!(event.action, PointerAction::Release(_)));
+            world.resource_mut::<PointerState>().drag = None;
+        }
         if world
             .resource::<PointerState>()
             .zoom
@@ -718,6 +732,12 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 if let Some(point) =
                     item_point(world, root, entity, event.location.position, last.y)
                 {
+                    if world.resource::<PointerState>().scene_drag_root.is_none()
+                        && world.get::<crate::native::edit_mode::scene::bridge::Connected>(root).is_some()
+                        && crate::native::edit_mode::scene::bridge::begin(world, root, entity)
+                    {
+                        world.resource_mut::<PointerState>().scene_drag_root = Some(root);
+                    }
                     super::groups::transform(
                         world,
                         entity,
@@ -971,7 +991,8 @@ pub(crate) mod tests {
     #[test]
     fn cancelling_the_content_pointer_releases_its_last_surface_image() {
         let mut app = App::new();
-        app.init_resource::<PointerState>()
+        app.init_resource::<bevy::picking::pointer::PointerMap>()
+            .init_resource::<PointerState>()
             .init_resource::<Assets<Image>>()
             .add_message::<PointerInput>()
             .add_systems(

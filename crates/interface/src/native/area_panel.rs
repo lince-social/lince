@@ -74,6 +74,8 @@ pub enum AreaAction {
     Cancel,
     Remove,
     AttractionEnabled,
+    GraphLayout,
+    ResetGraphLayout,
     Enabled,
     Hole,
     ChangesEnabled,
@@ -186,6 +188,33 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
                     crate::native::area_mutation::arm(world, root, entity);
                 }
             }
+        }
+        AreaAction::GraphLayout | AreaAction::ResetGraphLayout => {
+            let Some(owner) = selected else { return };
+            let mut area = world.get_mut::<InfluenceArea>(owner).unwrap();
+            let enable = action == AreaAction::ResetGraphLayout || area.graph_settings().is_none();
+            let mut settings = area
+                .graph_layout
+                .or_else(|| area.graph_settings().copied())
+                .unwrap_or_default();
+            if let Some(config) = &mut area.protein {
+                if enable && (config.group_with_source || config.grouping.active()) {
+                    return;
+                }
+                config.motion = None;
+            }
+            if action == AreaAction::ResetGraphLayout {
+                settings = Default::default();
+            }
+            settings.enabled = enable;
+            area.graph_layout = Some(settings);
+            if enable
+                && let Some(member) = world.get::<WorkspaceMember>(owner).copied()
+                && !crate::native::workspace_config::enabled(world, root, member.0)
+            {
+                crate::native::workspace_config::set_physics(world, root, member.0, true);
+            }
+            crate::native::area_mutation::disarm(world, owner, "Applying graph layout settings");
         }
         AreaAction::PreviewChanges | AreaAction::ArmChanges | AreaAction::DisarmChanges => {
             if let Some(entity) = selected {
@@ -328,6 +357,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
 
 #[derive(Clone, Copy)]
 enum Field {
+    Layout(crate::native::area::graph_layout::Parameter),
     Name,
     Center(usize),
     Size(usize),
@@ -369,6 +399,10 @@ pub(crate) fn set_force_strength(
 fn force_status(area: &InfluenceArea) -> &'static str {
     if !area.enabled || !area.attraction_enabled {
         "Attraction is disabled. Enable the Area and attraction to apply this force."
+    } else if area.graph_settings().is_some()
+        && (area.strength == 0.0 || area.rules.is_empty() && area.filter.is_none())
+    {
+        "Graph layout uses its own center pull. This slider controls additional attraction or repulsion for matching Sands."
     } else if area.strength == 0.0 {
         "Force is off. Raise the slider and choose matching properties to move Sands."
     } else if area.rules.is_empty() && area.filter.is_none() {
@@ -495,6 +529,7 @@ fn field(
         .id();
     world.entity_mut(input).insert((
         crate::native::icons::Tooltip(match field {
+            Field::Layout(parameter) => parameter.description(),
             Field::Name => "Area name, up to 80 characters.",
             Field::Center(_) => "Position of the local Area boundary in workspace coordinates.",
             Field::Size(_) => "Local boundary size, from 1 to 100000 workspace units. Reach is measured outward from it.",
@@ -948,6 +983,62 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         area.attraction_enabled,
     );
     force_controls(world, root, forces, entity);
+    let graph = section(world, "graph", "Graph layout");
+    let source = world.get::<InfluenceArea>(entity).unwrap();
+    let settings = source.graph_settings().copied();
+    let grouped = source
+        .protein
+        .as_ref()
+        .is_some_and(|p| p.group_with_source || p.grouping.active());
+    if grouped {
+        label(
+            world,
+            graph,
+            "Grouped rows use their group placement.",
+            14.0,
+        );
+    } else {
+        let description = if source.protein.is_some() {
+            "Arrange this Area’s spawned cards and their links. Dragging a card wakes its neighbors."
+        } else {
+            "Arrange matching Sands within reach and the arrows between them. Dragging a Sand wakes its neighbors."
+        };
+        label(world, graph, description, 14.0);
+        label(
+            world,
+            graph,
+            "Runs while workspace physics and Area attraction are enabled.",
+            14.0,
+        );
+        choice(
+            world,
+            root,
+            graph,
+            AreaAction::GraphLayout,
+            "Graph layout",
+            settings.is_some(),
+        );
+        if let Some(settings) = settings {
+            for parameter in crate::native::area::graph_layout::Parameter::ALL {
+                field(
+                    world,
+                    root,
+                    graph,
+                    entity,
+                    Field::Layout(parameter),
+                    parameter.label(),
+                    parameter.value(settings).to_string(),
+                );
+            }
+            button(
+                world,
+                root,
+                graph,
+                AreaAction::ResetGraphLayout,
+                "Restore graph defaults",
+            );
+        }
+    }
     reach_controls(world, root, forces, entity, &area);
     select(
         world,
@@ -1718,7 +1809,9 @@ pub(crate) mod tests {
             .world_mut()
             .query::<(Entity, &EditableText, &crate::native::icons::Tooltip)>()
             .iter(app.world())
-            .find(|(_, _, tooltip)| tooltip.0 == "0 to 100000")
+            .find(|(_, _, tooltip)| {
+                tooltip.0 == crate::native::area::graph_layout::Parameter::Repulsion.description()
+            })
             .unwrap()
             .0;
         app.world_mut()
@@ -1731,15 +1824,61 @@ pub(crate) mod tests {
             app.world()
                 .get::<InfluenceArea>(area)
                 .unwrap()
-                .protein
-                .as_ref()
-                .unwrap()
-                .motion
-                .as_ref()
+                .graph_settings()
                 .unwrap()
                 .repulsion,
             75.0
         );
+        assert!(
+            app.world()
+                .get::<InfluenceArea>(area)
+                .unwrap()
+                .protein
+                .as_ref()
+                .unwrap()
+                .motion
+                .is_none()
+        );
+        // Toggling physics for this layout preserves its tuning.
+        for _ in 0..2 {
+            EditAction::Area(AreaAction::GraphLayout).apply(app.world_mut(), root);
+        }
+        assert_eq!(
+            app.world()
+                .get::<InfluenceArea>(area)
+                .unwrap()
+                .graph_settings()
+                .unwrap()
+                .repulsion,
+            75.0
+        );
+        EditAction::Area(AreaAction::ResetGraphLayout).apply(app.world_mut(), root);
+        assert_eq!(
+            app.world()
+                .get::<InfluenceArea>(area)
+                .unwrap()
+                .graph_settings(),
+            Some(&Default::default())
+        );
+
+        EditAction::Area(AreaAction::Add(ShapeKind::Square)).apply(app.world_mut(), root);
+        EditAction::Area(AreaAction::GraphLayout).apply(app.world_mut(), root);
+        let ordinary = app
+            .world()
+            .get::<AreaEditor>(root)
+            .unwrap()
+            .selected
+            .unwrap();
+        let ordinary_area = app.world().get::<InfluenceArea>(ordinary).unwrap();
+        assert!(ordinary_area.protein.is_none());
+        assert_eq!(ordinary_area.graph_settings(), Some(&Default::default()));
+        let inputs = app
+            .world_mut()
+            .query::<&AreaField>()
+            .iter(app.world())
+            .filter(|field| field.area == ordinary && matches!(field.field, Field::Layout(_)))
+            .count();
+        assert_eq!(inputs, 5);
     }
 
     #[cfg_attr(test, test)]

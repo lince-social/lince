@@ -1,0 +1,21 @@
+Stage 128 — Run two physical domains with independent clocks (@ws-stage-128: 0, is #chapter, #part-of @workspace-stages: 128) { r_6X6TN2D8JHV0GQW27KB69N00S3
+**Status** Pending verification.
+
+## Capability
+
+Give each admitted domain a separate evolution state and step, sleep and unload policy under the existing authority and budget service.
+
+## Completion checks
+
+- [ ] Pause one copy of the same setup and step the other. Check positions, clocks, contact isolation and resource release when demand ends.
+
+## Implementation references
+
+[Rigid bodies joints and authored forces](../features/Rigid.lingua) · [18.T03](../features/Rigid.lingua#task-18t03)
+
+Use the applicable fixture, tolerances and recovery cases in [18 · Rigid and articulated physics](../contracts/Rigid-and-articulated-physics-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 127](127-give-an-area-a-physical-force-law.lingua) · [Next · 129](129-drive-a-mechanical-load-with-a-simulated-motor.lingua)
+} r_6X6TN2D8JHV0GQW27KB69N00S3

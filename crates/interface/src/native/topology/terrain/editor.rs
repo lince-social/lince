@@ -14,7 +14,11 @@
 //   1056, 1063, 1067, 1076, 1079, 1083, 1084, 1092, 1093, 1100, 1106, 1111, 1115).
 
 use super::*;
-use crate::native::actions::{Action, ActionButton};
+use crate::native::{
+    actions::{Action, ActionButton},
+    canvas_controls::{toolbar, toolbar_button},
+    icons::{Icon, IconButton},
+};
 use bevy::picking::events::PointerScroll;
 use nucleus::canvas::{self as api, Mutation};
 use nucleus::terrain::Preset;
@@ -1025,10 +1029,16 @@ pub fn update(world: &mut World) {
             world.entity_mut(root).insert(Editor::default());
         }
         if world.get::<Toolbar>(root).is_none() {
-            let toolbar = crate::native::canvas_controls::toolbar(world, root);
-            let floor = button(world, toolbar, root, "Floor", Control::Open);
-            world.entity_mut(floor).insert(crate::native::icons::Tooltip(
-                "Edit floor topology: hills, valleys, slopes and other ground-height effects.".into(),
+            let toolbar = toolbar(world, root);
+            world.spawn((
+                toolbar_button(
+                    toolbar,
+                    ActionButton::new(root, crate::native::actions![Control::Open]),
+                ),
+                IconButton::new(
+                    Icon::Floor,
+                    "Edit floor topology: hills, valleys, slopes and other ground-height effects.",
+                ),
             ));
             world.entity_mut(root).insert(Toolbar);
         }

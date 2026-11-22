@@ -1,0 +1,23 @@
+Stage 067 — Route a board from its schematic (@ws-stage-067: 0, is #chapter, #part-of @workspace-stages: 67) { r_51H8ZW0NYCGM8Y7GABFK36JR73
+**Status** Pending verification.
+
+## Capability
+
+Assign footprints, place them on a board outline and route supported layers, traces and vias. Preserve net identity between the design and the copper.
+
+## Completion checks
+
+- [ ] Route a B43 net through a via and cross-select its terminal in schematic, board and package views. Undo one segment and inspect the resulting disconnection.
+
+## Implementation references
+
+**Provider handoffs** [066 · Schematics](066-draw-a-circuit-with-named-nets.lingua) · [062 · Exact Assemblies](062-finish-an-exact-part-inside-an-assembly.lingua) · [063 · Takeoff](063-read-a-revisioned-quantity-from-a-design.lingua)
+
+[PCB layout, checks and fabrication data](../features/Pcb.lingua) · [11a.T04](../features/Pcb.lingua#task-11at04)
+
+Use the applicable fixture, tolerances and recovery cases in [11a · Electronic design](../contracts/Electronic-design-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 066](066-draw-a-circuit-with-named-nets.lingua) · [Next · 068](068-find-a-board-design-error.lingua)
+} r_51H8ZW0NYCGM8Y7GABFK36JR73

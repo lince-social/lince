@@ -1,0 +1,23 @@
+Stage 023 — Move through a room in Orbit, Fly or Walk (@ws-stage-023: 0, is #chapter, #part-of @workspace-stages: 23) { r_59YVQ9XNEBPCR6JA727QQ3HVJ3
+**Status** Pending verification.
+
+## Capability
+
+Switch native controllers in a standalone room. Use its declared support, horizon and input settings and retain the selected subject.
+
+## Completion checks
+
+- [ ] Orbit an item, fly to a doorway, walk through it and switch back. Exercise absent support, focus loss and return to the previous viewpoint.
+
+## Implementation references
+
+**Provider handoffs** [022 · Areas Mounts](022-mount-a-desktop-item-to-a-surface.lingua)
+
+[Local Orbit Fly Walk and content use](../features/Navigation.lingua) · [05.T06](../features/Navigation.lingua#task-05t06)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 022](022-mount-a-desktop-item-to-a-surface.lingua) · [Next · 024](024-use-content-from-inside-the-room.lingua)
+} r_59YVQ9XNEBPCR6JA727QQ3HVJ3

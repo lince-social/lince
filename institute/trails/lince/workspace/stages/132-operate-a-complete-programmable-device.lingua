@@ -1,0 +1,25 @@
+Stage 132 — Operate a complete programmable device (@ws-stage-132: 0, is #chapter, #part-of @workspace-stages: 132) { r_241B594VEPJWAYBS1R2QZ3B144
+**Status** Pending verification.
+
+## Capability
+
+Combine the real sensor, firmware, driver and motor with design, physical prototype and instrument views. Expose its public functional interface and only the validated model substitutions.
+
+## Completion checks
+
+- [ ] Change the sensor input and observe the firmware, PWM, load motion and current. Cross-probe the design, reopen offline and replay EB.W01–EB.W07 with low-detail observation and bounded computation.
+
+Compare the authored glow, functional module and wired device in one scene. Lower the board’s visual detail, drop unneeded internal representations and switch only a validated model pair. Keep the firmware pinned or restart explicitly where no state map exists. Report the observed difference in electrical results, memory and computation.
+
+## Implementation references
+
+[Composed electronics workbench acceptance](../features/Electronics-Integration.lingua) · [EBI.T03](../features/Electronics-Integration.lingua#task-ebit03) · [EBI.T04](../features/Electronics-Integration.lingua#task-ebit04)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 131](131-decode-a-firmware-bus-transaction.lingua) · [Next · 133](133-derive-density-from-a-crystal-cell.lingua)
+} r_241B594VEPJWAYBS1R2QZ3B144

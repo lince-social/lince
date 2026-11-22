@@ -1,0 +1,21 @@
+Stage 026 — Use a Park application on a surface (@ws-stage-026: 0, is #chapter, #part-of @workspace-stages: 26) { r_507KWZYNPDVQEYBHPVSK5F8RTS
+**Status** Pending verification.
+
+## Capability
+
+Place a supported application surface, map local input and popups, and apply separate grants for publishing pixels or injecting remote input.
+
+## Completion checks
+
+- [ ] Focus and operate a supported app, open a popup and revoke a guest’s media and input grants. The host can continue to use the app.
+
+## Implementation references
+
+[Native and Park application panels](../features/Mounted-Apps.lingua) · [07.T06](../features/Mounted-Apps.lingua#task-07t06)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 025](025-use-a-mounted-native-panel.lingua) · [Next · 027](027-play-inside-a-focused-native-castle.lingua)
+} r_507KWZYNPDVQEYBHPVSK5F8RTS

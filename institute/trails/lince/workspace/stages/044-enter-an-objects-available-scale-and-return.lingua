@@ -1,0 +1,21 @@
+Stage 044 — Enter an object’s available scale and return (@ws-stage-044: 0, is #chapter, #part-of @workspace-stages: 44) { r_327MC6WMZ8HRRN5TZ4AT8PY111
+**Status** Pending verification.
+
+## Capability
+
+Use Enter, Surroundings and Back to traverse declared internal views. Bound history and prefetch and honor reduced-motion settings.
+
+## Completion checks
+
+- [ ] Enter an internal component, return to the prior subject and framing, and try a subject with no accessible interior. Recover gracefully after source revocation.
+
+## Implementation references
+
+[Exploration and object perspectives](../features/Exploration.lingua) · [EXP.T03](../features/Exploration.lingua#task-expt03) · [EXP.T04](../features/Exploration.lingua#task-expt04) · [EXP.T05](../features/Exploration.lingua#task-expt05)
+
+Use the applicable fixture, tolerances and recovery cases in [Exploration and possession](../contracts/Exploration-contracts.lingua#ordered-integration-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 043](043-look-out-from-a-selected-object.lingua) · [Next · 045](045-wire-a-functional-sensor-to-a-lamp.lingua)
+} r_327MC6WMZ8HRRN5TZ4AT8PY111

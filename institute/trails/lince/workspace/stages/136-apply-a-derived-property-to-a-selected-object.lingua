@@ -1,0 +1,23 @@
+Stage 136 — Apply a derived property to a selected object (@ws-stage-136: 0, is #chapter, #part-of @workspace-stages: 136) { r_2XSY2WD7C9MDP7ZAS3276WN09P
+**Status** Pending verification.
+
+## Capability
+
+Link a candidate result to its intended local material variant. Show affected consumers, conditions, conflicts, recompute and explicit stale status.
+
+## Completion checks
+
+- [ ] Edit the source specimen, leave the editor with a ready result and see it on the selected rod. Try an invalid or pending result and recover the last accepted value.
+
+## Implementation references
+
+**Provider handoffs** [134 · Micro Properties](134-derive-an-oriented-effective-material-property.lingua) · [135 · Laboratory](135-run-an-experiment-on-a-standalone-specimen.lingua) · [074 · Numerical Transitions](074-change-circuit-fidelity-during-a-running-event.lingua)
+
+[Derived-model adoption and shared laboratory integration](../features/Scientific-Adoption.lingua) · [17.T03](../features/Scientific-Adoption.lingua#task-17t03) · [17.T05](../features/Scientific-Adoption.lingua#task-17t05)
+
+Use the applicable fixture, tolerances and recovery cases in [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 135](135-run-an-experiment-on-a-standalone-specimen.lingua) · [Next · 137](137-scale-the-represented-amount-independently-of-the-sample.lingua)
+} r_2XSY2WD7C9MDP7ZAS3276WN09P

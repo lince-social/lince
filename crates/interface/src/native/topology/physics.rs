@@ -602,42 +602,6 @@ pub fn synchronize(world: &mut World) -> bool {
                 .remove::<Sleeping>();
             changed = true;
         }
-        let force = if held {
-            DVec3::ZERO
-        } else {
-            members
-                .iter()
-                .map(|e| {
-                    world
-                        .resource::<super::influence::Forces>()
-                        .totals
-                        .get(e)
-                        .copied()
-                        .unwrap_or_default()
-                        + world
-                            .get_resource::<crate::native::protein_motion::Motion>()
-                            .and_then(|motion| motion.forces.get(e))
-                            .copied()
-                            .unwrap_or_default()
-                })
-                .sum::<DVec3>()
-                + if world.contains_resource::<super::terrain::Terrain>() {
-                    DVec3::new(0.0, -981.0 * solid.len() as f64, 0.0)
-                } else {
-                    DVec3::ZERO
-                }
-        };
-        if world.get::<ConstantForce>(body).unwrap().0 != force.as_vec3() {
-            let threshold = crate::native::physics::sleep_threshold(
-                force,
-                f64::from(world.get::<Mass>(body).unwrap().0),
-            );
-            world
-                .entity_mut(body)
-                .insert((ConstantForce(force.as_vec3()), SleepTimer(0.0), threshold))
-                .remove::<Sleeping>();
-            changed = true;
-        }
         let link = world.get::<Body>(body).unwrap();
         if link.position != position
             || link.rotation != rotation
@@ -692,6 +656,54 @@ pub fn synchronize(world: &mut World) -> bool {
             .entity_mut(entity)
             .insert(SleepTimer(0.0))
             .remove::<Sleeping>();
+    }
+    update_body_forces(world) || changed
+}
+
+pub(crate) fn update_body_forces(world: &mut World) -> bool {
+    world
+        .run_system_cached(assign_forces)
+        .expect("update spatial body forces")
+}
+
+fn assign_forces(
+    areas: Option<Res<super::influence::Forces>>,
+    motion: Option<Res<crate::native::protein_motion::Motion>>,
+    terrain: Option<Res<super::terrain::Terrain>>,
+    mut bodies: Query<(Entity, &Body, &Mass, &mut ConstantForce)>,
+    mut commands: Commands,
+) -> bool {
+    let mut changed = false;
+    for (entity, body, mass, mut current) in &mut bodies {
+        let mut force = DVec3::ZERO;
+        if !body.held {
+            for member in &body.members {
+                force += areas
+                    .as_ref()
+                    .and_then(|area| area.totals.get(member))
+                    .copied()
+                    .unwrap_or_default()
+                    + motion
+                        .as_ref()
+                        .and_then(|motion| motion.forces.get(member))
+                        .copied()
+                        .unwrap_or_default();
+            }
+            if terrain.is_some() {
+                force.y -= 981.0 * body.signature.len() as f64;
+            }
+        }
+        if current.0 != force.as_vec3() {
+            current.0 = force.as_vec3();
+            commands
+                .entity(entity)
+                .insert((
+                    SleepTimer(0.0),
+                    crate::native::physics::sleep_threshold(force, f64::from(mass.0)),
+                ))
+                .remove::<Sleeping>();
+            changed = true;
+        }
     }
     changed
 }

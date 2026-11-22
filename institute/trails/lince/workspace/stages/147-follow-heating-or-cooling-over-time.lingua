@@ -1,0 +1,21 @@
+Stage 147 — Follow heating or cooling over time (@ws-stage-147: 0, is #chapter, #part-of @workspace-stages: 147) { r_45T3FYK94YY17B8T5EDTAN3DTT
+**Status** Pending verification.
+
+## Capability
+
+Give the thermal model initial temperature, density, heat capacity and a source or sink. Display its temperature history on the source region.
+
+## Completion checks
+
+- [ ] Compare a bounded transient with the reference curve and energy balance, refine the time step and inspect cancellation and stale-source handling.
+
+## Implementation references
+
+[Verified elasticity and thermal models](../features/Continuum.lingua) · [19.T02](../features/Continuum.lingua#task-19t02) · [19.T03](../features/Continuum.lingua#task-19t03) · [19.T04](../features/Continuum.lingua#task-19t04)
+
+Use the applicable fixture, tolerances and recovery cases in [19 · Continuum and thermal](../contracts/Continuum-and-thermal-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 146](146-calculate-steady-heat-flow.lingua) · [Next · 148](148-switch-a-thermal-model-to-a-lumped-approximation.lingua)
+} r_45T3FYK94YY17B8T5EDTAN3DTT

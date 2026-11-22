@@ -54,6 +54,11 @@ fn candidate<'a>(field: Field, area: &InfluenceArea, value: &'a str) -> Option<E
                     }
                     Edit::Size(size)
                 }
+                Field::Layout(parameter) => {
+                    let mut settings = *area.graph_settings()?;
+                    *parameter.field(&mut settings) = number;
+                    Edit::Layout(settings)
+                }
                 Field::Radius => Edit::Radius(number),
                 Field::Depth => Edit::Depth(number),
                 Field::Target(axis) => {
@@ -171,6 +176,12 @@ pub(super) fn refresh(world: &mut World, preparation: &mut Preparation) {
         let value = match field.field {
             Field::Center(axis) => area.center[axis],
             Field::Size(axis) => area.size[axis],
+            Field::Layout(parameter) => {
+                let Some(settings) = area.graph_settings() else {
+                    continue;
+                };
+                parameter.value(*settings)
+            }
             Field::Radius => area.reach.radius,
             Field::Depth => area.depth,
             Field::Target(axis) => (area.target_position() - DVec2::from_array(area.center))[axis],

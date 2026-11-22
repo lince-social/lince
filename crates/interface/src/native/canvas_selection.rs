@@ -152,6 +152,10 @@ pub(crate) fn set_selection(world: &mut World, root: Entity, mut entities: Vec<E
     entities.retain(|entity| eligible(world, root, *entity));
     entities.sort();
     entities.dedup();
+    let single = match entities.as_slice() {
+        [entity] => Some(*entity),
+        _ => None,
+    };
     if world
         .get::<SandSelection>(root)
         .is_none_or(|selection| selection.0 != entities)
@@ -168,6 +172,9 @@ pub(crate) fn set_selection(world: &mut World, root: Entity, mut entities: Vec<E
             inspection.selected = entities.first().copied();
         }
         world.entity_mut(root).insert(SandSelection(entities));
+    }
+    if let Some(entity) = single {
+        crate::native::edit_mode::scene::bridge::selected(world, root, entity);
     }
 }
 

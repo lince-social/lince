@@ -1,0 +1,295 @@
+Workspace refactor in delivery order (@workspace-stages: 0, is #chapter, #part-of @workspace-development) { r_1YY2R9043QSH0PSNZ2K29SS2V9
+Build the native Lince desktop one capability at a time. A Sand, an application surface, a room, a circuit board and a specimen can occupy the same workspace. Each keeps its identity as the user changes viewpoint, edits its source or chooses how much of it to load and simulate.
+
+**Start here** [004 · Recover an edit receipt after a lost reply](stages/004-recover-an-edit-receipt-after-a-lost-reply.lingua). This is the chosen delivery order. Each of the 190 numbered links below opens one stage with an observable result, implementation scope, completion checks and an evidence handoff. The first stage establishes a measurement reference. [110 · Core desktop acceptance](stages/110-use-the-refactored-desktop-as-one-workspace.lingua) proves that the earlier desktop capabilities work together. Optional recipes and separately selected research methods are labeled.
+
+## Current position
+
+Stage 001 passed on 2026-11-22. Its handoff includes the fixed-clock native replay, fresh-process reopen, three real-clock timing runs, five reviewed findings, ten fixture cases and the delivery contracts. Stage 002 also passed. The native desktop can save and reopen two placements of a shared part, with stable identities and recovery after an interrupted save. Stage 003 verified selection, movement, undo and reopening for an existing Room member linked to the scene. Stage 004 is next. [Stage 003 proof](../../../fixtures/workspace/stage03/README.md) [Stage 002 proof](../../../fixtures/workspace/stage02/README.md) [November evidence](../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md) · [October audit](../../../fixtures/workspace/stage01/completion-audit.json)
+
+Legacy identifiers such as `01.W01`, `11a.T04` and `15a.T06` still identify original workflows and tasks. The 87 feature Records own the 276 task entries and their implementation boundaries. The 28 contract Records own fixtures, guarantees and composed acceptance. A task can span several numbered stages. Check it off in its owner Record only after every part has evidence. The card on which the last provider becomes available identifies the composed replay. [Technical dependencies](Workspace-Development.lingua#dependency-graph) · [Contract catalogue](Workspace-Contracts.lingua)
+
+Every stage card inherits [Workspace refactor delivery](Workspace-Refactor.lingua), including the cumulative native showcase replay and the stage handoff.
+
+## Picking up the next stage
+
+1. Open the first unfinished stage in this order. Read its preceding handoff and the linked task and proof sections. Work on that one outcome. The feature graph still identifies technical prerequisites if the delivery order is ever revised. A character can already be built in a local room before any globe or photographic reconstruction.
+2. Implement the ordinary native entry point and its actual data path. Use the card’s fixture and an independent expected result. Check applicable save/reopen, undo, permissions, failure recovery, resource limits and one earlier workflow affected by the change. New or changed edit panels follow the native left-edge, height and reachable-control requirements. [Desktop edit-panel rule](../../Lince.lingua) · [Shared acceptance guidance](Workspace-Development.lingua#workflow-contracts-and-balanced-acceptance)
+3. Record the revision, fixture, device/profile where relevant, runnable command, expected and observed results, limitations and a durable link to the evidence in the card. On a failed required check, record the failure, repair its earliest owner and replay affected work. Publish a package handoff when its owned stages and local proofs pass. Make representative timing measurements in an exclusive window after compilation. [Handoff and repair](Workspace-Development.lingua#dependency-driven-delivery-and-repair)
+4. Follow the next link. An optional recipe or specialist method can be recorded as deferred when its scope has not been selected. A later stage that actually needs that provider waits for its verified handoff. Core desktop acceptance has its own explicit contributors. For a specialist package, recover the handoff for the selected law or coupling. For example, electrical heat feedback uses verified thermal coupling, and the acoustic study has independent evidence. Each deferred method needs its own reference, error and resource bounds before a claim of support.
+
+## How detail works across the sequence
+
+- A glowing object can keep an authored appearance. A functional lamp responds to a sensor event. A wired lamp responds to calculated electrical power. Place them together and inspect what drives each light. [045 · Functional lamp](stages/045-wire-a-functional-sensor-to-a-lamp.lingua) · [072 · Powered lamp](stages/072-light-a-lamp-from-a-simulated-power-source.lingua)
+- A detailed board can expose a single sensor port while its internals are unloaded. The view, structural coverage, behavior model, numerical accuracy, clock and budget are separately inspectable choices. A validated transfer must preserve the declared outputs and state when changing models in flight. [046 · Per-occurrence policy](stages/046-choose-the-behavior-detail-of-one-occurrence.lingua) · [070 · Board as device](stages/070-use-a-whole-board-as-one-functional-device.lingua) · [074 · Live circuit transition](stages/074-change-circuit-fidelity-during-a-running-event.lingua) · [148 · Thermal transition](stages/148-switch-a-thermal-model-to-a-lumped-approximation.lingua)
+- A user can inhabit a local character, enter a component’s view, possess an object temporarily, or refine a region of a coarse world. The source stays editable at its own scale. The same place data can be placed in a fictional world. [035 · Character control](stages/035-navigate-as-a-supplied-character.lingua) · [044 · Cross-scale exploration](stages/044-enter-an-objects-available-scale-and-return.lingua) · [048 · Temporary play](stages/048-play-as-an-object-in-a-temporary-trial.lingua) · [083 · Portable place fragment](stages/083-move-a-fragment-into-a-different-world.lingua)
+
+## Ordered stages
+
+| Stages | Capabilities |
+| --- | --- |
+| 001–006 | [Recover the desktop and make edits durable](#recover-the-desktop-and-make-edits-durable) |
+| 007–017 | [View, select and share the same objects](#view-select-and-share-the-same-objects) |
+| 018–034 | [Build and inhabit a local desktop scene](#build-and-inhabit-a-local-desktop-scene) |
+| 035–048 | [Give a character and ordinary objects controls](#give-a-character-and-ordinary-objects-controls) |
+| 049–051 | [Inspect molecular structures without running a solver](#inspect-molecular-structures-without-running-a-solver) |
+| 052–075 | [Author reusable objects, solid parts and electronics](#author-reusable-objects-solid-parts-and-electronics) |
+| 076–099 | [Curate places and use live observations](#curate-places-and-use-live-observations) |
+| 100–112 | [Link designs to work and accept the core desktop](#link-designs-to-work-and-accept-the-core-desktop) |
+| 113–132 | [Build, program and measure simulated electronics](#build-program-and-measure-simulated-electronics) |
+| 133–148 | [Study specimens, motion and heat](#study-specimens-motion-and-heat) |
+| 149–182 | [Extend the laboratory one validated method at a time](#extend-the-laboratory-one-validated-method-at-a-time) |
+| 183–190 | [Select additional electronics methods when needed](#select-additional-electronics-methods-when-needed) |
+
+### Recover the desktop and make edits durable
+
+The isolated replay passed. The first new product capability is saving and reopening a scene with two placements of the same part.
+
+- [x] [001 · Re-establish the desktop baseline](stages/001-re-establish-the-desktop-baseline.lingua)
+- [x] [002 · Save and reopen a tiny scene](stages/002-save-and-reopen-a-tiny-scene.lingua)
+- [003 · Edit an existing canvas item through the model](stages/003-edit-an-existing-canvas-item-through-the-model.lingua)
+- [004 · Recover an edit receipt after a lost reply](stages/004-recover-an-edit-receipt-after-a-lost-reply.lingua)
+- [005 · Reuse a definition from another document](stages/005-reuse-a-definition-from-another-document.lingua)
+- [006 · Save a behavior choice on an occurrence](stages/006-save-a-behavior-choice-on-an-occurrence.lingua)
+
+### View, select and share the same objects
+
+Establish frames, views, host and Agent authority, stable selections and typed connections.
+
+- [007 · Keep a local measurement accurate far from the origin](stages/007-keep-a-local-measurement-accurate-far-from-the-origin.lingua)
+- [008 · Inspect one model in flat and spatial views](stages/008-inspect-one-model-in-flat-and-spatial-views.lingua)
+- [009 · Pin a second presentation of the same content](stages/009-pin-a-second-presentation-of-the-same-content.lingua)
+- [010 · Invite someone to a tiny document](stages/010-invite-someone-to-a-tiny-document.lingua)
+- [011 · See the cost before joining](stages/011-see-the-cost-before-joining.lingua)
+- [012 · Delegate a bounded edit to Fiote](stages/012-delegate-a-bounded-edit-to-fiote.lingua)
+- [013 · Keep a named selection through a source edit](stages/013-keep-a-named-selection-through-a-source-edit.lingua)
+- [014 · Connect typed ports](stages/014-connect-typed-ports.lingua)
+- [015 · See another participant’s pointer in your frame](stages/015-see-another-participants-pointer-in-your-frame.lingua)
+- [016 · Query only the authorized part of a scene](stages/016-query-only-the-authorized-part-of-a-scene.lingua)
+- [017 · Give Fiote the context of a selection](stages/017-give-fiote-the-context-of-a-selection.lingua)
+
+### Build and inhabit a local desktop scene
+
+Make content load, mount, accept focus and remain editable in a room. The isolated native game is an optional desktop recipe.
+
+- [018 · Open a coarse scene and refine it on demand](stages/018-open-a-coarse-scene-and-refine-it-on-demand.lingua)
+- [019 · Share geometry within a bounded working set](stages/019-share-geometry-within-a-bounded-working-set.lingua)
+- [020 · Carry a scene offline in a Workspace package](stages/020-carry-a-scene-offline-in-a-workspace-package.lingua)
+- [021 · Apply an Area’s influence to selected objects](stages/021-apply-an-areas-influence-to-selected-objects.lingua)
+- [022 · Mount a desktop item to a surface](stages/022-mount-a-desktop-item-to-a-surface.lingua)
+- [023 · Move through a room in Orbit, Fly or Walk](stages/023-move-through-a-room-in-orbit-fly-or-walk.lingua)
+- [024 · Use content from inside the room](stages/024-use-content-from-inside-the-room.lingua)
+- [025 · Use a mounted native panel](stages/025-use-a-mounted-native-panel.lingua)
+- [026 · Use a Park application on a surface](stages/026-use-a-park-application-on-a-surface.lingua)
+- [027 · Play inside a focused native Castle](stages/027-play-inside-a-focused-native-castle.lingua) · optional
+- [028 · Shape a room in the native editor](stages/028-shape-a-room-in-the-native-editor.lingua)
+- [029 · Preview a topology edit before committing it](stages/029-preview-a-topology-edit-before-committing-it.lingua)
+- [030 · Edit a chosen group of mesh copies](stages/030-edit-a-chosen-group-of-mesh-copies.lingua)
+- [031 · Reduce mesh detail while protecting an opening](stages/031-reduce-mesh-detail-while-protecting-an-opening.lingua)
+- [032 · Replace a collision proxy under a resting object](stages/032-replace-a-collision-proxy-under-a-resting-object.lingua)
+- [033 · Carve a traversable overhang](stages/033-carve-a-traversable-overhang.lingua)
+- [034 · Assemble two parts around a constrained joint](stages/034-assemble-two-parts-around-a-constrained-joint.lingua)
+
+### Give a character and ordinary objects controls
+
+Start with a supplied character, then author motion, explore and possess ordinary objects. This whole group uses a local scene.
+
+- [035 · Navigate as a supplied character](stages/035-navigate-as-a-supplied-character.lingua)
+- [036 · Customize one character’s appearance](stages/036-customize-one-characters-appearance.lingua)
+- [037 · Pose an articulated model](stages/037-pose-an-articulated-model.lingua)
+- [038 · Bind a surface to a rig](stages/038-bind-a-surface-to-a-rig.lingua)
+- [039 · Play an authored movement clip](stages/039-play-an-authored-movement-clip.lingua)
+- [040 · Annotate a structure on an anatomical reference](stages/040-annotate-a-structure-on-an-anatomical-reference.lingua)
+- [041 · Furnish a room with Fiote and continue by hand](stages/041-furnish-a-room-with-fiote-and-continue-by-hand.lingua)
+- [042 · Keep a character controllable while anatomical detail unloads](stages/042-keep-a-character-controllable-while-anatomical-detail-unloads.lingua)
+- [043 · Look out from a selected object](stages/043-look-out-from-a-selected-object.lingua)
+- [044 · Enter an object’s available scale and return](stages/044-enter-an-objects-available-scale-and-return.lingua)
+- [045 · Wire a functional sensor to a lamp](stages/045-wire-a-functional-sensor-to-a-lamp.lingua)
+- [046 · Choose the behavior detail of one occurrence](stages/046-choose-the-behavior-detail-of-one-occurrence.lingua)
+- [047 · Place an object by moving as it](stages/047-place-an-object-by-moving-as-it.lingua)
+- [048 · Play as an object in a temporary trial](stages/048-play-as-an-object-in-a-temporary-trial.lingua)
+
+### Inspect molecular structures without running a solver
+
+Edit a molecule, crystal or protein as data. Predictive calculations have later stages.
+
+- [049 · Edit a molecule as a structure](stages/049-edit-a-molecule-as-a-structure.lingua)
+- [050 · Edit a periodic crystal cell](stages/050-edit-a-periodic-crystal-cell.lingua)
+- [051 · Open a protein as its own workspace](stages/051-open-a-protein-as-its-own-workspace.lingua)
+
+### Author reusable objects, solid parts and electronics
+
+Compose appearance and behavior, design parts and boards, and follow the lamp from a functional device to a validated numerical substitute.
+
+- [052 · Publish an object with editable controls](stages/052-publish-an-object-with-editable-controls.lingua)
+- [053 · Compose an object’s behavior from events](stages/053-compose-an-objects-behavior-from-events.lingua)
+- [054 · Trace why a behavior fired](stages/054-trace-why-a-behavior-fired.lingua)
+- [055 · Design an appearance controlled by a parameter](stages/055-design-an-appearance-controlled-by-a-parameter.lingua)
+- [056 · Add a bounded transient visual effect](stages/056-add-a-bounded-transient-visual-effect.lingua)
+- [057 · Bind a control to an object action](stages/057-bind-a-control-to-an-object-action.lingua)
+- [058 · Compare two authored object behaviors](stages/058-compare-two-authored-object-behaviors.lingua)
+- [059 · Make a dimensioned solid from a sketch](stages/059-make-a-dimensioned-solid-from-a-sketch.lingua)
+- [060 · Keep solid-face references through a rebuild](stages/060-keep-solid-face-references-through-a-rebuild.lingua)
+- [061 · Drive a hatch’s travel from its CAD dimensions](stages/061-drive-a-hatchs-travel-from-its-cad-dimensions.lingua)
+- [062 · Finish an exact part inside an assembly](stages/062-finish-an-exact-part-inside-an-assembly.lingua)
+- [063 · Read a revisioned quantity from a design](stages/063-read-a-revisioned-quantity-from-a-design.lingua)
+- [064 · Build a structure from reusable parts](stages/064-build-a-structure-from-reusable-parts.lingua)
+- [065 · Exchange a building and a linked issue](stages/065-exchange-a-building-and-a-linked-issue.lingua)
+- [066 · Draw a circuit with named nets](stages/066-draw-a-circuit-with-named-nets.lingua)
+- [067 · Route a board from its schematic](stages/067-route-a-board-from-its-schematic.lingua)
+- [068 · Find a board design error](stages/068-find-a-board-design-error.lingua)
+- [069 · Export fabrication files for a board revision](stages/069-export-fabrication-files-for-a-board-revision.lingua)
+- [070 · Use a whole board as one functional device](stages/070-use-a-whole-board-as-one-functional-device.lingua)
+- [071 · Solve a small circuit on the desktop](stages/071-solve-a-small-circuit-on-the-desktop.lingua)
+- [072 · Light a lamp from a simulated power source](stages/072-light-a-lamp-from-a-simulated-power-source.lingua)
+- [073 · Substitute a cheaper equivalent circuit](stages/073-substitute-a-cheaper-equivalent-circuit.lingua)
+- [074 · Change circuit fidelity during a running event](stages/074-change-circuit-fidelity-during-a-running-event.lingua)
+- [075 · Let a device adapt its simulation cost](stages/075-let-a-device-adapt-its-simulation-cost.lingua)
+
+### Curate places and use live observations
+
+Build from supplied data, register and replace regions, share them, then create new model layers from photographs, generation or calibrated live feeds.
+
+- [076 · Place a supplied model as an editable layer](stages/076-place-a-supplied-model-as-an-editable-layer.lingua)
+- [077 · Align a model to measured points](stages/077-align-a-model-to-measured-points.lingua)
+- [078 · Refresh an imported model while keeping local edits](stages/078-refresh-an-imported-model-while-keeping-local-edits.lingua)
+- [079 · Build a local place from several data sources](stages/079-build-a-local-place-from-several-data-sources.lingua)
+- [080 · Make a composed place walkable](stages/080-make-a-composed-place-walkable.lingua)
+- [081 · Review a new revision of a curated place](stages/081-review-a-new-revision-of-a-curated-place.lingua)
+- [082 · Replace a selected region of a place](stages/082-replace-a-selected-region-of-a-place.lingua)
+- [083 · Move a fragment into a different world](stages/083-move-a-fragment-into-a-different-world.lingua)
+- [084 · Travel from a globe to a local place](stages/084-travel-from-a-globe-to-a-local-place.lingua)
+- [085 · Navigate the same scale range in an invented world](stages/085-navigate-the-same-scale-range-in-an-invented-world.lingua)
+- [086 · Download a chosen city region for offline use](stages/086-download-a-chosen-city-region-for-offline-use.lingua)
+- [087 · Find and revisit a place within a city budget](stages/087-find-and-revisit-a-place-within-a-city-budget.lingua)
+- [088 · Visit the same place from two different devices](stages/088-visit-the-same-place-from-two-different-devices.lingua)
+- [089 · Take an authorized copy of a hosted place offline](stages/089-take-an-authorized-copy-of-a-hosted-place-offline.lingua)
+- [090 · Build a mesh from supplied photographs](stages/090-build-a-mesh-from-supplied-photographs.lingua)
+- [091 · Drape a registered image on terrain](stages/091-drape-a-registered-image-on-terrain.lingua)
+- [092 · Generate an editable scene candidate from a prompt](stages/092-generate-an-editable-scene-candidate-from-a-prompt.lingua)
+- [093 · Regenerate a scene while retaining authored changes](stages/093-regenerate-a-scene-while-retaining-authored-changes.lingua)
+- [094 · Attach a live camera to a place](stages/094-attach-a-live-camera-to-a-place.lingua)
+- [095 · Let Fiote inspect a live frame](stages/095-let-fiote-inspect-a-live-frame.lingua)
+- [096 · Watch a feed for a named event](stages/096-watch-a-feed-for-a-named-event.lingua)
+- [097 · Create a model layer from one observation](stages/097-create-a-model-layer-from-one-observation.lingua)
+- [098 · Refresh an observed layer periodically](stages/098-refresh-an-observed-layer-periodically.lingua)
+- [099 · Reconstruct changing geometry from live cameras](stages/099-reconstruct-changing-geometry-from-live-cameras.lingua)
+
+### Link designs to work and accept the core desktop
+
+Connect geometry to quantities, work and governance. Verify the mixed desktop at 110. The tour and Area game are optional follow-ons.
+
+- [100 · Unfold a sheet-metal part](stages/100-unfold-a-sheet-metal-part.lingua)
+- [101 · Author a repeated material structure](stages/101-author-a-repeated-material-structure.lingua)
+- [102 · Exchange a toleranced manufacturing drawing](stages/102-exchange-a-toleranced-manufacturing-drawing.lingua)
+- [103 · Lay out a corridor on surveyed terrain](stages/103-lay-out-a-corridor-on-surveyed-terrain.lingua)
+- [104 · Track a delivery through inventory](stages/104-track-a-delivery-through-inventory.lingua)
+- [105 · Preview the consequences of a delay](stages/105-preview-the-consequences-of-a-delay.lingua)
+- [106 · Generate draft work from a model quantity](stages/106-generate-draft-work-from-a-model-quantity.lingua)
+- [107 · Reconcile a design change with accepted work](stages/107-reconcile-a-design-change-with-accepted-work.lingua)
+- [108 · Turn a site observation into a reviewed proposal](stages/108-turn-a-site-observation-into-a-reviewed-proposal.lingua)
+- [109 · Work across two independently governed sources](stages/109-work-across-two-independently-governed-sources.lingua)
+- [110 · Use the refactored desktop as one workspace](stages/110-use-the-refactored-desktop-as-one-workspace.lingua)
+- [111 · Start a tour and take back control](stages/111-start-a-tour-and-take-back-control.lingua) · optional
+- [112 · Play a run in an opt-in canvas Area](stages/112-play-a-run-in-an-opt-in-canvas-area.lingua) · optional
+
+### Build, program and measure simulated electronics
+
+Use catalogues, physical prototypes, instruments and real firmware. Empirical materials and rigid mechanics supply the load for the integrated motor demonstration.
+
+- [113 · Find a reusable part in a catalogue](stages/113-find-a-reusable-part-in-a-catalogue.lingua)
+- [114 · Update a library part without losing local work](stages/114-update-a-library-part-without-losing-local-work.lingua)
+- [115 · Wire a physical prototype by its contacts](stages/115-wire-a-physical-prototype-by-its-contacts.lingua)
+- [116 · Find a wiring discrepancy on a prototype](stages/116-find-a-wiring-discrepancy-on-a-prototype.lingua)
+- [117 · Probe a simulated signal on a scope](stages/117-probe-a-simulated-signal-on-a-scope.lingua)
+- [118 · Diagnose a circuit fault](stages/118-diagnose-a-circuit-fault.lingua)
+- [119 · Run a repeatable circuit experiment](stages/119-run-a-repeatable-circuit-experiment.lingua)
+- [120 · Run analog and digital parts on one clock](stages/120-run-analog-and-digital-parts-on-one-clock.lingua)
+- [121 · Build a reusable electrical subcircuit](stages/121-build-a-reusable-electrical-subcircuit.lingua)
+- [122 · Run compiled firmware on a simulated device](stages/122-run-compiled-firmware-on-a-simulated-device.lingua)
+- [123 · Edit a firmware program and reload it](stages/123-edit-a-firmware-program-and-reload-it.lingua)
+- [124 · Assign a physical material directly](stages/124-assign-a-physical-material-directly.lingua)
+- [125 · Resolve material properties from an offline evidence pack](stages/125-resolve-material-properties-from-an-offline-evidence-pack.lingua)
+- [126 · Run a rigid body with a joint](stages/126-run-a-rigid-body-with-a-joint.lingua)
+- [127 · Give an Area a physical force law](stages/127-give-an-area-a-physical-force-law.lingua)
+- [128 · Run two physical domains with independent clocks](stages/128-run-two-physical-domains-with-independent-clocks.lingua)
+- [129 · Drive a mechanical load with a simulated motor](stages/129-drive-a-mechanical-load-with-a-simulated-motor.lingua)
+- [130 · Validate an imported electrical model](stages/130-validate-an-imported-electrical-model.lingua)
+- [131 · Decode a firmware bus transaction](stages/131-decode-a-firmware-bus-transaction.lingua)
+- [132 · Operate a complete programmable device](stages/132-operate-a-complete-programmable-device.lingua)
+
+### Study specimens, motion and heat
+
+Derive or adopt a property, run independent experiments, articulate and record a physical mechanism, and solve bounded elastic or thermal cases.
+
+- [133 · Derive density from a crystal cell](stages/133-derive-density-from-a-crystal-cell.lingua)
+- [134 · Derive an oriented effective material property](stages/134-derive-an-oriented-effective-material-property.lingua)
+- [135 · Run an experiment on a standalone specimen](stages/135-run-an-experiment-on-a-standalone-specimen.lingua)
+- [136 · Apply a derived property to a selected object](stages/136-apply-a-derived-property-to-a-selected-object.lingua)
+- [137 · Scale the represented amount independently of the sample](stages/137-scale-the-represented-amount-independently-of-the-sample.lingua)
+- [138 · Observe someone else’s bounded experiment](stages/138-observe-someone-elses-bounded-experiment.lingua)
+- [139 · Adopt a changed material in a running physical scene](stages/139-adopt-a-changed-material-in-a-running-physical-scene.lingua)
+- [140 · Interact with shared physics from a lightweight viewer](stages/140-interact-with-shared-physics-from-a-lightweight-viewer.lingua)
+- [141 · Replace a detailed mechanism with an aggregate](stages/141-replace-a-detailed-mechanism-with-an-aggregate.lingua)
+- [142 · Let physical joints drive an authored rig](stages/142-let-physical-joints-drive-an-authored-rig.lingua)
+- [143 · Capture a selected simulation interval](stages/143-capture-a-selected-simulation-interval.lingua) · optional
+- [144 · Scrub a simulation recording without executing it](stages/144-scrub-a-simulation-recording-without-executing-it.lingua) · optional
+- [145 · Calculate elastic deformation of a part](stages/145-calculate-elastic-deformation-of-a-part.lingua)
+- [146 · Calculate steady heat flow](stages/146-calculate-steady-heat-flow.lingua)
+- [147 · Follow heating or cooling over time](stages/147-follow-heating-or-cooling-over-time.lingua)
+- [148 · Switch a thermal model to a lumped approximation](stages/148-switch-a-thermal-model-to-a-lumped-approximation.lingua)
+
+### Extend the laboratory one validated method at a time
+
+This is a sequence of individually deferred study methods. Select the specific question, reference data, rights, worker and limits at each entry. Every additional law or regime requires its own evidence.
+
+- [149 · Minimize a bounded molecular structure](stages/149-minimize-a-bounded-molecular-structure.lingua)
+- [150 · Observe motion in a molecular sample](stages/150-observe-motion-in-a-molecular-sample.lingua)
+- [151 · Inspect an electronic-structure result](stages/151-inspect-an-electronic-structure-result.lingua)
+- [152 · Compare a molecular reaction result](stages/152-compare-a-molecular-reaction-result.lingua)
+- [153 · Evaluate a folding observable](stages/153-evaluate-a-folding-observable.lingua)
+- [154 · Evaluate a history-dependent material law](stages/154-evaluate-a-history-dependent-material-law.lingua)
+- [155 · Inspect failure under a selected material model](stages/155-inspect-failure-under-a-selected-material-model.lingua)
+- [156 · Evaluate one manufacturing process](stages/156-evaluate-one-manufacturing-process.lingua)
+- [157 · Evaluate a civil ground-response case](stages/157-evaluate-a-civil-ground-response-case.lingua)
+- [158 · Apply a temperature field to a structural study](stages/158-apply-a-temperature-field-to-a-structural-study.lingua)
+- [159 · Run a two-way thermal and structural study](stages/159-run-a-two-way-thermal-and-structural-study.lingua)
+- [160 · Inspect a bounded fluid-flow result](stages/160-inspect-a-bounded-fluid-flow-result.lingua)
+- [161 · Inspect a bounded acoustic response](stages/161-inspect-a-bounded-acoustic-response.lingua)
+- [162 · Show heat produced by a simulated circuit](stages/162-show-heat-produced-by-a-simulated-circuit.lingua)
+- [163 · Feed a temperature change back into a circuit](stages/163-feed-a-temperature-change-back-into-a-circuit.lingua)
+- [164 · Measure a circuit’s layout parasitics](stages/164-measure-a-circuits-layout-parasitics.lingua)
+- [165 · Inspect an electromagnetic field on a device](stages/165-inspect-an-electromagnetic-field-on-a-device.lingua)
+- [166 · Evaluate a semiconductor device characteristic](stages/166-evaluate-a-semiconductor-device-characteristic.lingua)
+- [167 · Inspect the result of a modeled fabrication step](stages/167-inspect-the-result-of-a-modeled-fabrication-step.lingua)
+- [168 · Inspect a chemical equilibrium result](stages/168-inspect-a-chemical-equilibrium-result.lingua)
+- [169 · Inspect the time course of a chemical model](stages/169-inspect-the-time-course-of-a-chemical-model.lingua)
+- [170 · Compare a multiphase transport result](stages/170-compare-a-multiphase-transport-result.lingua)
+- [171 · Observe a calibrated growth model](stages/171-observe-a-calibrated-growth-model.lingua)
+- [172 · Inspect a reference radiation-transport result](stages/172-inspect-a-reference-radiation-transport-result.lingua)
+- [173 · Track a reference inventory through time](stages/173-track-a-reference-inventory-through-time.lingua)
+- [174 · Inspect a coupled power and heat reference](stages/174-inspect-a-coupled-power-and-heat-reference.lingua)
+- [175 · Locate a body at a specified epoch](stages/175-locate-a-body-at-a-specified-epoch.lingua)
+- [176 · Run a bounded astronomical dynamics study](stages/176-run-a-bounded-astronomical-dynamics-study.lingua)
+- [177 · Simulate an attached garment](stages/177-simulate-an-attached-garment.lingua)
+- [178 · Simulate a strand attached to a rig](stages/178-simulate-a-strand-attached-to-a-rig.lingua)
+- [179 · Estimate joint loads from a measured motion](stages/179-estimate-joint-loads-from-a-measured-motion.lingua)
+- [180 · Predict motion for a specified articulated model](stages/180-predict-motion-for-a-specified-articulated-model.lingua)
+- [181 · Estimate a supported muscle force](stages/181-estimate-a-supported-muscle-force.lingua)
+- [182 · Measure a simulated tissue response](stages/182-measure-a-simulated-tissue-response.lingua)
+
+### Select additional electronics methods when needed
+
+These are individually deferred methods from the workbench contract. The original bench and firmware gates close on their earlier, bounded scope.
+
+- [183 · Measure a circuit’s AC response](stages/183-measure-a-circuits-ac-response.lingua)
+- [184 · Estimate noise over a frequency band](stages/184-estimate-noise-over-a-frequency-band.lingua)
+- [185 · Inspect the spectrum of a captured signal](stages/185-inspect-the-spectrum-of-a-captured-signal.lingua)
+- [186 · Pass a saved audio signal through a circuit](stages/186-pass-a-saved-audio-signal-through-a-circuit.lingua)
+- [187 · Use live audio with a simulated circuit](stages/187-use-live-audio-with-a-simulated-circuit.lingua)
+- [188 · Run firmware for another MCU architecture](stages/188-run-firmware-for-another-mcu-architecture.lingua)
+- [189 · Use an HDL-defined digital part](stages/189-use-an-hdl-defined-digital-part.lingua)
+- [190 · Inspect a bounded RF circuit response](stages/190-inspect-a-bounded-rf-circuit-response.lingua)
+
+[Workspace development](Workspace-Development.lingua) · [Detailed contracts](Workspace-Contracts.lingua)
+} r_1YY2R9043QSH0PSNZ2K29SS2V9

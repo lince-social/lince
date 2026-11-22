@@ -333,6 +333,7 @@ pub(super) fn apply(
                         topology: Default::default(),
                         colors: Default::default(),
                         color_overrides: [false; 2],
+                        showoff_bracket: None,
                     });
             if entry.name != space.name {
                 entry.name.clone_from(&space.name);

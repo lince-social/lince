@@ -1,0 +1,23 @@
+Stage 145 — Calculate elastic deformation of a part (@ws-stage-145: 0, is #chapter, #part-of @workspace-stages: 145) { r_61F3KKG88MV3Q8KG2B0W472EGD
+**Status** Pending verification.
+
+## Capability
+
+Set loads, supports, material and named regions on the supplied part. Map displacements and stresses from a pinned mesh and solver back to the source.
+
+## Completion checks
+
+- [ ] Compare a patch and a slender cantilever with independent references, inspect mesh refinement and explain an underconstrained or stale result.
+
+## Implementation references
+
+**Provider handoffs** [125 · Materials](125-resolve-material-properties-from-an-offline-evidence-pack.lingua) · [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua) · [074 · Numerical Transitions](074-change-circuit-fidelity-during-a-running-event.lingua) · [060 · Cad](060-keep-solid-face-references-through-a-rebuild.lingua)
+
+[Verified elasticity and thermal models](../features/Continuum.lingua) · [19.T01](../features/Continuum.lingua#task-19t01) · [19.T03](../features/Continuum.lingua#task-19t03) · [19.T04](../features/Continuum.lingua#task-19t04)
+
+Use the applicable fixture, tolerances and recovery cases in [19 · Continuum and thermal](../contracts/Continuum-and-thermal-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 144](144-scrub-a-simulation-recording-without-executing-it.lingua) · [Next · 146](146-calculate-steady-heat-flow.lingua)
+} r_61F3KKG88MV3Q8KG2B0W472EGD

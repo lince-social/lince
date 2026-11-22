@@ -1,0 +1,24 @@
+Stage 158 — Apply a temperature field to a structural study (@ws-stage-158: 0, is #chapter, #part-of @workspace-stages: 158) { r_24HNFK5XP5RTCVM28WBJ98R4DZ
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Map one validated thermal field to a structural mesh with declared units, frames, interpolation and transfer error.
+
+## Completion checks
+
+- [ ] Compare the expansion of the bounded reference part and check a deliberately incompatible mapping before running it.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+**Provider handoffs** [148 · Continuum](148-switch-a-thermal-model-to-a-lumped-approximation.lingua)
+
+[Thermal structural and further coupled studies](../features/Coupled-Physics.lingua) · [21.T04](../features/Coupled-Physics.lingua#task-21t04)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 157](157-evaluate-a-civil-ground-response-case.lingua) · [Next · 159](159-run-a-two-way-thermal-and-structural-study.lingua)
+} r_24HNFK5XP5RTCVM28WBJ98R4DZ

@@ -1,0 +1,21 @@
+Stage 029 — Preview a topology edit before committing it (@ws-stage-029: 0, is #chapter, #part-of @workspace-stages: 29) { r_7MMQM1N4F9562EFEG5CMBV5YMP
+**Status** Pending verification.
+
+## Capability
+
+Drive one boundary edit through a cancellable preview and a single generation-checked commit. Retain shared edges and the user’s final numeric target.
+
+## Completion checks
+
+- [ ] Drag across several intermediate values, commit the final opening, then deliver an older result. Check the opening boundary and undo it in one step.
+
+## Implementation references
+
+[Native mesh and room authoring](../features/Geometry.lingua) · [07.T04](../features/Geometry.lingua#task-07t04) · [07.T05](../features/Geometry.lingua#task-07t05)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 028](028-shape-a-room-in-the-native-editor.lingua) · [Next · 030](030-edit-a-chosen-group-of-mesh-copies.lingua)
+} r_7MMQM1N4F9562EFEG5CMBV5YMP

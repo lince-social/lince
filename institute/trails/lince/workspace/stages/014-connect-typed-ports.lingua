@@ -1,0 +1,21 @@
+Stage 014 — Connect typed ports (@ws-stage-014: 0, is #chapter, #part-of @workspace-stages: 14) { r_6CPSB2V770TQ9T0WWMAZ7Z4PD7
+**Status** Pending verification.
+
+## Capability
+
+Expose terminal direction, quantity, units and supported mappings in the native connection editor and the shared query path.
+
+## Completion checks
+
+- [ ] Connect compatible B42 ports. Try an unsupported conversion and a forbidden cycle and identify the offending endpoints before acceptance.
+
+## Implementation references
+
+[Selections, correspondence and typed ports](../features/Selection.lingua) · [04.T07](../features/Selection.lingua#task-04t07)
+
+Use the applicable fixture, tolerances and recovery cases in [04 · Selection and interface](../contracts/Selection-and-interface-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 013](013-keep-a-named-selection-through-a-source-edit.lingua) · [Next · 015](015-see-another-participants-pointer-in-your-frame.lingua)
+} r_6CPSB2V770TQ9T0WWMAZ7Z4PD7

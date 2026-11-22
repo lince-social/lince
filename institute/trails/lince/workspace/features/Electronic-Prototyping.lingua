@@ -1,0 +1,39 @@
+Physical electronic prototyping and contact topology (@ws-electronic-prototyping: 0, is #chapter, #part-of @workspace-development, #requires @ws-schematics) { r_1DRKGTS2K8HH72489SHTKV4J9F
+Status: Pending. Owner refinement, 2026-11-22: assemble circuits through native breadboard, socket and perfboard interactions while retaining explicit electrical meaning.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified export: [Electronic definitions and schematics](Schematics.lingua). Consume its actual terminal identities, native transactions, connectivity and cross-selection. Deliver bounded physical prototyping and realized connectivity from a built-in fixture. A source library, PCB layout, exact fabrication geometry, numerical solver and geography are not prerequisites. Simulation later consumes the same electronic graph through its verified adapter.
+
+## Ownership and parallel work
+
+Own contact-group topology, insertion bindings, jumper authoring and their native view. Schematics retains canonical electronic identities and connectivity commands. Reserve changes to that boundary; do not duplicate its source database or introduce an independent netlist authority. Library adapters and PCB tools can proceed independently on verified shared exports. Prototype-to-PCB comparison is a later composed proof, not this package's start gate.
+
+## Ordered work
+
+### Task EPT.T01
+
+- [ ] Freeze small native fixtures for a solderless breadboard, multi-pin socket and perfboard. Give holes, terminals and contact groups stable identities, explicit internal connections, pitch/orientation and insertion rules. Include separated terminal strips, the central gap, split power rails and separately insulated perfboard pads with authored solder bridges. Document supported lead spans and occupancy; depict unsupported arrangements honestly. Hand-specify expected connectivity independently of the extraction implementation. No electrical connection is inferred merely because meshes touch, intersect or look like copper.
+
+### Task EPT.T02
+
+- [ ] Implement explicit insert/remove/reseat and connect/disconnect operations with preview, accepted revision, undo and native/authorized-Agent parity. Snapping proposes a named hole/contact; acceptance establishes the terminal binding. Validate rotation, lead mapping, occupied sockets, incompatible spans and ambiguous placement before committing. Distinguish mechanical attachment, connector mating and electrical contact relationships. Moving an inserted component previews which contacts remain, move or disconnect; never leave an invisible connection to its former hole. Unsupported partial insertion preserves a recoverable draft and the prior accepted circuit.
+
+### Task EPT.T03
+
+- [ ] Author jumpers by explicit endpoint contacts and separately editable routing/appearance. Reshaping an insulated wire does not reconnect it; crossing wires does not join them. Compile declared contact groups, lead bindings, jumpers and solder bridges into the shared canonical electronic graph, with revisioned source correspondence for merged/split nets. Preserve intended schematic connectivity separately from the physical realization. An open, short or misplaced lead is an inspectable discrepancy, not permission to rewrite the intended schematic. Any supported reconcile action previews the precise source edit through existing commands.
+
+### Task EPT.T04
+
+- [ ] Deliver native component/hole/contact/net selection, cross-probing into the schematic, continuity highlighting and source-linked discrepancy diagnostics. Inspect connected contact groups even without simulation; identify that display as connectivity rather than current flow. Preserve numeric/keyboard placement, narrow-viewport reachability and the shared edit panel flush-left/full-height rule above workspace controls. Show pending/stale extraction without presenting old topology as current. Reuse normal selected-copy variants, save/reopen, offline closure and bounded jobs; later PCB and numerical views consume these same identities and captured topology revisions.
+
+### Task EPT.T05
+
+- [ ] Prove the full native fixture against its independent expected graph: disconnected split rail, one-hole offset, gap-spanning device, rotated pin mapping, occupied socket, crossing jumpers and intentional solder bridge. Move/unplug a component, reshape only a jumper, undo and reopen; compare intended versus realized nets after each accepted change. Exercise stale extraction, cancellation, denied edit and two occurrences without cross-editing. Measure contact/net/component counts, extraction/selection latency, transient buffers and last-demand release on named hardware. No solver is needed to close this proof; the later workbench join must actually run a realized prototype through the circuit evaluator and inspect supply/return consequences.
+
+## Completion and handoff
+
+Publish supported board/contact forms, source and mapping ownership, actual native operations, independent graphs, measured limits and offline evidence. Read the Electronics workbench contracts and existing Electronic-design contracts. Electrical contact resistance, intermittent contacts, solder processes and damage require separately implemented models; this topology proof makes no such claim. Current outcome: unbuilt and unverified.
+} r_1DRKGTS2K8HH72489SHTKV4J9F

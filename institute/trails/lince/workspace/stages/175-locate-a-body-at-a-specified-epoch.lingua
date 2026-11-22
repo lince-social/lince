@@ -1,0 +1,24 @@
+Stage 175 — Locate a body at a specified epoch (@ws-stage-175: 0, is #chapter, #part-of @workspace-stages: 175) { r_15J0920NBW854ZZ3P6G9DXME7Q
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Load a rights-reviewed ephemeris as optional data with a named time scale, frame and valid interval. Expose the source and its uncertainty in the native view.
+
+## Completion checks
+
+- [ ] Check a body’s position against independent tabulated epochs and inspect the out-of-range response. Reopen a nonastronomical scene without loading the dataset.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+**Provider handoffs** [085 · Geography](085-navigate-the-same-scale-range-in-an-invented-world.lingua) · [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua)
+
+[Astronomical dynamics and scientific time](../features/Astronomy.lingua) · [21.T08](../features/Astronomy.lingua#task-21t08)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 174](174-inspect-a-coupled-power-and-heat-reference.lingua) · [Next · 176](176-run-a-bounded-astronomical-dynamics-study.lingua)
+} r_15J0920NBW854ZZ3P6G9DXME7Q

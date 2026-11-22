@@ -1,0 +1,23 @@
+Stage 058 — Compare two authored object behaviors (@ws-stage-058: 0, is #chapter, #part-of @workspace-stages: 58) { r_3HQ7FD0CEN86G8M14G77TS950G
+**Status** Pending verification.
+
+## Capability
+
+Bind exposed state to appearance and run two lamp or hatch variants on the same captured inputs. Inspect the different event histories and selected output.
+
+## Completion checks
+
+- [ ] Change a timer in one variant, explain the difference and discard the trial. Adopt an explicitly chosen change and repair a broken link without overwriting the other variant.
+
+## Implementation references
+
+**Provider handoffs** [054 · Behavior Authoring](054-trace-why-a-behavior-fired.lingua) · [056 · Procedural Appearance](056-add-a-bounded-transient-visual-effect.lingua)
+
+[Composed object trials and explanation](../features/Authoring-Experiments.lingua) · [AEX.T01](../features/Authoring-Experiments.lingua#task-aext01) · [AEX.T02](../features/Authoring-Experiments.lingua#task-aext02) · [AEX.T03](../features/Authoring-Experiments.lingua#task-aext03) · [AEX.T04](../features/Authoring-Experiments.lingua#task-aext04)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 057](057-bind-a-control-to-an-object-action.lingua) · [Next · 059](059-make-a-dimensioned-solid-from-a-sketch.lingua)
+} r_3HQ7FD0CEN86G8M14G77TS950G

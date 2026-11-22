@@ -1,0 +1,21 @@
+Stage 116 — Find a wiring discrepancy on a prototype (@ws-stage-116: 0, is #chapter, #part-of @workspace-stages: 116) { r_2V3C4MT7W7W03B3E106J9J9JNA
+**Status** Pending verification.
+
+## Capability
+
+Cross-probe the realized contact graph against the intended schematic. Highlight an open or short down to the named contact and terminal.
+
+## Completion checks
+
+- [ ] Shift a component by one hole or remove the return. Locate the mismatch from the schematic, reseat the part and restore expected continuity.
+
+## Implementation references
+
+[Physical electronic prototyping and contact topology](../features/Electronic-Prototyping.lingua) · [EPT.T04](../features/Electronic-Prototyping.lingua#task-eptt04) · [EPT.T05](../features/Electronic-Prototyping.lingua#task-eptt05)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 115](115-wire-a-physical-prototype-by-its-contacts.lingua) · [Next · 117](117-probe-a-simulated-signal-on-a-scope.lingua)
+} r_2V3C4MT7W7W03B3E106J9J9JNA

@@ -1,0 +1,23 @@
+Stage 126 — Run a rigid body with a joint (@ws-stage-126: 0, is #chapter, #part-of @workspace-stages: 126) { r_2YMJZYXZHMSSR2FD77ZD8Y2YHC
+**Status** Pending verification.
+
+## Capability
+
+Configure body mode, mass, inertia, contact parameters and joint limits on the bounded Avian fixture. Support a fixed-step run, pause, single step and reset.
+
+## Completion checks
+
+- [ ] Apply the fixture load and compare motion and limit behavior with the reference. Inspect source identity and recover the initial state after reset.
+
+## Implementation references
+
+**Provider handoffs** [125 · Materials](125-resolve-material-properties-from-an-offline-evidence-pack.lingua) · [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua) · [034 · Relations](034-assemble-two-parts-around-a-constrained-joint.lingua) · [032 · Simplification](032-replace-a-collision-proxy-under-a-resting-object.lingua)
+
+[Rigid bodies joints and authored forces](../features/Rigid.lingua) · [18.T01](../features/Rigid.lingua#task-18t01)
+
+Use the applicable fixture, tolerances and recovery cases in [18 · Rigid and articulated physics](../contracts/Rigid-and-articulated-physics-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 125](125-resolve-material-properties-from-an-offline-evidence-pack.lingua) · [Next · 127](127-give-an-area-a-physical-force-law.lingua)
+} r_2YMJZYXZHMSSR2FD77ZD8Y2YHC

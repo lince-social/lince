@@ -510,6 +510,10 @@ fn refresh_fields(
 }
 
 impl Influences {
+    pub(crate) fn has_fields(&self) -> bool {
+        !self.fields.is_empty()
+    }
+
     fn field(&self, entity: Entity) -> Option<&Field> {
         self.indices.get(&entity).map(|index| &self.fields[*index])
     }

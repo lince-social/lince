@@ -1,0 +1,23 @@
+Stage 073 — Substitute a cheaper equivalent circuit (@ws-stage-073: 0, is #chapter, #part-of @workspace-stages: 73) { r_5YFQVJDJ3DEZ4DB12XX4HM5TTZ
+**Status** Pending verification.
+
+## Capability
+
+Offer a validated detailed and reduced subsystem with the same public terminals. Expose the load, observable quantities and valid operating range.
+
+## Completion checks
+
+- [ ] Run both alternatives against the same source and load, compare the declared outputs and refuse substitution outside its measured envelope.
+
+## Implementation references
+
+**Provider handoffs** [072 · Powered Circuit](072-light-a-lamp-from-a-simulated-power-source.lingua)
+
+[Numerical equivalents and stateful model transitions](../features/Numerical-Transitions.lingua) · [15a.T05](../features/Numerical-Transitions.lingua#task-15at05)
+
+Use the applicable fixture, tolerances and recovery cases in [15a · Circuit and transition](../contracts/Circuit-and-transition-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 072](072-light-a-lamp-from-a-simulated-power-source.lingua) · [Next · 074](074-change-circuit-fidelity-during-a-running-event.lingua)
+} r_5YFQVJDJ3DEZ4DB12XX4HM5TTZ

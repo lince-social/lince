@@ -173,9 +173,7 @@ pub(crate) fn capture(world: &World, owner: Entity, mut area: InfluenceArea) -> 
                 continue;
             };
             let offset = area
-                .protein
-                .as_ref()
-                .filter(|config| config.motion.is_some())
+                .graph_settings()
                 .and_then(|_| crate::native::topology::position(world, entity))
                 .map(|point| (rotation.inverse() * (point - center)).to_array());
             let shader_placement = area

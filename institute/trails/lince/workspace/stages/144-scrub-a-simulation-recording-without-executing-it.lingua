@@ -1,0 +1,23 @@
+Stage 144 — Scrub a simulation recording without executing it (@ws-stage-144: 0, is #chapter, #part-of @workspace-stages: 144) { r_0PW1J9JN342QY9WQ38XGS8PQRE
+**Status** Planned optional capability. Current verification is pending.
+
+## Capability
+
+Present retained observations and articulated poses through a read-only replay with explicit gaps, comparison and export.
+
+## Completion checks
+
+- [ ] Scrub back over an Area crossing or joint action twice. The recorded motion is visible and the live action count and current simulation state stay fixed.
+
+## Implementation references
+
+[Optional scoped recording and playback](../features/Recording.lingua) · [20.T03](../features/Recording.lingua#task-20t03) · [20.T04](../features/Recording.lingua#task-20t04) · [20.T05](../features/Recording.lingua#task-20t05)
+
+Use the applicable fixture, tolerances and recovery cases in [20 · Recording](../contracts/Recording-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [20 · Recording](../contracts/Recording-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 143](143-capture-a-selected-simulation-interval.lingua) · [Next · 145](145-calculate-elastic-deformation-of-a-part.lingua)
+} r_0PW1J9JN342QY9WQ38XGS8PQRE

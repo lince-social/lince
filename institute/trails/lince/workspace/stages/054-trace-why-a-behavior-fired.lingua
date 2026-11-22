@@ -1,0 +1,21 @@
+Stage 054 — Trace why a behavior fired (@ws-stage-054: 0, is #chapter, #part-of @workspace-stages: 54) { r_4SPTQEZKDSHK04C9AQ4M05DQW7
+**Status** Pending verification.
+
+## Capability
+
+Run, pause, step and reset a bounded local behavior trial. Show the input, state, timer and action along the causal path.
+
+## Completion checks
+
+- [ ] Step equal-time events in the lamp recipe, identify the trigger and reproduce the expected order after reset. Discard the trial and inspect the accepted source.
+
+## Implementation references
+
+[Native behavior composition](../features/Behavior-Authoring.lingua) · [BHV.T04](../features/Behavior-Authoring.lingua#task-bhvt04) · [BHV.T05](../features/Behavior-Authoring.lingua#task-bhvt05)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 053](053-compose-an-objects-behavior-from-events.lingua) · [Next · 055](055-design-an-appearance-controlled-by-a-parameter.lingua)
+} r_4SPTQEZKDSHK04C9AQ4M05DQW7

@@ -1,0 +1,23 @@
+Stage 089 — Take an authorized copy of a hosted place offline (@ws-stage-089: 0, is #chapter, #part-of @workspace-stages: 89) { r_2FD463N4Q56XZK6TH7QX7PEJTC
+**Status** Pending verification.
+
+## Capability
+
+Publish access-compatible chunks and a profile-specific manifest with only the permitted dependency closure.
+
+## Completion checks
+
+- [ ] Export as a visitor, disconnect and reopen. Inspect the pack for private identifiers and bytes and exercise an unavailable mandatory chunk.
+
+## Implementation references
+
+[Hosted world and offline publication joins](../features/Hosted-World.lingua) · [06.T07](../features/Hosted-World.lingua#task-06t07)
+
+Use the applicable fixture, tolerances and recovery cases in [06 · Offline coverage](../contracts/Offline-coverage-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows for each of these contracts and retain their evidence separately. [06 · Offline coverage](../contracts/Offline-coverage-contracts.lingua) · [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 088](088-visit-the-same-place-from-two-different-devices.lingua) · [Next · 090](090-build-a-mesh-from-supplied-photographs.lingua)
+} r_2FD463N4Q56XZK6TH7QX7PEJTC

@@ -1,0 +1,98 @@
+{
+  "native_binary": {
+    "version": "0.8.0",
+    "target": "x86_64-unknown-linux-gnu",
+    "optimized": false,
+    "ui": true,
+    "launch": "lince --showoff --directory <fresh-profile>",
+    "active_workspace": "showoff",
+    "showoff_room": "Model workbench",
+    "initial_local_translation_in_canvas_units": [
+      500.0,
+      0.0,
+      200.0
+    ],
+    "record_link_present": true
+  },
+  "cumulative_command": "cargo xtask workspace showcase <new-output-directory>",
+  "date": "2026-11-22",
+  "source_base": "bee6f4cc (local changes)",
+  "drag": {
+    "canvas_before": [
+      -240.0,
+      640.0
+    ],
+    "canvas_after": [
+      -116.92306518554688,
+      689.2308349609375
+    ],
+    "room_origin": [
+      -740.0,
+      440.0
+    ],
+    "model_xz_metres": [
+      6.230769348144531,
+      2.492308349609375
+    ]
+  },
+  "after_undo_and_reopen": {
+    "binding": {
+      "handle": {
+        "root": "root_01M8270HJG8PQ9TRG060K4STCW",
+        "slot": "slot_01M8270J8Z918A31Y6WT57A3VY"
+      },
+      "placement": "placement_01M8270AK19J2SFHT7RW4V0RNP",
+      "room": "placement_01M8270AK18BA8FGVE8XE22XTH"
+    },
+    "slots": [
+      {
+        "id": "slot_01M8270HYQ8Z69AEZDN8491Z97",
+        "metres": [
+          {
+            "scale": 0,
+            "value": "0"
+          },
+          {
+            "scale": 0,
+            "value": "0"
+          },
+          {
+            "scale": 0,
+            "value": "0"
+          }
+        ],
+        "part": "part_01M8270HYQ8NE82MDWA5B7J0MH",
+        "record": null,
+        "revision": "sha256:30d7c859f9ab6704d489d9a952a55701a5fe96aa7af804cb82dcd88531a0162a"
+      },
+      {
+        "id": "slot_01M8270J8Z918A31Y6WT57A3VY",
+        "metres": [
+          {
+            "scale": 0,
+            "value": "5"
+          },
+          {
+            "scale": 0,
+            "value": "0"
+          },
+          {
+            "scale": 0,
+            "value": "2"
+          }
+        ],
+        "part": "part_01M8270HYQ8NE82MDWA5B7J0MH",
+        "record": "r_01M8270AK28PDS5W1W8T4DY6EM",
+        "revision": "sha256:30d7c859f9ab6704d489d9a952a55701a5fe96aa7af804cb82dcd88531a0162a"
+      }
+    ]
+  },
+  "checks": {
+    "native_edit_room_selection_physics_and_showcase": 82,
+    "scene_storage": 5,
+    "baseline_fixture_cases": 10,
+    "lingua_records": 310,
+    "original_scene_replay_and_narrow_inspector": "passed",
+    "isolated_storage_benchmark": "not run"
+  }
+}

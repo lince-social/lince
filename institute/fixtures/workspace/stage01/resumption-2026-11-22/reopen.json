@@ -1,0 +1,26 @@
+{
+  "Other workspace stays still": {
+    "workspace": 2,
+    "position": [
+      -300.0,
+      -200.0
+    ],
+    "elevation": 0.0
+  },
+  "Gravity and settling": {
+    "workspace": 1,
+    "position": [
+      -350.0,
+      200.0
+    ],
+    "elevation": 9.999804896995576
+  },
+  "Move this work": {
+    "workspace": 1,
+    "position": [
+      -400.1885535087872,
+      0.20235071889118345
+    ],
+    "elevation": 0.9998049521276964
+  }
+}

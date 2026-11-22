@@ -1,0 +1,23 @@
+Stage 034 — Assemble two parts around a constrained joint (@ws-stage-034: 0, is #chapter, #part-of @workspace-stages: 34) { r_55FMHVXMAH826HQ3CE0MW20Q9W
+**Status** Pending verification.
+
+## Capability
+
+Connect stable local ports on two geometric parts and expose the joint coordinates, permitted motion, limits and writer.
+
+## Completion checks
+
+- [ ] Pose the joint to a known limit and reopen the assembly. Show a diagnostic for an unsupported loop or incompatible relation.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua)
+
+[Geometric assembly and joint relations](../features/Relations.lingua) · [11.T01a](../features/Relations.lingua#task-11t01a)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 033](033-carve-a-traversable-overhang.lingua) · [Next · 035](035-navigate-as-a-supplied-character.lingua)
+} r_55FMHVXMAH826HQ3CE0MW20Q9W

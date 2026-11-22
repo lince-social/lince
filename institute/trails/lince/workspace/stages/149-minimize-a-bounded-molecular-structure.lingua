@@ -1,0 +1,24 @@
+Stage 149 — Minimize a bounded molecular structure (@ws-stage-149: 0, is #chapter, #part-of @workspace-stages: 149) { r_4XEA7W0EB9XYSF5J6RPR6R9XPR
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select one supported molecular model and parameterized specimen for a laboratory minimization. Expose conditions, convergence and a result separate from authored structure.
+
+## Completion checks
+
+- [ ] Compare the final energy or geometry with an independent reference. Show missing parameter coverage and reopen the result with its validity range.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+**Provider handoffs** [138 · Scientific Adoption](138-observe-someone-elses-bounded-experiment.lingua)
+
+[Molecular and protein physical studies](../features/Molecular-Dynamics.lingua) · [21.T01](../features/Molecular-Dynamics.lingua#task-21t01)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 148](148-switch-a-thermal-model-to-a-lumped-approximation.lingua) · [Next · 150](150-observe-motion-in-a-molecular-sample.lingua)
+} r_4XEA7W0EB9XYSF5J6RPR6R9XPR

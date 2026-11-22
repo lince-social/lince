@@ -1,0 +1,23 @@
+Stage 095 — Let Fiote inspect a live frame (@ws-stage-095: 0, is #chapter, #part-of @workspace-stages: 95) { r_6Y13TGR81CTP2NHVCRRQZ990KS
+**Status** Pending verification.
+
+## Capability
+
+Give Fiote and native controls a permitted, expiring image reference plus its capture metadata and run an actual supported vision model.
+
+## Completion checks
+
+- [ ] Change the visible input and compare the model observation with the independent fixture. Revoke access before inference and check rejection and frame release.
+
+## Implementation references
+
+**Provider handoffs** [094 · Camera Feeds](094-attach-a-live-camera-to-a-place.lingua) · [017 · Agent Context](017-give-fiote-the-context-of-a-selection.lingua)
+
+[Fiote vision tasks and event watches](../features/Vision-Tasks.lingua) · [VSN.T01](../features/Vision-Tasks.lingua#task-vsnt01)
+
+Use the applicable fixture, tolerances and recovery cases in [Camera feeds and Fiote vision](../contracts/Camera-vision-contracts.lingua#canonical-fixture-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 094](094-attach-a-live-camera-to-a-place.lingua) · [Next · 096](096-watch-a-feed-for-a-named-event.lingua)
+} r_6Y13TGR81CTP2NHVCRRQZ990KS

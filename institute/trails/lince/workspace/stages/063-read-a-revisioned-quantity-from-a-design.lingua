@@ -1,0 +1,23 @@
+Stage 063 — Read a revisioned quantity from a design (@ws-stage-063: 0, is #chapter, #part-of @workspace-stages: 63) { r_2YPQ62Q2GFC2HAFEGGFFS8C449
+**Status** Pending verification.
+
+## Capability
+
+Select the assembly components covered by a work recipe and expose their count or measured quantity with unit, revision and provenance.
+
+## Completion checks
+
+- [ ] Add one instance, verify the exact count change and inspect both old and new takeoffs. An ambiguous selection remains visible for repair.
+
+## Implementation references
+
+**Provider handoffs** [062 · Exact Assemblies](062-finish-an-exact-part-inside-an-assembly.lingua)
+
+[Revisioned model quantities and takeoff](../features/Takeoff.lingua) · [11.T05](../features/Takeoff.lingua#task-11t05)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 062](062-finish-an-exact-part-inside-an-assembly.lingua) · [Next · 064](064-build-a-structure-from-reusable-parts.lingua)
+} r_2YPQ62Q2GFC2HAFEGGFFS8C449

@@ -1,0 +1,21 @@
+Stage 038 — Bind a surface to a rig (@ws-stage-038: 0, is #chapter, #part-of @workspace-stages: 38) { r_474F3KNPDWNPZ41GH9G29BY1N0
+**Status** Pending verification.
+
+## Capability
+
+Expose weights, supported morphs, attachments and correspondence in the native deformation editor. Keep accepted rig and bind revisions together.
+
+## Completion checks
+
+- [ ] Edit a weight, pose the joint and inspect the deformed region. Reload it and exercise a stale or ambiguous bind after changing topology.
+
+## Implementation references
+
+[Articulated models and editable deformation](../features/Character-Rig.lingua) · [11.T07](../features/Character-Rig.lingua#task-11t07)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 037](037-pose-an-articulated-model.lingua) · [Next · 039](039-play-an-authored-movement-clip.lingua)
+} r_474F3KNPDWNPZ41GH9G29BY1N0

@@ -1,0 +1,27 @@
+Stage 110 — Use the refactored desktop as one workspace (@ws-stage-110: 0, is #chapter, #part-of @workspace-stages: 110) { r_2H51T0JR2BZPZYBMCJJYF4697J
+**Status** Pending verification.
+
+## Capability
+
+Run the existing mixed core workflow on the specified hardware and data. Exercise the shared place, character, authoring, electronic design, camera, world refinement and operational workflows through their ordinary native entry points.
+
+## Completion checks
+
+- [ ] An editor changes the scene while a restricted visitor continues to navigate with lower detail. Exercise disconnect, revoke, offline reopen and 15.W01–15.W10. Capture isolated cold, warm and mixed-workload results and route each failed assertion to its owning stage.
+
+This is the composed desktop acceptance gate. Reopen the ball in the saved place, go out to the globe and back, enter the building, use mounted content, edit one model and retain the change offline. Run every contributing workflow with its own thresholds, including rights and per-view budgets. The powered-circuit route is scheduled earlier as a useful example and retains its separate numerical certificate.
+
+## Implementation references
+
+**Provider handoffs** [19 required provider handoffs](../features/Core-Acceptance.lingua#start-gate)
+
+[Complete core workspace acceptance](../features/Core-Acceptance.lingua) · [15.T01](../features/Core-Acceptance.lingua#task-15t01) · [15.T02](../features/Core-Acceptance.lingua#task-15t02) · [15.T03](../features/Core-Acceptance.lingua#task-15t03) · [15.T04](../features/Core-Acceptance.lingua#task-15t04) · [15.T05](../features/Core-Acceptance.lingua#task-15t05) · [15.T06](../features/Core-Acceptance.lingua#task-15t06) · [15.T07](../features/Core-Acceptance.lingua#task-15t07) · [15.T08](../features/Core-Acceptance.lingua#task-15t08) · [15.T09](../features/Core-Acceptance.lingua#task-15t09) · [15.T10](../features/Core-Acceptance.lingua#task-15t10) · [15.T11](../features/Core-Acceptance.lingua#task-15t11)
+
+Use the applicable fixture, tolerances and recovery cases in [15 · Core acceptance](../contracts/Core-acceptance-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [15 · Core acceptance](../contracts/Core-acceptance-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 109](109-work-across-two-independently-governed-sources.lingua) · [Next · 111](111-start-a-tour-and-take-back-control.lingua)
+} r_2H51T0JR2BZPZYBMCJJYF4697J

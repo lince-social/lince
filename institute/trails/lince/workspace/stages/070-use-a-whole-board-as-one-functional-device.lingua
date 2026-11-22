@@ -1,0 +1,25 @@
+Stage 070 — Use a whole board as one functional device (@ws-stage-070: 0, is #chapter, #part-of @workspace-stages: 70) { r_3FKCB1MDT1PVCFFTTZE361MW7A
+**Status** Pending verification.
+
+## Capability
+
+Expose a module’s typed external ports, bind them to a functional model and retain its internal board and schematic as editable source.
+
+## Completion checks
+
+- [ ] Use the B43 board as a movement sensor with its internals unloaded, then open it and cross-probe one port. Verify a denied hosted edit and reopen offline.
+
+## Implementation references
+
+**Provider handoffs** [069 · Pcb](069-export-fabrication-files-for-a-board-revision.lingua) · [046 · Functional](046-choose-the-behavior-detail-of-one-occurrence.lingua)
+
+[Reusable electronic device integration](../features/Electronic-Devices.lingua) · [11a.T07](../features/Electronic-Devices.lingua#task-11at07) · [11a.T08](../features/Electronic-Devices.lingua#task-11at08)
+
+Use the applicable fixture, tolerances and recovery cases in [11a · Electronic design](../contracts/Electronic-design-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [11a · Electronic design](../contracts/Electronic-design-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 069](069-export-fabrication-files-for-a-board-revision.lingua) · [Next · 071](071-solve-a-small-circuit-on-the-desktop.lingua)
+} r_3FKCB1MDT1PVCFFTTZE361MW7A

@@ -1,0 +1,24 @@
+Stage 156 — Evaluate one manufacturing process (@ws-stage-156: 0, is #chapter, #part-of @workspace-stages: 156) { r_5VN7VEB8AABCXQ4FM1K6YT2H47
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Choose a bounded process on existing fabrication geometry. Record the input material history and process conditions and return a result linked to the design.
+
+## Completion checks
+
+- [ ] Compare the supported final dimension or material-state change with its reference, then reopen the result with the originating part revision.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+**Provider handoffs** [103 · Manufacturing Civil](103-lay-out-a-corridor-on-surveyed-terrain.lingua) · [Selected nonlinear export](../features/Nonlinear.lingua#completion-and-handoff)
+
+[Manufacturing and civil physical processes](../features/Process-Physics.lingua) · [21.T03](../features/Process-Physics.lingua#task-21t03)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 155](155-inspect-failure-under-a-selected-material-model.lingua) · [Next · 157](157-evaluate-a-civil-ground-response-case.lingua)
+} r_5VN7VEB8AABCXQ4FM1K6YT2H47

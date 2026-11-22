@@ -1,0 +1,23 @@
+Stage 138 — Observe someone else’s bounded experiment (@ws-stage-138: 0, is #chapter, #part-of @workspace-stages: 138) { r_3D97RTW2G2JKNF57D2G4D4EBB2
+**Status** Pending verification.
+
+## Capability
+
+Use one identified execution authority and separate grants for observing, starting, cancelling and spending. Stream authorized results to a lightweight participant.
+
+## Completion checks
+
+- [ ] Disconnect and reconnect the observer during B37. Verify one run, one payer and correctly attributed results, and exercise a denied start or cancel.
+
+## Implementation references
+
+[Derived-model adoption and shared laboratory integration](../features/Scientific-Adoption.lingua) · [17.T09](../features/Scientific-Adoption.lingua#task-17t09)
+
+Use the applicable fixture, tolerances and recovery cases in [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 137](137-scale-the-represented-amount-independently-of-the-sample.lingua) · [Next · 139](139-adopt-a-changed-material-in-a-running-physical-scene.lingua)
+} r_3D97RTW2G2JKNF57D2G4D4EBB2

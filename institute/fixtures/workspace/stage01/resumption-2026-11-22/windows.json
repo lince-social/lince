@@ -1,0 +1,530 @@
+{
+  "accepted": {
+    "started_unix": 1795358565.2304647,
+    "elapsed_s": 21.293575872999554,
+    "process_sample_count": 21,
+    "competing_build_observations": 0,
+    "top_observed_cpu_ticks": [
+      [
+        "workspace_basel",
+        2569
+      ],
+      [
+        "codex",
+        381
+      ],
+      [
+        "niri",
+        57
+      ],
+      [
+        ".ghostty-wrappe",
+        53
+      ],
+      [
+        "python3",
+        25
+      ],
+      [
+        ".noctalia-wrapp",
+        17
+      ],
+      [
+        "kswapd0",
+        17
+      ],
+      [
+        "btrfs-transaction",
+        9
+      ],
+      [
+        "kcompactd0",
+        1
+      ],
+      [
+        "codex-code-mode",
+        1
+      ],
+      [
+        "rcu_preempt",
+        1
+      ],
+      [
+        "dbus-broker",
+        1
+      ],
+      [
+        "NetworkManager",
+        1
+      ],
+      [
+        ".tailscaled-wra",
+        1
+      ],
+      [
+        "ksoftirqd/1",
+        1
+      ]
+    ],
+    "sampling": "Approximately once per second. Each interval retained up to 14 process names by CPU ticks. Includes scene and desktop session. Short-lived processes may elude polling. Worker-thread names can change during their lifetime. Kernel workqueue rows are excluded from these residual-load totals.",
+    "drm_last_nonempty": [
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "3704 KiB",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "206596 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "411644 KiB",
+        "drm-resident-system0": "405500 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "1230370024 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      }
+    ],
+    "peak_observed_single_client_resident_system0_kib": 407544
+  },
+  "accepted-reopened": {
+    "started_unix": 1795358586.558939,
+    "elapsed_s": 4.049630028000138,
+    "process_sample_count": 4,
+    "competing_build_observations": 0,
+    "top_observed_cpu_ticks": [
+      [
+        "workspace_basel",
+        413
+      ],
+      [
+        "codex",
+        42
+      ],
+      [
+        ".ghostty-wrappe",
+        10
+      ],
+      [
+        "niri",
+        4
+      ],
+      [
+        "python3",
+        3
+      ],
+      [
+        "rcu_preempt",
+        1
+      ],
+      [
+        "ksoftirqd/3",
+        1
+      ]
+    ],
+    "sampling": "Approximately once per second. Each interval retained up to 14 process names by CPU ticks. Includes scene and desktop session. Short-lived processes may elude polling. Worker-thread names can change during their lifetime. Kernel workqueue rows are excluded from these residual-load totals.",
+    "drm_last_nonempty": [
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "3720 KiB",
+        "drm-resident-system0": "3432 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "339248 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "408 MiB",
+        "drm-resident-system0": "400 MiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "21372676 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      }
+    ],
+    "peak_observed_single_client_resident_system0_kib": 409600
+  },
+  "accepted-timing-1": {
+    "started_unix": 1795358590.6426857,
+    "elapsed_s": 20.23871062199987,
+    "process_sample_count": 20,
+    "competing_build_observations": 0,
+    "top_observed_cpu_ticks": [
+      [
+        "workspace_basel",
+        3447
+      ],
+      [
+        "codex",
+        271
+      ],
+      [
+        "niri",
+        57
+      ],
+      [
+        ".ghostty-wrappe",
+        28
+      ],
+      [
+        "python3",
+        18
+      ],
+      [
+        ".noctalia-wrapp",
+        13
+      ],
+      [
+        "btrfs-transaction",
+        4
+      ],
+      [
+        "kswapd0",
+        2
+      ],
+      [
+        "systemd-oomd",
+        1
+      ],
+      [
+        "rcu_preempt",
+        1
+      ]
+    ],
+    "sampling": "Approximately once per second. Each interval retained up to 14 process names by CPU ticks. Includes scene and desktop session. Short-lived processes may elude polling. Worker-thread names can change during their lifetime. Kernel workqueue rows are excluded from these residual-load totals.",
+    "drm_last_nonempty": [
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "3720 KiB",
+        "drm-resident-system0": "3432 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "254488 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "411640 KiB",
+        "drm-resident-system0": "405496 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "1879839364 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      }
+    ],
+    "peak_observed_single_client_resident_system0_kib": 409592
+  },
+  "accepted-timing-2": {
+    "started_unix": 1795358610.916222,
+    "elapsed_s": 21.251600000000053,
+    "process_sample_count": 21,
+    "competing_build_observations": 0,
+    "top_observed_cpu_ticks": [
+      [
+        "workspace_basel",
+        3562
+      ],
+      [
+        "codex",
+        296
+      ],
+      [
+        "niri",
+        103
+      ],
+      [
+        ".noctalia-wrapp",
+        53
+      ],
+      [
+        ".ghostty-wrappe",
+        26
+      ],
+      [
+        "python3",
+        17
+      ],
+      [
+        "kswapd0",
+        5
+      ],
+      [
+        "btrfs-transaction",
+        5
+      ],
+      [
+        ".tailscaled-wra",
+        1
+      ],
+      [
+        "pipewire",
+        1
+      ],
+      [
+        "wireplumber",
+        1
+      ],
+      [
+        "rcu_preempt",
+        1
+      ],
+      [
+        "irq/146-iwlwifi:queue_4",
+        1
+      ],
+      [
+        "codex-code-mode",
+        1
+      ]
+    ],
+    "sampling": "Approximately once per second. Each interval retained up to 14 process names by CPU ticks. Includes scene and desktop session. Short-lived processes may elude polling. Worker-thread names can change during their lifetime. Kernel workqueue rows are excluded from these residual-load totals.",
+    "drm_last_nonempty": [
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "3720 KiB",
+        "drm-resident-system0": "3432 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "240760 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "406 MiB",
+        "drm-resident-system0": "400 MiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "2044382912 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      }
+    ],
+    "peak_observed_single_client_resident_system0_kib": 409600
+  },
+  "accepted-timing-3": {
+    "started_unix": 1795358632.201341,
+    "elapsed_s": 20.20886272000007,
+    "process_sample_count": 20,
+    "competing_build_observations": 0,
+    "top_observed_cpu_ticks": [
+      [
+        "workspace_basel",
+        3454
+      ],
+      [
+        "codex",
+        201
+      ],
+      [
+        "niri",
+        53
+      ],
+      [
+        ".ghostty-wrappe",
+        23
+      ],
+      [
+        "python3",
+        19
+      ],
+      [
+        ".noctalia-wrapp",
+        14
+      ],
+      [
+        "codex-code-mode",
+        1
+      ],
+      [
+        "rcu_preempt",
+        1
+      ],
+      [
+        "ksoftirqd/7",
+        1
+      ],
+      [
+        ".tailscaled-wra",
+        1
+      ],
+      [
+        "khugepaged",
+        1
+      ]
+    ],
+    "sampling": "Approximately once per second. Each interval retained up to 14 process names by CPU ticks. Includes scene and desktop session. Short-lived processes may elude polling. Worker-thread names can change during their lifetime. Kernel workqueue rows are excluded from these residual-load totals.",
+    "drm_last_nonempty": [
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "3720 KiB",
+        "drm-resident-system0": "3720 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "180908 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "0",
+        "drm-resident-system0": "0",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "0 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      },
+      {
+        "drm-driver": "i915",
+        "drm-total-system0": "409592 KiB",
+        "drm-resident-system0": "405496 KiB",
+        "drm-total-stolen-system0": "0",
+        "drm-resident-stolen-system0": "0",
+        "drm-engine-render": "1989272532 ns",
+        "drm-engine-copy": "0 ns",
+        "drm-engine-video": "0 ns",
+        "drm-engine-capacity-video": "2",
+        "drm-engine-video-enhance": "0 ns"
+      }
+    ],
+    "peak_observed_single_client_resident_system0_kib": 409592
+  }
+}

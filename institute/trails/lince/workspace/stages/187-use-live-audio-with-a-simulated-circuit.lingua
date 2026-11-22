@@ -1,0 +1,20 @@
+Stage 187 — Use live audio with a simulated circuit (@ws-stage-187: 0, is #chapter, #part-of @workspace-stages: 187) { r_5CYQYGQZ3EYAV3K9BY5EZH0VS0
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Extend the proved offline signal path to granted live capture and output. Expose latency, sample-rate conversion, pause, overrun and disconnect behavior.
+
+## Completion checks
+
+- [ ] Pass a bounded live signal through the same fixture, inspect measured latency and overrun handling, then revoke the input and verify release.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](186-pass-a-saved-audio-signal-through-a-circuit.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 186](186-pass-a-saved-audio-signal-through-a-circuit.lingua) · [Next · 188](188-run-firmware-for-another-mcu-architecture.lingua)
+} r_5CYQYGQZ3EYAV3K9BY5EZH0VS0

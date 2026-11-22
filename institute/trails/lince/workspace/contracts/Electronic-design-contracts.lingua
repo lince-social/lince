@@ -78,4 +78,9 @@ Finish with a reusable electronic device whose schematic, board layout, 3D assem
 ## Completion summary
 
 Pending. Preserve all unfinished requirements. On verified delivery, retain actual interfaces/source owners, evidence links, measured limits and a separate paragraph for each 11a.W workflow. Hand off stable device/terminal mappings and B43 to stages 12/13/15/15a; circuit solving, advanced fabrication and unsupported formats remain explicitly pending. Update the registry only after the full gate passes.
+
+## Expanded construction and component knowledge
+
+The [Electronics workbench contract](Electronics-workbench-contracts.lingua) adds independent library and physical-prototyping packages after Schematics, then joins actual solver/instrument/firmware/mechanical providers later. Its EB requirements preserve this contract's intended nets, pin mappings and bounded PCB proof. Breadboard/socket insertion is a validated connectivity operation with explicit contact groups; crossing wires or touching meshes remains insufficient. The new branch is planned capability with its own acceptance, not an implied success or added prerequisite of 11a.
+
 } r_0YQ3V7MYWEDZ5KS75JX6GFKQGG

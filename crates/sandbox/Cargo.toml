@@ -367,6 +367,10 @@ name = "workspace_baseline"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "workspace_scene"
+required-features = ["native-runtime"]
+
+[[example]]
 name = "record_castle_visual"
 required-features = ["native-runtime"]
 

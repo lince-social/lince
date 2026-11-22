@@ -1,0 +1,23 @@
+Stage 097 — Create a model layer from one observation (@ws-stage-097: 0, is #chapter, #part-of @workspace-stages: 97) { r_4TZ5V51B2DFRKQ0NC9BZTYF479
+**Status** Pending verification.
+
+## Capability
+
+Run Model once over a bounded frame window. Present an image-space or calibrated proxy candidate with source, uncertainty and capture time for an explicit target component.
+
+## Completion checks
+
+- [ ] Inspect and adopt an observed layer, change calibration and reject a result with the old generation. Reopen the target with attribution and no archived media.
+
+## Implementation references
+
+**Provider handoffs** [096 · Vision Tasks](096-watch-a-feed-for-a-named-event.lingua) · [041 · Agent Authoring](041-furnish-a-room-with-fiote-and-continue-by-hand.lingua)
+
+[One-shot and periodic observed world models](../features/Observed-Models.lingua) · [OMD.T01](../features/Observed-Models.lingua#task-omdt01) · [OMD.T02](../features/Observed-Models.lingua#task-omdt02)
+
+Use the applicable fixture, tolerances and recovery cases in [Camera feeds and Fiote vision](../contracts/Camera-vision-contracts.lingua#canonical-fixture-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 096](096-watch-a-feed-for-a-named-event.lingua) · [Next · 098](098-refresh-an-observed-layer-periodically.lingua)
+} r_4TZ5V51B2DFRKQ0NC9BZTYF479

@@ -1,0 +1,22 @@
+Stage 160 — Inspect a bounded fluid-flow result (@ws-stage-160: 0, is #chapter, #part-of @workspace-stages: 160) { r_38W5Z0QCYDH2ST99FHABW3NC8N
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select one fluid model, its material and boundary data, and a reference observable. Present the result and validity on the existing workspace region.
+
+## Completion checks
+
+- [ ] Check the selected flow observable and mass balance against the reference under refinement. Record failed convergence and unsupported boundaries.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Thermal structural and further coupled studies](../features/Coupled-Physics.lingua) · [21.T04](../features/Coupled-Physics.lingua#task-21t04)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 159](159-run-a-two-way-thermal-and-structural-study.lingua) · [Next · 161](161-inspect-a-bounded-acoustic-response.lingua)
+} r_38W5Z0QCYDH2ST99FHABW3NC8N

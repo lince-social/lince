@@ -1,0 +1,23 @@
+Stage 139 — Adopt a changed material in a running physical scene (@ws-stage-139: 0, is #chapter, #part-of @workspace-stages: 139) { r_1VMKYNGPGZVAB3DC6FFRY3AGB0
+**Status** Pending verification.
+
+## Capability
+
+At a supported step boundary apply the selected state-transfer, restart, defer or pinned-model policy for a changed material or collision input.
+
+## Completion checks
+
+- [ ] Change an active body’s material, compare its resulting state with the selected policy and deliver an obsolete replacement. Inspect the retained run epoch and state.
+
+## Implementation references
+
+**Provider handoffs** [128 · Rigid](128-run-two-physical-domains-with-independent-clocks.lingua) · [074 · Numerical Transitions](074-change-circuit-fidelity-during-a-running-event.lingua)
+
+[Mechanical substitution and shared interaction](../features/Mechanical-Transitions.lingua) · [18.T04](../features/Mechanical-Transitions.lingua#task-18t04)
+
+Use the applicable fixture, tolerances and recovery cases in [18 · Rigid and articulated physics](../contracts/Rigid-and-articulated-physics-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 138](138-observe-someone-elses-bounded-experiment.lingua) · [Next · 140](140-interact-with-shared-physics-from-a-lightweight-viewer.lingua)
+} r_1VMKYNGPGZVAB3DC6FFRY3AGB0

@@ -1,0 +1,37 @@
+Electromechanical devices and coupled loads (@ws-electromechanical-devices: 0, is #chapter, #part-of @workspace-development, #requires @ws-mixed-signal-circuits, #requires @ws-rigid) { r_7J2W1ZVYMGQ4PJ9094J4VSYE5Y
+Status: Pending; unbuilt and unverified. Deliver a bounded coupled motor and load with declared limits.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and ownership
+
+Require verified [Mixed signal circuits](Mixed-Signal-Circuits.lingua) electrical ports, accepted-step observations and worker lifetime, plus [Rigid bodies and joints](Rigid.lingua) effort application, mass/inertia, units and isolated state. Reuse [numerical jobs](Numerical-Runtime.lingua) and [rigid-domain contracts](../contracts/Rigid-and-articulated-physics-contracts.lingua). This package does not wait for PCB construction, full Circuit policy, continuum heating or geographic integration.
+
+Own the electromechanical model, coupling adapter and acceptance fixture. Providers retain job, clock, transform, signal and rigid integrator authority. Development can overlap unrelated ready consumers after verified handoffs; changes spanning both providers require one owner. Establish one coupled system before multiple actuators or general multiphysics graphs.
+
+## Ordered work
+
+### Task EMC.T01
+
+- [ ] **EMC.T01.** Specify and implement a brushed DC motor with named electrical supply/return and rotational shaft/reference ports. Pin resistance, inductance, torque constant, back-EMF constant, rotor inertia and supported friction/load laws, their units, source evidence and validity. Use a declared consistent orientation so voltage/current, torque/angular velocity and their products have unambiguous signs. The first model includes winding current, shaft speed/angle and mechanical load, with V = R i + L di/dt + k_e omega and electromagnetic torque = k_t i under stated SI conventions. Describe saturation, brush effects, temperature dependence and other omitted behavior. No CAD mesh, name or decorative rotation supplies unstated physical parameters. Provide native parameter, terminal, shaft-axis and load attachment controls with diagnostic checks for missing references, invalid inertia and incompatible units.
+
+### Task EMC.T02
+
+- [ ] **EMC.T02.** Couple the real circuit worker to a real rigid rotor/load through the established effort and state boundary. Back-EMF affects current, current produces torque and load changes acceleration; an animation driven only by voltage does not pass. Choose a supported monolithic or iterated exchange algorithm and specify electrical substeps, mechanical steps, synchronization instants, interpolation and bounded convergence criteria. Publish only mutually accepted, settled exchange samples; retain tentative state privately and roll back/retry both sides on rejected steps. Do not treat settled exchange as mechanical rest. Resolve abrupt load changes and PWM edges without lost events or uncontrolled impulses. Fixed/adaptive numerical clocks remain independent of rendering; resource exhaustion throttles or pauses simulated time. Single writers own current, shaft state and canonical transforms, with rigid contacts and circuit reactions entering their proper solve group.
+
+### Task EMC.T03
+
+- [ ] **EMC.T03.** Build the native fixture: supply and driver, motor shaft, visible inertial load, adjustable opposing torque and an explicit locked-shaft constraint. Show source-mapped voltage/current, speed, torque, back-EMF, electrical power, mechanical power and accumulated energy/residual. Track copper/friction losses as accounted energy without claiming a temperature solve. Run, pause, step and reset through common commands; edits capture a new version or stop at a supported boundary. Preserve current/flux, angle/velocity, pending inputs and accepted time in explicitly supported checkpoints. Reopening preserves authored state and identified observations without automatically resuming execution. Cancellation, removed loads, stale definitions and authority loss cannot leave one half running or publish an old result. A moving rotor retains its domain's supported behavior when electrical drive is disabled; stopping a worker is not an invented physical brake.
+
+### Task EMC.T04
+
+- [ ] **EMC.T04.** Independently verify locked-shaft steady current V/R and its electrical transient, no-load speed under the declared losses, load-step response and back-EMF under imposed rotation. Prove stall current with the actual shaft constraint, including bounded runtime at stall. Check consistent k_t/k_e units and signs, electrical/mechanical energy balance and residual against declared tolerances. Compare the coupled trajectory with an independent reference integration and refine electrical step, mechanical step and exchange cadence separately; record convergence and admissible latency/error before claiming a valid multi-rate profile. Repeat at different render rates and under bounded catch-up pressure. Through native controls reverse polarity, change load, disconnect supply and exercise cancellation/reopen. Retain current/speed/torque traces, actual worker costs, resource peaks, interface responsiveness and final release evidence.
+
+## Completion and handoff
+
+Export the supported motor/load family, electrical/mechanical port contract, state ownership, accepted-sample semantics, coupling algorithm, reference fixtures and measured operating envelope. Keep mechanical, model, parameter and numerical error distinct; an energy residual alone does not validate the physical model. Additional actuator types require their own laws and references.
+
+The coupled proof stands independently of a cheap functional substitute. A functional motor may impose motion under its declared contract; it cannot claim this load/current prediction. Any later fine/coarse switch uses [Numerical transitions](Numerical-Transitions.lingua) with a motor-specific mapping and measured error. Unsupported continuation requires explicit restart or continued pinned use, never fabricated current, momentum or conserved energy. No new universal transition service is owned here.
+
+Check affected rigid/circuit native workflows and independent references through repository cargo xtask/Nix conventions. Leave all tasks pending until real worker, persistence, failure and performance evidence satisfies the electronics workbench contract. No equipment control is implied.
+} r_7J2W1ZVYMGQ4PJ9094J4VSYE5Y

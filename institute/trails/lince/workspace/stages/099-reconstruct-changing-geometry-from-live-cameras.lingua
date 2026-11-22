@@ -1,0 +1,25 @@
+Stage 099 — Reconstruct changing geometry from live cameras (@ws-stage-099: 0, is #chapter, #part-of @workspace-stages: 99) { r_07N8F622CNXAWA84ZA88AS2B8M
+**Status** Pending verification.
+
+## Capability
+
+Send leased calibrated windows to one implemented geometry worker using the existing job and candidate path. Compare and accept results for a modeled place.
+
+## Completion checks
+
+- [ ] Capture an initial shape and at least two geometric changes. Check independent geometry or view residuals, reject misaligned windows and inspect frame release after stopping.
+
+## Implementation references
+
+**Provider handoffs** [091 · Scene Reconstruction](091-drape-a-registered-image-on-terrain.lingua) · [098 · Observed Models](098-refresh-an-observed-layer-periodically.lingua)
+
+[Live camera reconstruction and scene updates](../features/Live-Scene-Reconstruction.lingua) · [LRC.T01](../features/Live-Scene-Reconstruction.lingua#task-lrct01) · [LRC.T02](../features/Live-Scene-Reconstruction.lingua#task-lrct02) · [LRC.T03](../features/Live-Scene-Reconstruction.lingua#task-lrct03) · [LRC.T04](../features/Live-Scene-Reconstruction.lingua#task-lrct04) · [LRC.T05](../features/Live-Scene-Reconstruction.lingua#task-lrct05)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [World composition](../contracts/World-composition-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 098](098-refresh-an-observed-layer-periodically.lingua) · [Next · 100](100-unfold-a-sheet-metal-part.lingua)
+} r_07N8F622CNXAWA84ZA88AS2B8M

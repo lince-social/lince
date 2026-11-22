@@ -1,0 +1,22 @@
+Stage 173 — Track a reference inventory through time (@ws-stage-173: 0, is #chapter, #part-of @workspace-stages: 173) { r_7M2A12YB69SYMP1DHJWEPN5KRY
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Add a separately scoped civilian depletion or decay reference study with a declared time interval, data revision and validity.
+
+## Completion checks
+
+- [ ] Compare the documented inventory observable at the reference times, refine the time interval and retain uncertainty and provenance on reopen.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Nuclear transport and coupled power studies](../features/Nuclear.lingua) · [21.T07](../features/Nuclear.lingua#task-21t07)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 172](172-inspect-a-reference-radiation-transport-result.lingua) · [Next · 174](174-inspect-a-coupled-power-and-heat-reference.lingua)
+} r_7M2A12YB69SYMP1DHJWEPN5KRY

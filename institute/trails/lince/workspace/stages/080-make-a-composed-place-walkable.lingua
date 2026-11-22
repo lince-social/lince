@@ -1,0 +1,21 @@
+Stage 080 — Make a composed place walkable (@ws-stage-080: 0, is #chapter, #part-of @workspace-stages: 80) { r_5ZMHYZN1BG62CGNW9ABTR0YHJN
+**Status** Pending verification.
+
+## Capability
+
+Generate collision and support for the ground, steps, bridge, underpass and supported openings. Keep their coverage inspectable separately from appearance.
+
+## Completion checks
+
+- [ ] Walk under the bridge and through the opening, then try a visible region without support. Check clearances against independent fixture dimensions.
+
+## Implementation references
+
+[Curated scenes, regional refinement and reusable places](../features/World-Composition.lingua) · [WCO.T04](../features/World-Composition.lingua#task-wcot04)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 079](079-build-a-local-place-from-several-data-sources.lingua) · [Next · 081](081-review-a-new-revision-of-a-curated-place.lingua)
+} r_5ZMHYZN1BG62CGNW9ABTR0YHJN

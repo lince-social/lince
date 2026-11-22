@@ -101,7 +101,36 @@ pub(crate) struct ToolbarOrder(pub u8);
 #[derive(Component)]
 struct ToolbarScroll;
 
+#[derive(Component)]
+struct ToolbarButton;
+
 const CONTROL_HEIGHT: f32 = 40.0;
+
+pub(crate) fn toolbar_button(toolbar: Entity, action: ActionButton) -> impl Bundle {
+    (
+        ToolbarButton,
+        action,
+        button(0),
+        Node {
+            height: px(CONTROL_HEIGHT),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            padding: UiRect::axes(px(10), px(8)),
+            border: UiRect::all(px(crate::native::sand::BUTTON_BORDER_WIDTH)),
+            flex_shrink: 0.0,
+            ..default()
+        },
+        crate::native::token_style::border(crate::native::tokens::Token::Accent),
+        crate::native::token_style::OutlineToken(crate::native::tokens::Token::Accent),
+        Outline {
+            width: px(0),
+            offset: px(2),
+            color: PURPLE,
+        },
+        crate::native::token_style::background(crate::native::tokens::Token::Surface),
+        ChildOf(toolbar),
+    )
+}
 
 fn toolbar_bundle(view: Entity) -> impl Bundle {
     (
@@ -159,7 +188,7 @@ impl Plugin for CanvasControlsPlugin {
             .add_observer(
                 |event: On<FocusGained>,
                  visible: Res<InputFocusVisible>,
-                 mut controls: Query<&mut Outline, With<CanvasControl>>| {
+                 mut controls: Query<&mut Outline, With<ToolbarButton>>| {
                     if event.cause == FocusCause::Navigated
                         && visible.0
                         && let Ok(mut outline) = controls.get_mut(event.entity)
@@ -169,7 +198,7 @@ impl Plugin for CanvasControlsPlugin {
                 },
             )
             .add_observer(
-                |event: On<FocusLost>, mut controls: Query<&mut Outline, With<CanvasControl>>| {
+                |event: On<FocusLost>, mut controls: Query<&mut Outline, With<ToolbarButton>>| {
                     if let Ok(mut outline) = controls.get_mut(event.entity) {
                         outline.width = px(0);
                     }
@@ -214,26 +243,10 @@ pub(crate) fn create_controls(
             let control = world
                 .spawn((
                     CanvasControl { view, action },
-                    ActionButton::new(view, crate::native::actions![action]),
-                    button(0),
-                    Node {
-                        height: px(CONTROL_HEIGHT),
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        padding: UiRect::axes(px(10), px(8)),
-                        border: UiRect::all(px(crate::native::sand::BUTTON_BORDER_WIDTH)),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    crate::native::token_style::border(crate::native::tokens::Token::Accent),
-                    crate::native::token_style::OutlineToken(crate::native::tokens::Token::Accent),
-                    Outline {
-                        width: px(0),
-                        offset: px(2),
-                        color: PURPLE,
-                    },
-                    crate::native::token_style::background(crate::native::tokens::Token::Surface),
-                    ChildOf(toolbar),
+                    toolbar_button(
+                        toolbar,
+                        ActionButton::new(view, crate::native::actions![action]),
+                    ),
                 ))
                 .id();
             if action != CanvasAction::ResetZoom {
@@ -639,6 +652,40 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn floor_uses_the_same_toolbar_style_as_zoom() {
+        use crate::native::icons::{Icon, IconButton, IconPlugin};
+
+        let mut app = App::new();
+        crate::native::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>()
+            .init_resource::<Typography>()
+            .add_plugins((CanvasControlsPlugin, IconPlugin))
+            .add_systems(Update, crate::native::topology::terrain::editor::update);
+        app.world_mut().spawn((
+            CanvasView::default(),
+            crate::native::workspace::Workspaces::default(),
+        ));
+        app.update();
+
+        let world = app.world_mut();
+        let mut buttons = world.query::<(&IconButton, &Node, &ChildOf)>();
+        let (floor, floor_node, floor_parent) = buttons
+            .iter(world)
+            .find(|(button, _, _)| button.icon == Icon::Floor)
+            .expect("Floor toolbar button");
+        let (_, zoom_node, zoom_parent) = buttons
+            .iter(world)
+            .find(|(button, _, _)| button.icon == Icon::Plus)
+            .expect("Zoom in toolbar button");
+        assert_eq!(floor_parent.parent(), zoom_parent.parent());
+        assert_eq!(floor_node.width, floor_node.height);
+        assert_eq!(floor_node.width, zoom_node.width);
+        assert_eq!(floor_node.height, zoom_node.height);
+        assert_eq!(floor_node.border, zoom_node.border);
+        assert!(floor.label.starts_with("Edit floor topology"));
+    }
+
+    #[cfg_attr(test, test)]
     fn recenter_keeps_zoom_and_sands_and_only_moves_its_camera() {
         let (mut app, view) = fixture();
         let other = app
@@ -826,6 +873,7 @@ pub(crate) mod tests {
 
     crate::native::laboratory_cases! {
         controls_share_a_height_and_only_keyboard_focus_is_highlighted,
+        floor_uses_the_same_toolbar_style_as_zoom,
         recenter_keeps_zoom_and_sands_and_only_moves_its_camera,
         bring_here_keeps_entities_content_visibility_and_other_views,
         empty_and_single_sand_arrangements_are_centered,

@@ -1,0 +1,23 @@
+Stage 074 — Change circuit fidelity during a running event (@ws-stage-074: 0, is #chapter, #part-of @workspace-stages: 74) { r_5EC1BEMP83PB3CJPEKC95BXS8Q
+**Status** Pending verification.
+
+## Capability
+
+Map the supported capacitor and timer state at an accepted simulation boundary. Expose whether transfer, restart, deferral or a pinned model is possible.
+
+## Completion checks
+
+- [ ] Switch detailed to reduced and back during a pulse. Compare continuity and event count with the uninterrupted reference and reject a stale or unaffordable handoff.
+
+At the handoff record the simulation time, capacitor voltage or charge, pending timer deadline, source revision and writer. Compare the output trace on both sides of that instant with the uninterrupted reference. Keep one writer and deliver each event once.
+
+## Implementation references
+
+[Numerical equivalents and stateful model transitions](../features/Numerical-Transitions.lingua) · [15a.T06](../features/Numerical-Transitions.lingua#task-15at06)
+
+Use the applicable fixture, tolerances and recovery cases in [15a · Circuit and transition](../contracts/Circuit-and-transition-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 073](073-substitute-a-cheaper-equivalent-circuit.lingua) · [Next · 075](075-let-a-device-adapt-its-simulation-cost.lingua)
+} r_5EC1BEMP83PB3CJPEKC95BXS8Q

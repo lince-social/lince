@@ -1,0 +1,23 @@
+Stage 022 — Mount a desktop item to a surface (@ws-stage-022: 0, is #chapter, #part-of @workspace-stages: 22) { r_23P76T9F75Y3A4QYEBT3VT62E8
+**Status** Pending verification.
+
+## Capability
+
+Place a Sand against a local surface frame, rotate the supporting object and expose the mount in the inspector.
+
+## Completion checks
+
+- [ ] Reopen the rotated scene and check the local attachment. Remove the support and repair the mount from the retained pose.
+
+## Implementation references
+
+[Areas, influence and local mounts](../features/Areas-Mounts.lingua) · [04.T03](../features/Areas-Mounts.lingua#task-04t03)
+
+Use the applicable fixture, tolerances and recovery cases in [04 · Selection and interface](../contracts/Selection-and-interface-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [04 · Selection and interface](../contracts/Selection-and-interface-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 021](021-apply-an-areas-influence-to-selected-objects.lingua) · [Next · 023](023-move-through-a-room-in-orbit-fly-or-walk.lingua)
+} r_23P76T9F75Y3A4QYEBT3VT62E8

@@ -1,0 +1,25 @@
+Stage 012 — Delegate a bounded edit to Fiote (@ws-stage-012: 0, is #chapter, #part-of @workspace-stages: 12) { r_391PE51C7DWFN8XAXXN1EAA846
+**Status** Pending verification.
+
+## Capability
+
+Expose the same available operations and receipts to a Fiote Actor under a named delegator, source revision and budget. Keep a native continuation for the result.
+
+## Completion checks
+
+- [ ] Authorize one edit, inspect both identities, undo it manually and cancel a second request. A revoked or delayed result cannot change the document.
+
+## Implementation references
+
+**Provider handoffs** [006 · Model](006-save-a-behavior-choice-on-an-occurrence.lingua)
+
+[Agent delegation and operation access](../features/Agent.lingua) · [02.T09](../features/Agent.lingua#task-02t09) · [02.T10](../features/Agent.lingua#task-02t10)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [02 · Durable model](../contracts/Durable-model-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 011](011-see-the-cost-before-joining.lingua) · [Next · 013](013-keep-a-named-selection-through-a-source-edit.lingua)
+} r_391PE51C7DWFN8XAXXN1EAA846

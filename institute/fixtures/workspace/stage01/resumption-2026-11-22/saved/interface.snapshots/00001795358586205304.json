@@ -1,0 +1,548 @@
+{
+  "workspace_focus": [
+    {
+      "workspace": 1,
+      "last": null,
+      "active": null,
+      "following": false,
+      "unfocused": false
+    },
+    {
+      "workspace": 2,
+      "last": null,
+      "active": null,
+      "following": false,
+      "unfocused": false
+    }
+  ],
+  "physical_workspaces": [],
+  "shader_editors": [],
+  "shader_settings": {
+    "disabled": false,
+    "reduced_motion": false,
+    "compositor": {
+      "shadow_radius": 0.0,
+      "blur_radius": 0.0,
+      "appearance_fade_ms": 0
+    }
+  },
+  "terrain_effects": [],
+  "canvas_id": "canvas_01M81VBDSJ8E2B9K89JW6ETZDX",
+  "hidden_records": [],
+  "canvas_state": null,
+  "assertions": [],
+  "shaders": [],
+  "layouts": [],
+  "imports": [],
+  "theme": {
+    "scheme": "Dark",
+    "global": {},
+    "kinds": {}
+  },
+  "controls": {
+    "always_show": false
+  },
+  "active": 1,
+  "workspaces": [
+    {
+      "desktop": {
+        "minimized": [],
+        "minimized_fullscreen": [],
+        "maximized": [],
+        "mode": "free",
+        "gap": 0.0,
+        "items": [],
+        "columns": [],
+        "rows": {
+          "rows": [],
+          "homes": [],
+          "compact": [],
+          "next_id": 1,
+          "scroll": [
+            0.0,
+            0.0
+          ],
+          "last_focus": null,
+          "free_view": null
+        },
+        "focused": null,
+        "scroll": [
+          0.0,
+          0.0
+        ],
+        "fullscreen": null,
+        "scratch": []
+      },
+      "topology": {
+        "spatial": false,
+        "position": [
+          0.0,
+          500.0,
+          500.0
+        ],
+        "yaw": 0.0,
+        "pitch": -0.6,
+        "plane": 0.0,
+        "selection_depth": 1000.0
+      },
+      "id": 1,
+      "name": "Home",
+      "center": [
+        0.0,
+        0.0
+      ],
+      "zoom": 1.0,
+      "colors": {
+        "background": [
+          18,
+          18,
+          20
+        ],
+        "grid": [
+          44,
+          44,
+          49
+        ]
+      },
+      "color_overrides": [
+        false,
+        false
+      ]
+    },
+    {
+      "desktop": {
+        "minimized": [],
+        "minimized_fullscreen": [],
+        "maximized": [],
+        "mode": "free",
+        "gap": 0.0,
+        "items": [],
+        "columns": [],
+        "rows": {
+          "rows": [],
+          "homes": [],
+          "compact": [],
+          "next_id": 1,
+          "scroll": [
+            0.0,
+            0.0
+          ],
+          "last_focus": null,
+          "free_view": null
+        },
+        "focused": null,
+        "scroll": [
+          0.0,
+          0.0
+        ],
+        "fullscreen": null,
+        "scratch": []
+      },
+      "topology": {
+        "spatial": false,
+        "position": [
+          0.0,
+          500.0,
+          500.0
+        ],
+        "yaw": 0.0,
+        "pitch": -0.6,
+        "plane": 0.0,
+        "selection_depth": 1000.0
+      },
+      "id": 2,
+      "name": "Workspace 2",
+      "center": [
+        0.0,
+        0.0
+      ],
+      "zoom": 1.0,
+      "colors": {
+        "background": [
+          18,
+          18,
+          20
+        ],
+        "grid": [
+          44,
+          44,
+          49
+        ]
+      },
+      "color_overrides": [
+        false,
+        false
+      ]
+    }
+  ],
+  "deleted_workspaces": {},
+  "trash_retention_days": 10,
+  "sands": [
+    {
+      "placement": {
+        "record_properties": null,
+        "room": null,
+        "room_member": null,
+        "shader_surface": null,
+        "material": null,
+        "light": null,
+        "binding": null,
+        "follow_slope": false,
+        "practice_source": null,
+        "identity": null,
+        "canvas_component": null,
+        "backend_component": null,
+        "layout": null,
+        "transient_parent": null,
+        "events": [],
+        "pinned": null,
+        "order": 0,
+        "group": null,
+        "spatial": {
+          "elevation": 0.0,
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "depth": 10.0,
+          "world_pinned": false
+        },
+        "attachment": null,
+        "group_pose": null
+      },
+      "tokens": {},
+      "properties": {
+        "quantity": -1
+      },
+      "kind": "Text",
+      "texts": [
+        {
+          "area": {
+            "settings": {
+              "overflow": "Scroll"
+            },
+            "layout": null,
+            "order": 0,
+            "tokens": {},
+            "editable": false,
+            "offset": [
+              16.0,
+              16.0
+            ],
+            "size": [
+              216.0,
+              152.0
+            ],
+            "overflow": "Scroll"
+          },
+          "text": "Other workspace stays still"
+        }
+      ],
+      "workspace": 2,
+      "position": [
+        -300.0,
+        -200.0
+      ],
+      "size": [
+        248.0,
+        184.0
+      ],
+      "timer": null,
+      "time_castle": null,
+      "todo": null,
+      "visibility": null,
+      "video": null
+    },
+    {
+      "placement": {
+        "record_properties": null,
+        "room": null,
+        "room_member": null,
+        "shader_surface": null,
+        "material": null,
+        "light": null,
+        "binding": null,
+        "follow_slope": false,
+        "practice_source": null,
+        "identity": null,
+        "canvas_component": null,
+        "backend_component": null,
+        "layout": null,
+        "transient_parent": null,
+        "events": [],
+        "pinned": null,
+        "order": 0,
+        "group": null,
+        "spatial": {
+          "elevation": 9.99980742685195,
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "depth": 10.0,
+          "world_pinned": false
+        },
+        "attachment": null,
+        "group_pose": null
+      },
+      "tokens": {},
+      "properties": {
+        "quantity": 7
+      },
+      "kind": "Text",
+      "texts": [
+        {
+          "area": {
+            "settings": {
+              "overflow": "Scroll"
+            },
+            "layout": null,
+            "order": 0,
+            "tokens": {},
+            "editable": false,
+            "offset": [
+              16.0,
+              16.0
+            ],
+            "size": [
+              216.0,
+              152.0
+            ],
+            "overflow": "Scroll"
+          },
+          "text": "Gravity and settling"
+        }
+      ],
+      "workspace": 1,
+      "position": [
+        -350.0,
+        200.0
+      ],
+      "size": [
+        248.0,
+        184.0
+      ],
+      "timer": null,
+      "time_castle": null,
+      "todo": null,
+      "visibility": null,
+      "video": null
+    },
+    {
+      "placement": {
+        "record_properties": null,
+        "room": null,
+        "room_member": null,
+        "shader_surface": null,
+        "material": null,
+        "light": null,
+        "binding": null,
+        "follow_slope": false,
+        "practice_source": null,
+        "identity": null,
+        "canvas_component": null,
+        "backend_component": null,
+        "layout": null,
+        "transient_parent": null,
+        "events": [],
+        "pinned": null,
+        "order": 0,
+        "group": null,
+        "spatial": {
+          "elevation": 0.9998082623617317,
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "depth": 1.0,
+          "world_pinned": false
+        },
+        "attachment": null,
+        "group_pose": null
+      },
+      "tokens": {
+        "Width": {
+          "Number": 160.0
+        },
+        "Height": {
+          "Number": 80.0
+        }
+      },
+      "properties": {
+        "quantity": -1
+      },
+      "kind": "Text",
+      "texts": [
+        {
+          "area": {
+            "settings": {
+              "overflow": "Scroll"
+            },
+            "layout": null,
+            "order": 0,
+            "tokens": {},
+            "editable": false,
+            "offset": [
+              16.0,
+              16.0
+            ],
+            "size": [
+              216.0,
+              152.0
+            ],
+            "overflow": "Scroll"
+          },
+          "text": "Move this work"
+        }
+      ],
+      "workspace": 1,
+      "position": [
+        -400.1885535087872,
+        0.20235071889118345
+      ],
+      "size": [
+        160.0,
+        80.0
+      ],
+      "timer": null,
+      "time_castle": null,
+      "todo": null,
+      "visibility": null,
+      "video": null
+    }
+  ],
+  "records": [],
+  "areas": [
+    {
+      "placement": {
+        "record_properties": null,
+        "room": null,
+        "room_member": null,
+        "shader_surface": null,
+        "material": null,
+        "light": null,
+        "binding": null,
+        "follow_slope": false,
+        "practice_source": null,
+        "identity": null,
+        "canvas_component": null,
+        "backend_component": null,
+        "layout": null,
+        "transient_parent": null,
+        "events": [],
+        "pinned": null,
+        "order": -2,
+        "group": null,
+        "spatial": {
+          "elevation": 0.0,
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "depth": 10.0,
+          "world_pinned": false
+        },
+        "attachment": null,
+        "group_pose": null
+      },
+      "workspace": 1,
+      "area": {
+        "backend_components": false,
+        "records": {},
+        "id": "5bad5ac9fb294a541c1cf3241e219e55",
+        "name": "Bring matching work here",
+        "enabled": true,
+        "paused": false,
+        "include_right_edge": true,
+        "attraction_enabled": true,
+        "changes_enabled": true,
+        "change_filter": null,
+        "color": [
+          128,
+          102,
+          217
+        ],
+        "opacity": 0.5,
+        "center": [
+          -400.0,
+          0.0
+        ],
+        "size": [
+          900.0,
+          900.0
+        ],
+        "depth": 10.0,
+        "target": "Center",
+        "shape": "Square",
+        "direction": "Attract",
+        "strength": 100000.0,
+        "reach": {
+          "mode": "Unlimited",
+          "shape": "FollowShape",
+          "radius": 0.0
+        },
+        "rules": [
+          {
+            "property": "Quantity",
+            "value": "-1"
+          }
+        ],
+        "match_all": true,
+        "changes": {
+          "enter": {
+            "quantity": null,
+            "assert": [],
+            "retract": [],
+            "assign": [],
+            "unassign": []
+          },
+          "leave": {
+            "quantity": null,
+            "assert": [],
+            "retract": [],
+            "assign": [],
+            "unassign": []
+          }
+        },
+        "creation": {
+          "file_origin": null,
+          "assertions": []
+        },
+        "protein": null,
+        "filter": null,
+        "sound": null,
+        "sorting": null,
+        "immunity": "None",
+        "scale": 1.0,
+        "force_mode": "Simple",
+        "hole": false
+      }
+    }
+  ],
+  "proteins": [],
+  "karma_castles": [],
+  "simulations": [],
+  "frequency_castles": [],
+  "transfer_castles": [],
+  "recorders": [],
+  "documents": [],
+  "source_views": [],
+  "demeters": [],
+  "media": [],
+  "drawings": [],
+  "extension_sands": [],
+  "editors": [],
+  "explorers": [],
+  "calendars": [],
+  "maps": [],
+  "kanbans": [],
+  "instincts": []
+}

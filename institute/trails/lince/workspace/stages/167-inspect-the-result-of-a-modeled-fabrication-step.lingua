@@ -1,0 +1,22 @@
+Stage 167 — Inspect the result of a modeled fabrication step (@ws-stage-167: 0, is #chapter, #part-of @workspace-stages: 167) { r_20M2XZVGN03CY0WARPG6EJP1A1
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Choose one bounded device-fabrication study with documented inputs, layer identity and a measurable result on the retained geometry.
+
+## Completion checks
+
+- [ ] Compare the claimed output with its independent reference and reopen it with process and source revisions. An unsupported process cannot yield a validated result.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Electrothermal and specialist device physics](../features/Device-Physics.lingua) · [21.T05](../features/Device-Physics.lingua#task-21t05)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 166](166-evaluate-a-semiconductor-device-characteristic.lingua) · [Next · 168](168-inspect-a-chemical-equilibrium-result.lingua)
+} r_20M2XZVGN03CY0WARPG6EJP1A1

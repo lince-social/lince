@@ -1,0 +1,24 @@
+Stage 182 — Measure a simulated tissue response (@ws-stage-182: 0, is #chapter, #part-of @workspace-stages: 182) { r_7KDCT1DM0XJC2B9PJQPBNRKER4
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select a bounded tissue-mechanics reference with a documented material law, load, geometry, observable and privacy scope.
+
+## Completion checks
+
+- [ ] Compare the predicted deformation with an independent reference under refinement and expose uncertainty. Reopen the result with its provenance and source permissions.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Musculoskeletal and tissue studies](../features/Biomechanics.lingua) · [21.T10](../features/Biomechanics.lingua#task-21t10)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+At the specialist review, publish the evidence matrix for each selected method and list every deferred or unvalidated method separately. The full contract can close only within its declared and evidenced scope. [21 · Specialist science](../contracts/Specialist-science-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 181](181-estimate-a-supported-muscle-force.lingua) · [Next · 183](183-measure-a-circuits-ac-response.lingua)
+} r_7KDCT1DM0XJC2B9PJQPBNRKER4

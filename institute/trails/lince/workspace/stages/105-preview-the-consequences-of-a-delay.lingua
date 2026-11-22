@@ -1,0 +1,21 @@
+Stage 105 — Preview the consequences of a delay (@ws-stage-105: 0, is #chapter, #part-of @workspace-stages: 105) { r_2CCTPP5NRQGWBVG7X63NCBWD2J
+**Status** Pending verification.
+
+## Capability
+
+Use the isolated operational scenario with explicit quantities, calendar and yields. Make missing or private inputs visible in the projected outcome.
+
+## Completion checks
+
+- [ ] Delay a shipment and compare projected stock and dates against the original plan. Inspect the accepted ledger after discarding the scenario.
+
+## Implementation references
+
+[Stock production and operational scenarios](../features/Operations.lingua) · [13.T02](../features/Operations.lingua#task-13t02)
+
+Use the applicable fixture, tolerances and recovery cases in [13 · Operational workflow](../contracts/Operational-workflow-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 104](104-track-a-delivery-through-inventory.lingua) · [Next · 106](106-generate-draft-work-from-a-model-quantity.lingua)
+} r_2CCTPP5NRQGWBVG7X63NCBWD2J

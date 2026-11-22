@@ -1,0 +1,4 @@
+2026-11-22T14:43:06.878807Z  INFO bevy_pbr::cluster: GPU clustering is supported on this device.
+2026-11-22T14:43:06.878991Z  INFO bevy_render::batching::gpu_preprocessing: GPU preprocessing is fully supported on this device.
+2026-11-22T14:43:06.884909Z  INFO bevy_winit::system: Creating new window Lince (69v0)
+2026-11-22T14:43:06.888911Z  WARN {}{task_name="org.a11y.Status proxy caching"}: zbus::proxy: Failed to populate properties cache via GetAll: org.freedesktop.DBus.Error.ServiceUnknown: The name is not activatable. Property change streams will not produce values.

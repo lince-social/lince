@@ -1,0 +1,23 @@
+Stage 016 — Query only the authorized part of a scene (@ws-stage-016: 0, is #chapter, #part-of @workspace-stages: 16) { r_11RQMFT9DNTS9019FHKJTCC9MV
+**Status** Pending verification.
+
+## Capability
+
+Apply each source grant on the serving side to bounded spatial and semantic queries with captured multi-selection revisions.
+
+## Completion checks
+
+- [ ] Query across overlapping allowed and restricted sources in B34/B36. Narrow the grant during paging and check fields, counts and bounds for disclosure.
+
+## Implementation references
+
+[Shared presence and scoped queries](../features/Shared-Presence.lingua) · [04.T05](../features/Shared-Presence.lingua#task-04t05)
+
+Use the applicable fixture, tolerances and recovery cases in [04 · Selection and interface](../contracts/Selection-and-interface-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [03 · Frames and views](../contracts/Frames-and-views-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 015](015-see-another-participants-pointer-in-your-frame.lingua) · [Next · 017](017-give-fiote-the-context-of-a-selection.lingua)
+} r_11RQMFT9DNTS9019FHKJTCC9MV

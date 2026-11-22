@@ -1,0 +1,16 @@
+Workspace refactor delivery (@workspace-refactor: 0, is #chapter, #part-of @workspace-development) { r_6XJ2ZJ5ZVCANY0Z55SZ29XJ5GR
+Use this Record for every [numbered stage](Workspace-Stages.lingua). The [workspace vision](Workspace.lingua) and [development graph](Workspace-Development.lingua) give the larger context.
+
+## What ships with a stage
+
+Every feature added or changed updates Laboratory → **showoff workspace** in the native desktop. For each workflow the stage claims is usable, give someone a place to start, an action to try and a visible result to inspect. A button can expose a small operation. A Room with several Castles, a shader or a model can demonstrate a larger one. Make the individual parts usable on their own and provide an interaction that joins them where the stage supports it. A newly supported combination gets its own path through the existing scenario.
+
+Keep building the same saved workspace. Preserve edits when an older showcase is reopened. Ship the fixtures or the means to build them inside Lince so someone with the binary can explore the result. Open it from Laboratory or launch the native desktop with `lince --showoff`. [Explore the shipped examples](../../../fixtures/workspace/showcase/README.md) · [Showcase builder](../../../../crates/interface/src/native/laboratory/showoff.rs)
+
+## What proves completion
+
+- Exercise every newly claimed workflow on the shipped showcase through normal controls. Run the cumulative end-to-end replay in a fresh temporary profile, extend it for the new interaction, and assert an observable result for the new and earlier parts. Reopen saved work in a fresh process when persistence is part of the claim. The current entry point is `cargo xtask workspace showcase <new-output-directory>` in the interface development shell.
+- Run the stage’s focused unit and integration checks as well. Keep deterministic fault injection, scientific references and isolated performance measurements with their owning fixtures. Expose the user-visible recovery or result in the showcase when the stage promises one.
+- In the stage handoff give the exhibit or control, the actions and expected result for each workflow, the replay command or case and the evidence. Mark the stage done after the showcase and focused checks pass.
+- Add a **Human required** line to a stage only when a necessary acceptance step genuinely depends on a person. Name the exact action or observation, why automation cannot establish it, and how to record the result. Routine exploration, UI input and unattended verification need no stage annotation.
+} r_6XJ2ZJ5ZVCANY0Z55SZ29XJ5GR

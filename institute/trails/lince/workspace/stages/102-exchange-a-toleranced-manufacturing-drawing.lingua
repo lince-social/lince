@@ -1,0 +1,21 @@
+Stage 102 — Exchange a toleranced manufacturing drawing (@ws-stage-102: 0, is #chapter, #part-of @workspace-stages: 102) { r_102XWPX5V5DX3V63KQBAM4V955
+**Status** Pending verification.
+
+## Capability
+
+Derive a drawing from accepted geometry, attach supported tolerances and publish the declared exchange subset with units and losses.
+
+## Completion checks
+
+- [ ] Reopen the exchange, follow a dimension to its source feature and compare its nominal value and tolerance limits.
+
+## Implementation references
+
+[Manufacturing and civil geometry profiles](../features/Manufacturing-Civil.lingua) · [11.T04](../features/Manufacturing-Civil.lingua#task-11t04)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 101](101-author-a-repeated-material-structure.lingua) · [Next · 103](103-lay-out-a-corridor-on-surveyed-terrain.lingua)
+} r_102XWPX5V5DX3V63KQBAM4V955

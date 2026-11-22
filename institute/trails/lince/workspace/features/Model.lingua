@@ -1,11 +1,13 @@
 Durable model and accepted-change foundation (@ws-model: 0, is #chapter, #part-of @workspace-development, #requires @ws-baseline) { r_0YXDKARH3YCDNPWGP47VDF5PVK
-Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+**Status** In progress. Stages 002 and 003 are verified. Stage 004 is the next model slice.
 
 [Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
 
 ## Start gate
 
 Required completed exports: [Baseline and isolated resumption](Baseline.lingua)
+
+Stage 001 passed its isolated native, fixture and contract checks on 2026-11-22. Its evidence opens this entry gate. [November replay, findings and reproduction steps](../../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md) · [First model slice · Stage 002](../stages/002-save-and-reopen-a-tiny-scene.lingua)
 
 Dependency reason: Every branch must share identity, revisioned source, accepted commands, undo, bounded jobs and artifact persistence before branching.
 
@@ -27,15 +29,15 @@ Follow this package's task order. Original identifiers remain traceable; a refer
 
 ### Task 02.T01
 
-- [ ] **02.T01.** Implement definition revisions, stable instance slots/occurrence handles, compact element IDs and optional Record bindings for a tiny repeated scene. Extend existing canonical/asset contracts instead of duplicating identity.
+- [x] **02.T01.** Implement definition revisions, stable instance slots/occurrence handles, compact element IDs and optional Record bindings for a tiny repeated scene. Extend existing canonical/asset contracts instead of duplicating identity.
 
 ### Task 02.T02
 
-- [ ] **02.T02.** Implement directory save/load, required-profile/closure validation, atomic root publication/recovery and resource bounds. Expose create/open/save, tree/inspector and a revision-conflict flow in native UI. Evaluate compact shared authoring chunks for undo; instrument snapshot pointer/copy/retention costs without allocating an object per future numerical site.
+- [x] **02.T02.** Implement directory save/load, required-profile/closure validation, atomic root publication/recovery and resource bounds. Expose create/open/save, tree/inspector and a revision-conflict flow in native UI. Evaluate compact shared authoring chunks for undo; instrument snapshot pointer/copy/retention costs without allocating an object per future numerical site.
 
 ### Task 02.T03
 
-- [ ] **02.T03.** Bridge one existing canvas placement and Room into a model handle; preserve normal selection/undo. Test save failure, crash recovery, repeated definitions, cycle rejection and stale edit results.
+- [x] **02.T03.** Bridge one existing canvas placement and Room into a model handle; preserve normal selection/undo. Test save failure, crash recovery, repeated definitions, cycle rejection and stale edit results.
 
 ### Task 02.T04
 
@@ -69,5 +71,9 @@ Pass relevant independent correctness/security/performance checks and native acc
 
 Consumers: [Frames and independent local views](Frames.lingua); [Tiny-document hosting and access](Hosting.lingua); [Agent delegation and operation access](Agent.lingua)
 
-Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+**Stage 002 handoff.** The native tree and placement inspector publish bounded, revision-checked scene directories and reopen stable part/placement identities. The proof covers B01 selected-copy edits, undo/redo, a preserved Record UID, a competing writer, recovery after interruption, and saving a conflicting draft separately. The evidence records full native replay time and separate warm local save/open measurements. [Verified stage](../stages/002-save-and-reopen-a-tiny-scene.lingua) · [Replay, sample directory and limits](../../../../fixtures/workspace/stage02/README.md)
+
+**Stage 003 handoff.** A direct Room member and a model occurrence share selection and translation through stable IDs. A drag commits on release. Undo projects the restored Room-local pose onto the existing Sand. The two-process replay recovered the Record attachment and both model handles after saving. [Verified stage](../stages/003-edit-an-existing-canvas-item-through-the-model.lingua) · [Replay, screenshot and limits](../../../../fixtures/workspace/stage03/README.md)
+
+The remaining Model tasks keep their own stage gates. [Stage 004 · Recover an edit receipt after a lost reply](../stages/004-recover-an-edit-receipt-after-a-lost-reply.lingua) owns typed command receipts, retries and late completions.
 } r_0YXDKARH3YCDNPWGP47VDF5PVK

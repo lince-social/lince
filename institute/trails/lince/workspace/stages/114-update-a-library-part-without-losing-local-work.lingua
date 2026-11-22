@@ -1,0 +1,21 @@
+Stage 114 — Update a library part without losing local work (@ws-stage-114: 0, is #chapter, #part-of @workspace-stages: 114) { r_4TJR97W4NFMZJYV1WVEATF2V2J
+**Status** Pending verification.
+
+## Capability
+
+Pin the imported revision, fork it locally and compare old source, upstream update and local edit in the native revision review.
+
+## Completion checks
+
+- [ ] Make two instances, change one local mapping, refresh against an upstream pin change and resolve or undo the conflict without remapping by name alone.
+
+## Implementation references
+
+[Reusable electronic libraries and source adapters](../features/Electronic-Libraries.lingua) · [ELB.T04](../features/Electronic-Libraries.lingua#task-elbt04) · [ELB.T05](../features/Electronic-Libraries.lingua#task-elbt05)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 113](113-find-a-reusable-part-in-a-catalogue.lingua) · [Next · 115](115-wire-a-physical-prototype-by-its-contacts.lingua)
+} r_4TJR97W4NFMZJYV1WVEATF2V2J

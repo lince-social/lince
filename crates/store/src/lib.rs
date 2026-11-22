@@ -103,6 +103,7 @@ pub mod transport;
 pub mod trust_queries;
 pub mod visibility;
 pub mod vocabulary;
+pub mod workspace_scene;
 
 pub use database::write_tx;
 use nucleus::projection::ExecutionIdentity;

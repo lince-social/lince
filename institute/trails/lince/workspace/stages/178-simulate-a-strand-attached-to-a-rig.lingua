@@ -1,0 +1,22 @@
+Stage 178 — Simulate a strand attached to a rig (@ws-stage-178: 0, is #chapter, #part-of @workspace-stages: 178) { r_4HF080WGD3981H7CWE0ETPQRYG
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select the supported strand or rod model, rest configuration and interaction bounds. Preserve the ordinary authored hairstyle as an independently usable appearance.
+
+## Completion checks
+
+- [ ] Compare the motion of a small reference strand with independent data and inspect resolution, memory and release at the declared strand count.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Physical cloth hair and secondary motion](../features/Cloth.lingua) · [21.T09](../features/Cloth.lingua#task-21t09)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 177](177-simulate-an-attached-garment.lingua) · [Next · 179](179-estimate-joint-loads-from-a-measured-motion.lingua)
+} r_4HF080WGD3981H7CWE0ETPQRYG

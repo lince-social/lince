@@ -1,0 +1,21 @@
+Stage 008 — Inspect one model in flat and spatial views (@ws-stage-008: 0, is #chapter, #part-of @workspace-stages: 8) { r_21124DNNPXJSKPTGG8XQV93MK3
+**Status** Pending verification.
+
+## Capability
+
+Open orthographic and perspective views of the same specimen. Preserve exact authored dimensions through unit changes and supported edits.
+
+## Completion checks
+
+- [ ] Select the same occurrence in both views and reopen it. Two distinct sub-nanometre authored values must still be distinguishable in the source.
+
+## Implementation references
+
+[Frames and independent local views](../features/Frames.lingua) · [03.T03](../features/Frames.lingua#task-03t03) · [03.T04](../features/Frames.lingua#task-03t04)
+
+Use the applicable fixture, tolerances and recovery cases in [03 · Frames and views](../contracts/Frames-and-views-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 007](007-keep-a-local-measurement-accurate-far-from-the-origin.lingua) · [Next · 009](009-pin-a-second-presentation-of-the-same-content.lingua)
+} r_21124DNNPXJSKPTGG8XQV93MK3

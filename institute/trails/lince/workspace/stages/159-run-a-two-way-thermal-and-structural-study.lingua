@@ -1,0 +1,22 @@
+Stage 159 — Run a two-way thermal and structural study (@ws-stage-159: 0, is #chapter, #part-of @workspace-stages: 159) { r_6ER6KY61YXXQBCD3JAR5ZD04XC
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Couple one admitted pair with declared exchange variables, signs, stepping, convergence, checkpoints and rollback.
+
+## Completion checks
+
+- [ ] Compare the coupled reference response and interface balance, force a failed step and recover the last accepted state in both solvers.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Thermal structural and further coupled studies](../features/Coupled-Physics.lingua) · [21.T04](../features/Coupled-Physics.lingua#task-21t04)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 158](158-apply-a-temperature-field-to-a-structural-study.lingua) · [Next · 160](160-inspect-a-bounded-fluid-flow-result.lingua)
+} r_6ER6KY61YXXQBCD3JAR5ZD04XC

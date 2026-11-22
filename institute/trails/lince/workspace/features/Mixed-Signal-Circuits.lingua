@@ -1,0 +1,37 @@
+Mixed signal circuits and reusable electrical models (@ws-mixed-signal-circuits: 0, is #chapter, #part-of @workspace-development, #requires @ws-numerical-runtime) { r_4TFZCTWTAACNYFJ0J247K6WYRZ
+Status: Pending; unbuilt and unverified. This Record plans implementation; it supplies no completed simulator capability.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and ownership
+
+Require the verified bounded worker, source-mapped DC/RC results, explicit numerical clock, cancellation and authority exports of [Numerical runtime](Numerical-Runtime.lingua). Full [Circuit policy](Circuit-Policy.lingua), PCB realization, core-wide acceptance, geography and thermal physics are not prerequisites. Reuse the [circuit execution contract](../contracts/Circuit-and-transition-contracts.lingua); its full acceptance join remains separate.
+
+Own the electrical model capability profile, mixed event/analog integration and native reusable electrical-model editor. Preserve shared job, signal and schema ownership. After the provider handoff, this leaf may overlap other numerical consumers with separate files and workers; changes to shared clocks, commands or authority serialize through their owner. One real bounded circuit worker proves this package before concurrent solve groups are proposed.
+
+## Ordered work
+
+### Task MSG.T01
+
+- [ ] **MSG.T01.** Pin the installed trusted evaluator and its actually supported compact models, versions, platforms, parameter ranges, initialization and resource limits. Add capability profiles for the selected diode/transistor/switch, analog behavioral and event-driven primitives only after independent reference checks. Expose unsupported models and analyses before Run; parsing a library is not validation. Preserve schematic terminals, footprint pad mappings and simulator terminal ordering separately. Import a bounded unencrypted SPICE model/subcircuit with declared dialect, includes, units and pin mapping; constrain file resolution and reject unsupported control commands or executable extensions. Run an independently specified smoke/reference fixture for each admitted imported model and retain its revision, provenance and reuse terms. Never silently omit a device or replace it with an open circuit.
+
+### Task MSG.T02
+
+- [ ] **MSG.T02.** Implement digital 0/1/X/Z, supported drive strengths, high impedance and a documented multi-driver resolution table. Cover open-drain outputs with a pull-up, competing push-pull drivers and unknown initialization. Contention cannot choose an arbitrary winner. Implement explicit event/analog bridges with supply/reference, threshold and hysteresis rules, finite output impedance and rise/fall assumptions; an imposed logic value is not an unlimited physical source. Choose supported bridges against the actual evaluator. Resolve analog feedback as one solve group or a separately validated iterative exchange. Define same-time ordering, threshold crossings, discontinuities and bounded zero-time iteration on numerical time, independent of render cadence. Accept and publish a step only after convergence; retries roll back candidate state/events without duplicating or losing pulses. Unsupported loops stop with source-mapped diagnostics.
+
+### Task MSG.T03
+
+- [ ] **MSG.T03.** Provide native creation, parameter editing, terminal declaration and reuse of one custom electrical model assembled from admitted declarative primitives/subcircuits. Preview its generated netlist and mapping; save model and testbench separately, with defaults, initial state, validity and observed outputs. This editor does not introduce a universal interpreter or automatically install imported code. Add a bounded local environment source with independently typed scalar illuminance in lux and temperature in kelvin, region/frame/time scope and explicit constant or piecewise input history. Bind a declared sensor transfer law to this imposed stimulus, including calibration provenance, operating range and electrical loading. Prove one illuminance-to-current or resistance model and one temperature-dependent resistance case. These are imposed environmental inputs, not optical transport or thermal solutions; camera exposure, viewport lighting and decorative lights cannot change them unless an explicit supported binding is authored.
+
+### Task MSG.T04
+
+- [ ] **MSG.T04.** Complete native Run/Pause/Step/Reset, schematic probing, digital traces, analog plots and model/status inspection through the real worker. Independently check a truth table, two-driver open-drain wired result and pull-up current, plus contention/unknown cases. Compare an RC threshold crossing against its analytic trajectory and exercise short PWM pulses through the bridge at two solver resolutions and render rates. Verify edge timing, duty, loading and bounded error; a logic-only counterpart must state the electrical effects it omits. Change lux/temperature inputs and confirm the declared transfer law while changing viewport illumination leaves it unchanged. Inject unsupported dialect/pins, nonconvergence, event-limit exhaustion, cancellation, stale model edits and authority loss. Save source/testbench/results, reopen offline without starting execution, and measure native response, sample/event counts, peak resources and release on named hardware.
+
+## Completion and handoff
+
+Publish supported schemas, mappings, truth/resolution tables, transfer laws, units, clock/rollback rules, reference tolerances, actual evaluator integration and measured limits. Preserve failed/partial results with their status. Source/testbench changes invalidate dependent results and require an explicit new run; no stale output becomes current.
+
+Consumers include [Electromechanical devices](Electromechanical-Devices.lingua) and the electronics workbench contract. Cheaper substitutes and live state transfer retain the separate [Numerical transitions](Numerical-Transitions.lingua) obligations. Check affected existing workflows through repository cargo xtask/Nix conventions; retain native and independent numerical evidence before marking any task complete.
+
+Implementation candidates: [ngspice XSPICE](https://ngspice.sourceforge.io/xspice.html), [shared-library interface](https://ngspice.sourceforge.io/shared.html), and [KiCad model assignment](https://docs.kicad.org/10.0/en/eeschema/eeschema.html). These establish prior art, not compatibility or delivered Lince behavior.
+} r_4TFZCTWTAACNYFJ0J247K6WYRZ

@@ -1,0 +1,24 @@
+Stage 179 — Estimate joint loads from a measured motion (@ws-stage-179: 0, is #chapter, #part-of @workspace-stages: 179) { r_51YX3JXRCQVC1CGHS787KF0VE0
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select one bounded inverse-dynamics case with documented segment properties, coordinate frames and measured external inputs.
+
+## Completion checks
+
+- [ ] Compare the claimed joint observable with independent reference data. Expose uncertainty and any underdetermined parameter in the native result.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+**Provider handoffs** [040 · Anatomy](040-annotate-a-structure-on-an-anatomical-reference.lingua) · [142 · Physical Articulation](142-let-physical-joints-drive-an-authored-rig.lingua) · [Selected nonlinear export](../features/Nonlinear.lingua#completion-and-handoff)
+
+[Musculoskeletal and tissue studies](../features/Biomechanics.lingua) · [21.T10](../features/Biomechanics.lingua#task-21t10)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 178](178-simulate-a-strand-attached-to-a-rig.lingua) · [Next · 180](180-predict-motion-for-a-specified-articulated-model.lingua)
+} r_51YX3JXRCQVC1CGHS787KF0VE0

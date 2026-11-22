@@ -1,0 +1,21 @@
+Stage 123 — Edit a firmware program and reload it (@ws-stage-123: 0, is #chapter, #part-of @workspace-stages: 123) { r_6250RX225FCCM324DTT4S8WNCN
+**Status** Pending verification.
+
+## Capability
+
+Expose a bounded compiler and image-load job through the native editor with explicit toolchain, permissions and source identity.
+
+## Completion checks
+
+- [ ] Change the program, build and load it, then observe the changed pin or bus output. A bad build or stale completion preserves the last accepted image.
+
+## Implementation references
+
+[Firmware-backed programmable devices](../features/Firmware-Devices.lingua) · [FWD.T04](../features/Firmware-Devices.lingua#task-fwdt04) · [FWD.T05](../features/Firmware-Devices.lingua#task-fwdt05)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 122](122-run-compiled-firmware-on-a-simulated-device.lingua) · [Next · 124](124-assign-a-physical-material-directly.lingua)
+} r_6250RX225FCCM324DTT4S8WNCN

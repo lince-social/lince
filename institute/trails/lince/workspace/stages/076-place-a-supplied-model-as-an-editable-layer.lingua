@@ -1,0 +1,23 @@
+Stage 076 — Place a supplied model as an editable layer (@ws-stage-076: 0, is #chapter, #part-of @workspace-stages: 76) { r_4CY1QP12PZEDFR1NJ5WNNWMBRR
+**Status** Pending verification.
+
+## Capability
+
+Import a supported mesh or splat as a pinned source, then add an override or overlay with an explicit edit target and placement.
+
+## Completion checks
+
+- [ ] Place two copies of one base in a local scene. Hide part of one, reopen and inspect the source, the untouched copy and the edited occurrence separately.
+
+## Implementation references
+
+**Provider handoffs** [032 · Simplification](032-replace-a-collision-proxy-under-a-resting-object.lingua)
+
+[Imported bases, splats and authored overlays](../features/Imports.lingua) · [09.T01](../features/Imports.lingua#task-09t01)
+
+Use the applicable fixture, tolerances and recovery cases in [09 · Imported base](../contracts/Imported-base-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 075](075-let-a-device-adapt-its-simulation-cost.lingua) · [Next · 077](077-align-a-model-to-measured-points.lingua)
+} r_4CY1QP12PZEDFR1NJ5WNNWMBRR

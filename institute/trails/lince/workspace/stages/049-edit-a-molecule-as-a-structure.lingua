@@ -1,0 +1,23 @@
+Stage 049 — Edit a molecule as a structure (@ws-stage-049: 0, is #chapter, #part-of @workspace-stages: 49) { r_196PXGBV6V6495NY615V7W47NX
+**Status** Pending verification.
+
+## Capability
+
+Open a supported finite-molecule file and select atoms, bonds and conformers by stable identity. Use native numeric and graphical edits and export the declared subset.
+
+## Completion checks
+
+- [ ] Edit a bond in the bounded SDF fixture, reopen and match the selected atoms after reordering. Report unsupported or lost stereochemical information.
+
+## Implementation references
+
+**Provider handoffs** [020 · Assets](020-carry-a-scene-offline-in-a-workspace-package.lingua)
+
+[Structural molecules crystals and proteins](../features/Molecules.lingua) · [12.T01](../features/Molecules.lingua#task-12t01) · [12.T02](../features/Molecules.lingua#task-12t02)
+
+Use the applicable fixture, tolerances and recovery cases in [12 · Molecular structure](../contracts/Molecular-structure-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 048](048-play-as-an-object-in-a-temporary-trial.lingua) · [Next · 050](050-edit-a-periodic-crystal-cell.lingua)
+} r_196PXGBV6V6495NY615V7W47NX

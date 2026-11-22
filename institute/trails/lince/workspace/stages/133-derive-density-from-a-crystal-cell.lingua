@@ -1,0 +1,23 @@
+Stage 133 — Derive density from a crystal cell (@ws-stage-133: 0, is #chapter, #part-of @workspace-stages: 133) { r_76XF99Z01PQSMYGFESSDC6ANV6
+**Status** Pending verification.
+
+## Capability
+
+Count symmetry-expanded sites once, apply occupancies and divide by the declared cell volume. Record input revision, units and theoretical assumptions.
+
+## Completion checks
+
+- [ ] Compare a synthetic cell with an analytic density, vary occupancy and check the recomputed value. A missing atomic mass or invalid cell blocks publication.
+
+## Implementation references
+
+**Provider handoffs** [125 · Materials](125-resolve-material-properties-from-an-offline-evidence-pack.lingua) · [051 · Molecules](051-open-a-protein-as-its-own-workspace.lingua) · [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua)
+
+[Microscopic property derivation](../features/Micro-Properties.lingua) · [17.T01](../features/Micro-Properties.lingua#task-17t01)
+
+Use the applicable fixture, tolerances and recovery cases in [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 132](132-operate-a-complete-programmable-device.lingua) · [Next · 134](134-derive-an-oriented-effective-material-property.lingua)
+} r_76XF99Z01PQSMYGFESSDC6ANV6

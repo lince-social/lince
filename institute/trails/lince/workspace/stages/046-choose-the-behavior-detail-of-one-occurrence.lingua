@@ -1,0 +1,25 @@
+Stage 046 — Choose the behavior detail of one occurrence (@ws-stage-046: 0, is #chapter, #part-of @workspace-stages: 46) { r_6AFXMVBPMYSBADZ816TA20BN1T
+**Status** Pending verification.
+
+## Capability
+
+Show the requested and effective model, its state and its reason for running in the inspector. Preserve required offscreen events within budget.
+
+## Completion checks
+
+- [ ] Reduce one occurrence to its supported functional alternative during a timer, keep a second pinned and compare the event sequence. Verify the visible mesh can be simplified independently.
+
+For the lamp inspector, display the occurrence, requested and effective model, required outputs, current clock, state and admitted cost. Change the mesh detail while watching the event trace, then change the behavior while watching the mesh. Both operations must be inspectably independent.
+
+## Implementation references
+
+[Functional devices and model policy](../features/Functional.lingua) · [07.T11](../features/Functional.lingua#task-07t11)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 045](045-wire-a-functional-sensor-to-a-lamp.lingua) · [Next · 047](047-place-an-object-by-moving-as-it.lingua)
+} r_6AFXMVBPMYSBADZ816TA20BN1T

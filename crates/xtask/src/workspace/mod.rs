@@ -34,6 +34,21 @@ pub(super) fn dispatch(root: &Path, caller: &Path, args: &[OsString]) -> Result<
             );
             Ok(())
         }
+        Some("showcase") if args.len() == 2 => crate::checked(
+            crate::cargo_command()
+                .current_dir(root)
+                .args([
+                    "run",
+                    "--locked",
+                    "-p",
+                    "lince-sandbox",
+                    "--example",
+                    "workspace_scene",
+                    "--",
+                ])
+                .arg(caller.join(&args[1]))
+                .arg("--showcase"),
+        ),
         Some("baseline") if args.len() == 2 => {
             let output = caller.join(&args[1]);
             if output.exists() {
@@ -58,6 +73,7 @@ pub(super) fn dispatch(root: &Path, caller: &Path, args: &[OsString]) -> Result<
             )
         }
         None | Some("help" | "--help" | "-h") if args.len() <= 1 => {
+            println!("cargo xtask workspace showcase <new-output-directory>");
             println!("cargo xtask workspace baseline <new-output-directory>");
             println!("cargo xtask workspace prepare <new-fixture-directory>");
             println!("cargo xtask workspace check <fixture-directory>");

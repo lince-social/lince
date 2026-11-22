@@ -1,0 +1,22 @@
+Stage 150 — Observe motion in a molecular sample (@ws-stage-150: 0, is #chapter, #part-of @workspace-stages: 150) { r_3A6EF82FN6ZRGXF8Y8Y34A1ZJX
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Run an explicitly parameterized trajectory on a bounded sample and retain the clock, ensemble, sampling and uncertainties.
+
+## Completion checks
+
+- [ ] Compare one declared observable against the reference, vary the step and reproduce the stated uncertainty. Keep represented bulk amount independent of particle count.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Molecular and protein physical studies](../features/Molecular-Dynamics.lingua) · [21.T01](../features/Molecular-Dynamics.lingua#task-21t01)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 149](149-minimize-a-bounded-molecular-structure.lingua) · [Next · 151](151-inspect-an-electronic-structure-result.lingua)
+} r_3A6EF82FN6ZRGXF8Y8Y34A1ZJX

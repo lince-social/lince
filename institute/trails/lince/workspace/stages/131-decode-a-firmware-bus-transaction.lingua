@@ -1,0 +1,21 @@
+Stage 131 — Decode a firmware bus transaction (@ws-stage-131: 0, is #chapter, #part-of @workspace-stages: 131) { r_6T53AXR5GJ356VX7AXKMPER3QN
+**Status** Pending verification.
+
+## Capability
+
+Capture actual digital edges with a bounded trigger, export VCD and decode the supported I²C transaction on the same simulated time axis as the firmware.
+
+## Completion checks
+
+- [ ] Inspect a known address and payload, a bad address and a missing pull-up. Reopen the trace and compare decoded edges with the independent bus fixture.
+
+## Implementation references
+
+[Composed electronics workbench acceptance](../features/Electronics-Integration.lingua) · [EBI.T02](../features/Electronics-Integration.lingua#task-ebit02)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 130](130-validate-an-imported-electrical-model.lingua) · [Next · 132](132-operate-a-complete-programmable-device.lingua)
+} r_6T53AXR5GJ356VX7AXKMPER3QN

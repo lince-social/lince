@@ -1,0 +1,23 @@
+Stage 122 — Run compiled firmware on a simulated device (@ws-stage-122: 0, is #chapter, #part-of @workspace-stages: 122) { r_5KVJBDTG28WYAGMXK4DJ3JJH5D
+**Status** Pending verification.
+
+## Capability
+
+Select one real MCU emulator. Load a pinned image, map actual pins, timers, ADC and PWM to the mixed-signal circuit, and isolate flash, RAM and peripherals by occurrence.
+
+## Completion checks
+
+- [ ] Run two devices with known inputs, observe the expected bytes or edges and test reset, power-cycle and the advertised snapshot behavior independently.
+
+## Implementation references
+
+**Provider handoffs** [121 · Mixed Signal Circuits](121-build-a-reusable-electrical-subcircuit.lingua)
+
+[Firmware-backed programmable devices](../features/Firmware-Devices.lingua) · [FWD.T01](../features/Firmware-Devices.lingua#task-fwdt01) · [FWD.T02](../features/Firmware-Devices.lingua#task-fwdt02) · [FWD.T03](../features/Firmware-Devices.lingua#task-fwdt03)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 121](121-build-a-reusable-electrical-subcircuit.lingua) · [Next · 123](123-edit-a-firmware-program-and-reload-it.lingua)
+} r_5KVJBDTG28WYAGMXK4DJ3JJH5D

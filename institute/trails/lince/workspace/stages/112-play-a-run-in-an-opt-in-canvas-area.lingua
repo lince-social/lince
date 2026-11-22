@@ -1,0 +1,21 @@
+Stage 112 — Play a run in an opt-in canvas Area (@ws-stage-112: 0, is #chapter, #part-of @workspace-stages: 112) { r_7GMKV3PF8YE0Y1Y4XME70A1ZHG
+**Status** Planned optional capability. Current verification is pending.
+
+## Capability
+
+Add a separate Kamalie adapter for a delimited Area using existing membership, focus, ports and authority. Bind supported desktop occurrences to scenario roles such as support, obstacle or HUD. Route the built-in Castle’s game loop independently.
+
+## Completion checks
+
+- [ ] Enter the Area, bump a mounted application’s proxy and use a pinned call panel as HUD. Leave or discard the trial and verify the desktop placements, external application input and an outside object. Compare the same bounded run with the isolated Castle.
+
+Keep dungeon rules and build choices in the shared game logic. Translate only named workspace interactions through this adapter. On the same seeded room compare frame time, input response, entity count and accepted edits in the two modes. Keep per-frame simulation local and publish only the selected persistent changes. Karma or attraction can be explicit scene rules when chosen.
+
+## Implementation references
+
+[Verified standalone run](027-play-inside-a-focused-native-castle.lingua) · [Area membership](../features/Areas-Mounts.lingua) · [Trial and controller authority](../features/Possession.lingua) · [Mounted input](../features/Mounted-Apps.lingua)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 111](111-start-a-tour-and-take-back-control.lingua) · [Next · 113](113-find-a-reusable-part-in-a-catalogue.lingua)
+} r_7GMKV3PF8YE0Y1Y4XME70A1ZHG

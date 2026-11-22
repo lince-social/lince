@@ -4,7 +4,7 @@
 // - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 50.
 // - [rustc: unreachable_pub] unreachable `pub` item. Sites 1, 3.
 
-pub const COUNT: usize = 45;
+pub const COUNT: usize = 46;
 
 pub fn source(index: usize) -> &'static str {
     match index {
@@ -53,6 +53,7 @@ pub fn source(index: usize) -> &'static str {
         42 => events_shared(),
         43 => park(),
         44 => keyboard(),
+        45 => floor(),
         _ => panic!("unknown icon index {index}"),
     }
 }
@@ -252,4 +253,8 @@ fn park() -> &'static str {
 
 fn keyboard() -> &'static str {
     r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M5 9h1m3 0h1m3 0h1m3 0h2M5 12h1m3 0h1m3 0h1m3 0h2M7 16h10"/></svg>"##
+}
+
+fn floor() -> &'static str {
+    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 15c4 0 5-8 9-8s4 8 9 8M3 19h18"/></svg>"##
 }

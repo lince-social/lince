@@ -1,0 +1,23 @@
+Stage 125 — Resolve material properties from an offline evidence pack (@ws-stage-125: 0, is #chapter, #part-of @workspace-stages: 125) { r_0BQ3K9SJJNR27WEN4X61ZP3J3T
+**Status** Pending verification.
+
+## Capability
+
+Import versioned property candidates with units, orientation, methodology and applicability. Show conflicts, unknowns and eligibility for the selected constitutive law.
+
+## Completion checks
+
+- [ ] Open the pack offline and inspect an in-range value, an incompatible unit and an unsupported condition. Keep evidence and any user choice attached to the accepted revision.
+
+## Implementation references
+
+[Material properties and offline evidence](../features/Materials.lingua) · [16.T03](../features/Materials.lingua#task-16t03) · [16.T04](../features/Materials.lingua#task-16t04)
+
+Use the applicable fixture, tolerances and recovery cases in [16 · Material property](../contracts/Material-property-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [16 · Material property](../contracts/Material-property-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 124](124-assign-a-physical-material-directly.lingua) · [Next · 126](126-run-a-rigid-body-with-a-joint.lingua)
+} r_0BQ3K9SJJNR27WEN4X61ZP3J3T

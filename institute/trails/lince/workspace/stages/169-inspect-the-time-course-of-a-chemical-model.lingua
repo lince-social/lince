@@ -1,0 +1,22 @@
+Stage 169 — Inspect the time course of a chemical model (@ws-stage-169: 0, is #chapter, #part-of @workspace-stages: 169) { r_5W3NMJ6NZ6DGM948PC0T7HC313
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select a bounded kinetic reference problem with documented inputs and time scale. Publish only the modeled observable and its validity.
+
+## Completion checks
+
+- [ ] Compare the time series and balance against independent data, vary the time step and report uncertainty and cost at the supported conditions.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Chemical multiphase and living-system studies](../features/Chemical-Living.lingua) · [21.T06](../features/Chemical-Living.lingua#task-21t06)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 168](168-inspect-a-chemical-equilibrium-result.lingua) · [Next · 170](170-compare-a-multiphase-transport-result.lingua)
+} r_5W3NMJ6NZ6DGM948PC0T7HC313

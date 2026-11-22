@@ -1,0 +1,22 @@
+Stage 170 — Compare a multiphase transport result (@ws-stage-170: 0, is #chapter, #part-of @workspace-stages: 170) { r_62CYK1A9H1SJDVMBXKMNZ4VS5Q
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Choose one bounded transport problem and define the phases, exchanges, boundary data, time range and observable before implementing the calculation.
+
+## Completion checks
+
+- [ ] Compare the quantity transported and the balance across the interface under refinement. Report missing phase parameters at their source.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Chemical multiphase and living-system studies](../features/Chemical-Living.lingua) · [21.T06](../features/Chemical-Living.lingua#task-21t06)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 169](169-inspect-the-time-course-of-a-chemical-model.lingua) · [Next · 171](171-observe-a-calibrated-growth-model.lingua)
+} r_62CYK1A9H1SJDVMBXKMNZ4VS5Q

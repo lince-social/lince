@@ -1,0 +1,23 @@
+Stage 064 — Build a structure from reusable parts (@ws-stage-064: 0, is #chapter, #part-of @workspace-stages: 64) { r_0E809Q5HQE5Z91J0ZF0E8C48XC
+**Status** Pending verification.
+
+## Capability
+
+Place walls, slabs and openings from shared definitions and relations. Generate plans, sections and elevations from the same accepted geometry.
+
+## Completion checks
+
+- [ ] Move an opening and inspect its new position in plan and section. Save and reopen with the source dimensions and material assignments intact.
+
+## Implementation references
+
+**Provider handoffs** [062 · Exact Assemblies](062-finish-an-exact-part-inside-an-assembly.lingua)
+
+[Building systems, drawings and exchange](../features/Building.lingua) · [11.T02](../features/Building.lingua#task-11t02)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 063](063-read-a-revisioned-quantity-from-a-design.lingua) · [Next · 065](065-exchange-a-building-and-a-linked-issue.lingua)
+} r_0E809Q5HQE5Z91J0ZF0E8C48XC

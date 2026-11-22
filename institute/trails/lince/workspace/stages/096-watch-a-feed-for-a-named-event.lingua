@@ -1,0 +1,21 @@
+Stage 096 — Watch a feed for a named event (@ws-stage-096: 0, is #chapter, #part-of @workspace-stages: 96) { r_1W7Z4XJ8Q2JT33PMH2TRG0GBJQ
+**Status** Pending verification.
+
+## Capability
+
+Configure the target, predicate, cadence, model, destination and spend limit. Handle incomparable timestamps and missing views when a watch combines cameras.
+
+## Completion checks
+
+- [ ] Trigger the fixture event, introduce a skewed second feed and stop the watch. Inspect event times, confidence, coverage and model or decode work after stopping.
+
+## Implementation references
+
+[Fiote vision tasks and event watches](../features/Vision-Tasks.lingua) · [VSN.T02](../features/Vision-Tasks.lingua#task-vsnt02) · [VSN.T03](../features/Vision-Tasks.lingua#task-vsnt03) · [VSN.T04](../features/Vision-Tasks.lingua#task-vsnt04)
+
+Use the applicable fixture, tolerances and recovery cases in [Camera feeds and Fiote vision](../contracts/Camera-vision-contracts.lingua#canonical-fixture-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 095](095-let-fiote-inspect-a-live-frame.lingua) · [Next · 097](097-create-a-model-layer-from-one-observation.lingua)
+} r_1W7Z4XJ8Q2JT33PMH2TRG0GBJQ

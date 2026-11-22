@@ -1,0 +1,22 @@
+Stage 164 — Measure a circuit’s layout parasitics (@ws-stage-164: 0, is #chapter, #part-of @workspace-stages: 164) { r_20JN7ERTA265HNB3P4HPGT68DZ
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Choose one supported parasitic quantity on an already routed fixture. Record material, geometry, reference terminals, frequency range and extraction settings.
+
+## Completion checks
+
+- [ ] Compare the extracted value with an independent reference and the circuit response with the model enabled. Identify unsupported layers or geometry at the source.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Electrothermal and specialist device physics](../features/Device-Physics.lingua) · [21.T05](../features/Device-Physics.lingua#task-21t05)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 163](163-feed-a-temperature-change-back-into-a-circuit.lingua) · [Next · 165](165-inspect-an-electromagnetic-field-on-a-device.lingua)
+} r_20JN7ERTA265HNB3P4HPGT68DZ

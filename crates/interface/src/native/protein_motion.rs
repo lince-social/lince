@@ -7,41 +7,20 @@
 // - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
 //   Sites unwrap (80).
 
+#[cfg(test)]
+mod area_tests;
+mod forces;
+use forces::forces;
+
+pub use crate::native::area::graph_layout::Settings;
 use crate::native::{area::InfluenceArea, canvas::CanvasItem, protein_area::RecordBinding};
+use crate::native::{arrow_sand::ArrowSand, topology, workspace::WorkspaceMember};
 use bevy::{
-    math::{DQuat, DVec3},
+    ecs::query::QueryState,
+    math::{DQuat, DVec2, DVec3},
     prelude::*,
 };
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Settings {
-    pub center: f64,
-    pub repulsion: f64,
-    pub cooling: f64,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            center: 4.0,
-            repulsion: 1600.0,
-            cooling: 0.8,
-        }
-    }
-}
-
-impl Settings {
-    pub fn valid(&self) -> bool {
-        self.center.is_finite()
-            && (0.0..=100.0).contains(&self.center)
-            && self.repulsion.is_finite()
-            && (0.0..=100_000.0).contains(&self.repulsion)
-            && self.cooling.is_finite()
-            && (0.1..=10.0).contains(&self.cooling)
-    }
-}
 
 #[derive(Clone, PartialEq)]
 struct Member {
@@ -70,120 +49,173 @@ pub(crate) struct Motion {
 }
 
 pub(crate) fn prepare(world: &mut World) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeProteinMotionPrepare);
+    let _timing = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeProteinMotionPrepare,
+    );
+    world
+        .run_system_cached(prepare_graphs)
+        .expect("prepare Area graph layouts");
+}
+
+type Cards = QueryState<
+    (
+        Entity,
+        &'static CanvasItem,
+        &'static ChildOf,
+        &'static WorkspaceMember,
+        Option<&'static RecordBinding>,
+    ),
+    (
+        Without<InfluenceArea>,
+        Without<ArrowSand>,
+        Without<topology::terrain::Effect>,
+        Without<crate::native::canvas_item::Ephemeral>,
+        Without<crate::native::protein_area::placement::Pending>,
+        Without<crate::native::time_castle::AttachedCard>,
+    ),
+>;
+
+fn prepare_graphs(
+    world: &mut World,
+    sources: &mut QueryState<(
+        Entity,
+        &'static InfluenceArea,
+        &'static ChildOf,
+        &'static WorkspaceMember,
+    )>,
+    items: &mut Cards,
+    arrows: &mut QueryState<&'static ArrowSand>,
+    blocker_query: &mut topology::influence::BlockerQuery,
+) {
     let mut motion = world.remove_resource::<Motion>().unwrap_or_default();
     motion.forces.clear();
-    let sources: HashMap<_, _> = world
-        .query::<(Entity, &InfluenceArea)>()
+    let owners: Vec<_> = sources
         .iter(world)
-        .filter_map(|(owner, area)| {
-            area.protein
-                .as_ref()
-                .filter(|config| {
-                    area.enabled
-                        && area.attraction_enabled
-                        && config.enabled
-                        && config.motion.is_some()
-                        && config.valid()
-                })
-                .map(|config| (owner, config.motion.clone().unwrap()))
+        .filter(|(entity, area, parent, member)| {
+            area.graph_settings().is_some_and(Settings::valid)
+                && area.attraction_enabled
+                && area.protein.as_ref().is_none_or(|p| p.enabled)
+                && topology::holes::live(world, parent.parent(), member.0)
+                && crate::native::workspace_config::enabled(world, parent.parent(), member.0)
+                && crate::native::influence_report::activity(
+                    world,
+                    *entity,
+                    area,
+                    parent.parent(),
+                    member.0,
+                ) == crate::native::influence_report::Outcome::Active
         })
+        .map(|(entity, _, parent, member)| (entity, parent.parent(), member.0))
         .collect();
-    if sources.is_empty() {
-        motion.states.clear();
+    motion
+        .states
+        .retain(|owner, _| owners.iter().any(|(entity, ..)| entity == owner));
+    if owners.is_empty() {
         world.insert_resource(motion);
         return;
     }
     let held_items = crate::native::physics::HeldItems::capture(world);
-    let mut groups: HashMap<Entity, Vec<Member>> = HashMap::new();
-    for (entity, item, binding, parent, workspace) in world
-        .query::<(
-            Entity,
-            &CanvasItem,
-            &RecordBinding,
-            &ChildOf,
-            &crate::native::workspace::WorkspaceMember,
-        )>()
-        .iter(world)
-    {
-        if crate::native::topology::rooms::fixed(world, entity)
-            || !sources.contains_key(&binding.area)
-            || world
-                .get::<crate::native::arrow_sand::ArrowSand>(entity)
-                .is_some()
-            || world
-                .get::<crate::native::protein_area::placement::Pending>(entity)
-                .is_some()
-            || world.get::<ChildOf>(binding.area).map(ChildOf::parent) != Some(parent.parent())
-            || world.get::<crate::native::workspace::WorkspaceMember>(binding.area)
-                != Some(workspace)
-            || !crate::native::topology::holes::live(world, parent.parent(), workspace.0)
-            || !crate::native::workspace_config::enabled(world, parent.parent(), workspace.0)
-        {
-            continue;
-        }
-        let spatial = crate::native::topology::spatial(world, entity);
-        let position = spatial.position(item.position);
-        if !position.is_finite() || !item.size.is_finite() {
-            continue;
-        }
-        let held = spatial.world_pinned
-            || world
-                .get::<crate::native::sand_placement::Pinned>(entity)
-                .is_some()
-            || held_items.contains(world, entity)
-            || crate::native::area_mutation::pending(world, entity)
-            || world
-                .get_resource::<crate::native::topology::input::PointerState>()
-                .is_some_and(|pointer| pointer.drag.is_some_and(|(drag, _)| drag == entity));
-        let scale = world
-            .get::<crate::native::area_effects::AreaScale>(entity)
-            .map_or(1.0, |scale| scale.0);
-        let revision = world
-            .entity(entity)
-            .get_ref::<crate::native::area::RecordProperties>()
-            .map_or(0, |record| record.last_changed().get());
-        groups.entry(binding.area).or_default().push(Member {
-            entity,
-            position,
-            size: item.size * scale,
-            rotation: spatial.rotation,
-            held,
-            revision,
-        });
-    }
-    let mut links: HashMap<Entity, Vec<(Entity, Entity)>> = HashMap::new();
-    for (link, arrow) in world
-        .query::<(
-            &crate::native::relation_castle::RelationLink,
-            &crate::native::arrow_sand::ArrowSand,
-        )>()
-        .iter(world)
-    {
-        if sources.contains_key(&link.owner) {
-            let pair = if arrow.from < arrow.to {
-                (arrow.from, arrow.to)
-            } else {
-                (arrow.to, arrow.from)
-            };
-            links.entry(link.owner).or_default().push(pair);
-        }
-    }
-    motion.states.retain(|owner, _| groups.contains_key(owner));
     let dt = world
         .get_resource::<Time<Real>>()
-        .map_or(1.0 / 60.0, |time| time.delta_secs_f64())
-        .max(0.0);
-    for (owner, mut members) in groups {
+        .map_or(1.0 / 60.0, Time::delta_secs_f64)
+        .min(8.0 / 120.0);
+    for (owner, root, workspace) in owners {
+        let area = world.get::<InfluenceArea>(owner).unwrap();
+        let settings = *area.graph_settings().unwrap();
+        let plane = topology::spatial(world, owner);
+        let origin = DVec2::from_array(area.center);
+        let offset = area.target_position() - origin;
+        let rotation = plane.rotation();
+        let center = plane.position(origin) + rotation * DVec3::new(offset.x, 0.0, offset.y);
+        let blockers = topology::influence::Blockers::prepare(
+            world,
+            blocker_query,
+            root,
+            workspace,
+            owner,
+            true,
+        );
+        let filter = world.get::<crate::native::protein_area::filter::Matches>(owner);
+        let source_group = world.get::<crate::native::canvas_selection::SandGroup>(owner);
+        let mut members = Vec::new();
+        for (entity, stored, parent, member, binding) in items.iter(world) {
+            if parent.parent() != root
+                || member.0 != workspace
+                || area.protein.is_some() && !binding.is_some_and(|b| b.area == owner)
+                || topology::rooms::fixed(world, entity)
+                || source_group.is_some()
+                    && world.get::<crate::native::canvas_selection::SandGroup>(entity)
+                        == source_group
+            {
+                continue;
+            }
+            let item = crate::native::canvas::presented(world, entity).unwrap_or(*stored);
+            let spatial = crate::native::canvas::presented_spatial(world, entity);
+            let position = spatial.position(item.position);
+            let record = world.get::<crate::native::area::RecordProperties>(entity);
+            let point = topology::participation_point(world, entity, &item);
+            if !position.is_finite()
+                || !item.size.is_finite()
+                || blockers.blocks(point, record, binding)
+            {
+                continue;
+            }
+            if area.protein.is_none() {
+                let relative = plane.local_point(origin, point);
+                if area.reach.mode == crate::native::area::ReachMode::Limited
+                    && (relative.y < -area.depth - 1e-7
+                        || relative.y > 1e-7
+                        || !area.reaches(origin + DVec2::new(relative.x, relative.z)))
+                {
+                    continue;
+                }
+            }
+            if area.filter.is_some() {
+                if !record.is_some_and(|r| filter.is_some_and(|f| f.allows(r, binding))) {
+                    continue;
+                }
+            } else if !area.rules.is_empty() && !record.is_some_and(|r| area.matches(r)) {
+                continue;
+            }
+            let held = spatial.world_pinned
+                || world
+                    .get::<crate::native::sand_placement::Pinned>(entity)
+                    .is_some()
+                || held_items.contains(world, entity)
+                || crate::native::area_mutation::pending(world, entity)
+                || world
+                    .get::<crate::native::canvas::ItemPreview>(entity)
+                    .is_some()
+                || world
+                    .get_resource::<topology::input::PointerState>()
+                    .is_some_and(|p| p.drag.is_some_and(|(drag, _)| drag == entity));
+            let scale = world
+                .get::<crate::native::area_effects::AreaScale>(entity)
+                .map_or(1.0, |scale| scale.0);
+            let revision = world
+                .entity(entity)
+                .get_ref::<crate::native::area::RecordProperties>()
+                .map_or(0, |r| r.last_changed().get());
+            members.push(Member {
+                entity,
+                position,
+                size: item.size * scale,
+                rotation: spatial.rotation,
+                held,
+                revision,
+            });
+        }
         members.sort_by_key(|member| member.entity);
-        let mut edges = links.remove(&owner).unwrap_or_default();
+        let ids: std::collections::HashSet<_> = members.iter().map(|m| m.entity).collect();
+        let mut edges: Vec<_> = arrows
+            .iter(world)
+            .filter(|arrow| ids.contains(&arrow.from) && ids.contains(&arrow.to))
+            .map(|arrow| (arrow.from.min(arrow.to), arrow.from.max(arrow.to)))
+            .collect();
         edges.sort_unstable();
         edges.dedup();
-        let settings = sources[&owner].clone();
-        let center = crate::native::topology::position(world, owner).unwrap_or_default();
-        let rotation = crate::native::topology::spatial(world, owner).rotation();
         let state = motion.states.entry(owner).or_insert_with(|| State {
-            settings: settings.clone(),
+            settings,
             center,
             rotation,
             members: Vec::new(),
@@ -220,7 +252,9 @@ pub(crate) fn prepare(world: &mut World) {
             state.alpha,
         );
         motion.evaluations += 1;
-        motion.forces.extend(forces);
+        for (entity, force) in forces {
+            *motion.forces.entry(entity).or_default() += force;
+        }
     }
     world.insert_resource(motion);
 }
@@ -251,85 +285,15 @@ pub(crate) fn room_transform(
     world.insert_resource(motion);
 }
 
-fn forces(
-    members: &[Member],
-    links: &[(Entity, Entity)],
-    center: DVec3,
-    rotation: DQuat,
-    settings: &Settings,
-    alpha: f64,
-) -> Vec<(Entity, DVec3)> {
-    let mut forces: Vec<_> = members
-        .iter()
-        .map(|member| (center - member.position) * settings.center)
-        .collect();
-    if settings.repulsion > 0.0 {
-        let inverse = rotation.inverse();
-        let radii: Vec<_> = members.iter().map(|member| member.size.length()).collect();
-        for first in 0..members.len() {
-            for second in first + 1..members.len() {
-                let mut delta = inverse * (members[first].position - members[second].position);
-                delta.y = 0.0;
-                let distance = delta.length();
-                let direction = if distance > 1e-6 {
-                    delta / distance
-                } else {
-                    let angle = (first * 17 + second * 31) as f64 * 2.399963229728653;
-                    DVec3::new(angle.cos(), 0.0, angle.sin())
-                };
-                let spacing = f64::from((radii[first] + radii[second]) * 0.5) + 40.0;
-                let force = (rotation * direction)
-                    * (settings.repulsion * spacing.powi(2) / distance.max(spacing * 0.25).powi(2))
-                        .min(100_000.0);
-                forces[first] += force;
-                forces[second] -= force;
-            }
-        }
-    }
-    let indices: HashMap<_, _> = if links.is_empty() {
-        HashMap::new()
-    } else {
-        members
-            .iter()
-            .enumerate()
-            .map(|(index, member)| (member.entity, index))
-            .collect()
-    };
-    for (from, to) in links {
-        let (Some(&first), Some(&second)) = (indices.get(from), indices.get(to)) else {
-            continue;
-        };
-        let delta = members[second].position - members[first].position;
-        let distance = delta.length();
-        let spacing =
-            f64::from((members[first].size.length() + members[second].size.length()) * 0.5) + 40.0;
-        let force = delta.normalize_or_zero() * ((distance - spacing) * 8.0);
-        forces[first] += force;
-        forces[second] -= force;
-    }
-    members
-        .iter()
-        .zip(forces)
-        .map(|(member, force)| {
-            (
-                member.entity,
-                if member.held {
-                    DVec3::ZERO
-                } else {
-                    (force * alpha).clamp_length_max(100_000.0)
-                },
-            )
-        })
-        .collect()
-}
-
 pub(crate) fn remember(world: &mut World) {
     let Some(mut motion) = world.remove_resource::<Motion>() else {
         return;
     };
     for state in motion.states.values_mut() {
         for member in &mut state.members {
-            if let Some(position) = crate::native::topology::position(world, member.entity) {
+            if !member.held
+                && let Some(position) = crate::native::topology::position(world, member.entity)
+            {
                 member.position = position;
             }
         }
@@ -383,13 +347,7 @@ mod tests {
             .spawn(crate::native::workspace::Workspaces::default())
             .id();
         let owner = crate::native::relation_castle::spawn(&mut world, root).unwrap();
-        world
-            .get_mut::<InfluenceArea>(owner)
-            .unwrap()
-            .protein
-            .as_mut()
-            .unwrap()
-            .motion = Some(Settings::default());
+        world.get_mut::<InfluenceArea>(owner).unwrap().graph_layout = Some(Settings::default());
         let row = record(&mut world, root, owner, 0, DVec2::new(300.0, 100.0));
         prepare(&mut world);
         world
@@ -439,20 +397,14 @@ mod tests {
             .spawn(crate::native::workspace::Workspaces::default())
             .id();
         let owner = crate::native::relation_castle::spawn(&mut world, root).unwrap();
-        world
-            .get_mut::<InfluenceArea>(owner)
-            .unwrap()
-            .protein
-            .as_mut()
-            .unwrap()
-            .motion = Some(Settings {
+        world.get_mut::<InfluenceArea>(owner).unwrap().graph_layout = Some(Settings {
             center: 0.0,
             repulsion: 0.0,
             ..default()
         });
         let first = record(&mut world, root, owner, 0, DVec2::new(-500.0, 0.0));
         let second = record(&mut world, root, owner, 1, DVec2::new(500.0, 0.0));
-        for _ in 0..400 {
+        for _ in 0..700 {
             prepare(&mut world);
         }
         assert_eq!(world.resource::<Motion>().states[&owner].alpha, 0.0);
@@ -649,7 +601,7 @@ mod tests {
             ));
         }
         let other = record(&mut world, root, second_owner, 0, DVec2::new(100.0, 0.0));
-        for _ in 0..400 {
+        for _ in 0..700 {
             prepare(&mut world);
             remember(&mut world);
         }

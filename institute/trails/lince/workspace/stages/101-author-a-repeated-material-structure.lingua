@@ -1,0 +1,21 @@
+Stage 101 — Author a repeated material structure (@ws-stage-101: 0, is #chapter, #part-of @workspace-stages: 101) { r_6XZGN8XGYKA6WKY4DDB0VY9GBX
+**Status** Pending verification.
+
+## Capability
+
+Build the bounded laminate or lattice geometry profile with explicit cell or layer dimensions, orientations and material references.
+
+## Completion checks
+
+- [ ] Change one spacing or layer thickness, regenerate the structure and inspect its dimensions and source assignments after reopen.
+
+## Implementation references
+
+[Manufacturing and civil geometry profiles](../features/Manufacturing-Civil.lingua) · [11.T04](../features/Manufacturing-Civil.lingua#task-11t04)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 100](100-unfold-a-sheet-metal-part.lingua) · [Next · 102](102-exchange-a-toleranced-manufacturing-drawing.lingua)
+} r_6XZGN8XGYKA6WKY4DDB0VY9GBX

@@ -1,0 +1,21 @@
+Stage 119 — Run a repeatable circuit experiment (@ws-stage-119: 0, is #chapter, #part-of @workspace-stages: 119) { r_32AXXFJGZCZ5VBMBFDQQ89WWMN
+**Status** Pending verification.
+
+## Capability
+
+Save an input timeline, assertions, overrides, tolerances and a finite parameter sweep on an identified circuit revision.
+
+## Completion checks
+
+- [ ] Sweep a resistor across known RC responses, compare runs and adopt one value explicitly. Reopen the experiment and reproduce the independent pass and fail cases.
+
+## Implementation references
+
+[Electronic instruments and repeatable experiments](../features/Electronics-Workbench.lingua) · [EWB.T04](../features/Electronics-Workbench.lingua#task-ewbt04) · [EWB.T05](../features/Electronics-Workbench.lingua#task-ewbt05)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 118](118-diagnose-a-circuit-fault.lingua) · [Next · 120](120-run-analog-and-digital-parts-on-one-clock.lingua)
+} r_32AXXFJGZCZ5VBMBFDQQ89WWMN

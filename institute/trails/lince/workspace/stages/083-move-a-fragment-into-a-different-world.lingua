@@ -1,0 +1,21 @@
+Stage 083 — Move a fragment into a different world (@ws-stage-083: 0, is #chapter, #part-of @workspace-stages: 83) { r_31QGFAQE999CSX1AHZ7GR5NF54
+**Status** Pending verification.
+
+## Capability
+
+Extract a selected region with permitted assets, support, attribution and rebased frame. Place a shared instance and an editable copy in an unrelated scene.
+
+## Completion checks
+
+- [ ] Cut across a source boundary, reopen the fragment offline, place it twice in a fictional world and edit one copy independently.
+
+## Implementation references
+
+[Curated scenes, regional refinement and reusable places](../features/World-Composition.lingua) · [WCO.T09](../features/World-Composition.lingua#task-wcot09)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 082](082-replace-a-selected-region-of-a-place.lingua) · [Next · 084](084-travel-from-a-globe-to-a-local-place.lingua)
+} r_31QGFAQE999CSX1AHZ7GR5NF54

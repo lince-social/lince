@@ -8,6 +8,7 @@
 
 use crate::native::canvas::{CanvasItem, CanvasView};
 use crate::native::canvas_resize::{Edges, Resize, ResizeCursor};
+use crate::native::edit_mode::scene::bridge;
 use bevy::{
     camera::NormalizedRenderTarget,
     ecs::entity::ContainsEntity,
@@ -16,7 +17,9 @@ use bevy::{
         PickingSystems,
         events::pointer_events,
         hover::{HoverMap, generate_hovermap, update_interactions},
-        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPressState},
+        pointer::{
+            Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPressState,
+        },
     },
     prelude::*,
     window::{CursorIcon, WindowEvent},
@@ -39,6 +42,17 @@ struct Gesture {
     item: Option<Entity>,
     last: Location,
     resize: Option<Resize>,
+    bridge: bool,
+}
+
+impl CanvasPan {
+    fn finish(&mut self, commands: &mut Commands, commit: bool) {
+        if let Some(gesture) = self.0.take()
+            && gesture.bridge
+        {
+            commands.queue(move |world: &mut World| bridge::finish(world, gesture.view, commit));
+        }
+    }
 }
 
 pub struct CanvasPanPlugin;
@@ -82,7 +96,7 @@ fn pan(
         ),
         Without<crate::native::time_castle::AttachedCard>,
     >,
-    modes: Query<&crate::native::edit_mode::EditMode>,
+    modes: Query<(&crate::native::edit_mode::EditMode, Has<bridge::Connected>)>,
     parents: Query<&ChildOf>,
     mut pointers: Query<(&PointerId, &mut PointerPressState)>,
     mut focus: ResMut<InputFocus>,
@@ -102,16 +116,16 @@ fn pan(
         if matches!(event, WindowEvent::WindowFocused(event) if !event.focused)
             || matches!(event, WindowEvent::CursorLeft(_))
         {
-            gesture.0 = None;
+            gesture.finish(&mut commands, false);
             gesture.1 = None;
         }
     }
     if gesture.0.as_ref().is_some_and(|active| {
         active.button == PointerButton::Primary
             && active.item.is_some()
-            && !modes.get(active.view).is_ok_and(|mode| mode.enabled)
+            && !modes.get(active.view).is_ok_and(|(mode, _)| mode.enabled)
     }) {
-        gesture.0 = None;
+        gesture.finish(&mut commands, false);
     }
     let control = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
     let mut consumed = false;
@@ -123,7 +137,7 @@ fn pan(
         gesture.1 = Some(event.location.clone());
         match event.action {
             PointerAction::Press(button @ (PointerButton::Primary | PointerButton::Secondary)) => {
-                gesture.0 = None;
+                gesture.finish(&mut commands, false);
                 let hit = hover.get(&PointerId::Mouse).and_then(|hits| {
                     hits.iter()
                         .min_by(|(_, a), (_, b)| a.depth.total_cmp(&b.depth))
@@ -150,7 +164,7 @@ fn pan(
                                 !managed.get(entity).is_ok_and(|managed| !managed.floating)
                             })
                             && (button == PointerButton::Secondary
-                                || modes.get(candidate).is_ok_and(|mode| mode.enabled));
+                                || modes.get(candidate).is_ok_and(|(mode, _)| mode.enabled));
                         if (candidate == hit || control && sand.is_some() || moving)
                             && view.center.is_finite()
                             && view.zoom.is_finite()
@@ -205,7 +219,16 @@ fn pan(
                             } else {
                                 None
                             };
+                            let bridge = moving
+                                && resize.is_none()
+                                && modes.get(candidate).is_ok_and(|(_, connected)| connected);
+                            if bridge && let Some(entity) = sand {
+                                commands.queue(move |world: &mut World| {
+                                    bridge::begin(world, candidate, entity);
+                                });
+                            }
                             gesture.0 = Some(Gesture {
+                                bridge,
                                 button,
                                 view: candidate,
                                 item: if moving { sand } else { None },
@@ -231,19 +254,19 @@ fn pan(
                 if event.location.target != active.last.target
                     || !event.location.position.is_finite()
                 {
-                    gesture.0 = None;
+                    gesture.finish(&mut commands, false);
                     continue;
                 }
                 let Ok(mut view) = views.get_mut(active.view) else {
-                    gesture.0 = None;
+                    gesture.finish(&mut commands, false);
                     continue;
                 };
                 let delta = (event.location.position - active.last.position).as_dvec2();
                 if let Some(entity) = active.item {
                     if active.button == PointerButton::Primary
-                        && !modes.get(active.view).is_ok_and(|mode| mode.enabled)
+                        && !modes.get(active.view).is_ok_and(|(mode, _)| mode.enabled)
                     {
-                        gesture.0 = None;
+                        gesture.finish(&mut commands, false);
                         continue;
                     }
                     if !parents
@@ -253,11 +276,11 @@ fn pan(
                             .get(entity)
                             .is_ok_and(|(_, _, node)| node.display == Display::None)
                     {
-                        gesture.0 = None;
+                        gesture.finish(&mut commands, false);
                         continue;
                     }
                     let Ok((mut item, mut pin, area, scale)) = items.get_mut(entity) else {
-                        gesture.0 = None;
+                        gesture.finish(&mut commands, false);
                         continue;
                     };
                     let zoom = pin.as_ref().map_or(view.zoom, |pin| pin.scale);
@@ -270,7 +293,7 @@ fn pan(
                     let original = item.position;
                     if let Some(resize) = &active.resize {
                         if resize.zoom != zoom || resize.scale != scale {
-                            gesture.0 = None;
+                            gesture.finish(&mut commands, false);
                             continue;
                         }
                         if let Some(resized) = if area.as_ref().is_some_and(|area| {
@@ -318,11 +341,11 @@ fn pan(
                     .as_ref()
                     .is_some_and(|active| active.button == button) =>
             {
-                gesture.0 = None;
+                gesture.finish(&mut commands, true);
                 event.action = PointerAction::Cancel;
                 consumed = true;
             }
-            PointerAction::Cancel => gesture.0 = None,
+            PointerAction::Cancel => gesture.finish(&mut commands, false),
             _ => {}
         }
     }
@@ -359,7 +382,7 @@ fn pan(
                     sand = Some(entity);
                 }
                 if let Ok(view) = views.get(entity) {
-                    if modes.get(entity).is_ok_and(|mode| mode.enabled)
+                    if modes.get(entity).is_ok_and(|(mode, _)| mode.enabled)
                         && let Some(sand) = sand
                         && let Ok((item, pin, _, scale)) = items.get(sand)
                     {

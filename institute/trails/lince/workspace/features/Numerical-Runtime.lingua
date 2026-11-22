@@ -54,4 +54,7 @@ Pass relevant independent correctness/security/performance checks and native acc
 Consumers: [Powered circuit and mixed functional signals](Powered-Circuit.lingua); [Microscopic property derivation](Micro-Properties.lingua); [Independent microscopic laboratory](Laboratory.lingua); [Rigid bodies joints and authored forces](Rigid.lingua); [Verified elasticity and thermal models](Continuum.lingua); [Astronomical dynamics and scientific time](Astronomy.lingua)
 
 Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+
+Additional independent consumers: [Electronic instruments and experiments](Electronics-Workbench.lingua) and [Mixed-signal circuits](Mixed-Signal-Circuits.lingua). Publish actual settled observations, source/branch mapping, reference/sign conventions, clock/time status, bounded result subscriptions, failure/cancel and explicit supported parameter-change semantics. Their expanded instruments/models reuse this worker rather than extending the first DC/RC gate into a full electronics simulator. Firmware follows Mixed signal; its implementation does not wait for thermal physics.
+
 } r_4NWCAC5H4BXXNPB17PH918T7PA

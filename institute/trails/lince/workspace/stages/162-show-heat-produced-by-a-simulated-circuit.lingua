@@ -1,0 +1,24 @@
+Stage 162 — Show heat produced by a simulated circuit (@ws-stage-162: 0, is #chapter, #part-of @workspace-stages: 162) { r_677B5ND1PMD0CH45BA9V1YFRQY
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Map admitted electrical losses to a thermal region with explicit units and energy accounting. Keep independently authored illumination on its own behavior setting.
+
+## Completion checks
+
+- [ ] Change load on the bounded B44 device and verify the mapped heat against the electrical and thermal balances. A decorative glow has only its authored effects.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+**Provider handoffs** [075 · Circuit Policy](075-let-a-device-adapt-its-simulation-cost.lingua) · [Selected coupled physics export](../features/Coupled-Physics.lingua#completion-and-handoff)
+
+[Electrothermal and specialist device physics](../features/Device-Physics.lingua) · [21.T05](../features/Device-Physics.lingua#task-21t05)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 161](161-inspect-a-bounded-acoustic-response.lingua) · [Next · 163](163-feed-a-temperature-change-back-into-a-circuit.lingua)
+} r_677B5ND1PMD0CH45BA9V1YFRQY

@@ -1411,6 +1411,10 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
     if let Some(row) = world.get::<Row>(entity) {
         let owner = row.area;
         let config = row.config.clone();
+        let graph = world
+            .get::<InfluenceArea>(owner)
+            .and_then(InfluenceArea::graph_settings)
+            .is_some();
         if world.get::<super::placement::Placed>(entity).is_none() {
             let area = world.get::<InfluenceArea>(owner).unwrap();
             let center = DVec2::from_array(area.center);
@@ -1418,7 +1422,7 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
             let offset = position - center;
             let fallback = spatial.position(center)
                 + spatial.rotation() * bevy::math::DVec3::new(offset.x, 0.0, offset.y);
-            let fallback = if config.motion.is_some() {
+            let fallback = if graph {
                 crate::native::record_presentation::position(world, entity).unwrap_or_else(|| {
                     let angle = row.index as f64 * 2.399963229728653;
                     let radius = (row.index as f64 + 1.0).sqrt() * f64::from(config.width);
@@ -1439,7 +1443,7 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
                 return;
             };
             super::placement::finish(world, entity, point);
-            if config.motion.is_some()
+            if graph
                 || config.placement == super::SpawnPlacement::Source
                 || world.get::<super::placement::RoomFrame>(entity).is_some()
             {
@@ -1468,7 +1472,7 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
                 crate::native::topology::groups::attach(world, &members);
             }
         }
-        if (config.placement != super::SpawnPlacement::Source || config.motion.is_some())
+        if (config.placement != super::SpawnPlacement::Source || graph)
             && world
                 .get::<crate::native::layout::LayoutBox>(entity)
                 .is_none()
@@ -1560,7 +1564,12 @@ pub(super) fn room_frame(world: &World, entity: Entity) -> Option<Entity> {
         .get::<Row>(entity)
         .map(|row| row.config.as_ref())
         .or_else(|| world.get::<InfluenceArea>(binding.area)?.protein.as_ref())?;
-    let owner = if config.motion.is_some() || config.placement == super::SpawnPlacement::Source {
+    let owner = if world
+        .get::<InfluenceArea>(binding.area)
+        .and_then(InfluenceArea::graph_settings)
+        .is_some()
+        || config.placement == super::SpawnPlacement::Source
+    {
         binding.area
     } else {
         world.get::<super::placement::RoomFrame>(entity)?.0
@@ -1573,7 +1582,11 @@ pub(super) fn room_frame(world: &World, entity: Entity) -> Option<Entity> {
 
 pub(super) fn room_fixed(world: &World, entity: Entity) -> bool {
     world.get::<Row>(entity).is_some_and(|row| {
-        row.config.motion.is_none() && row.config.placement == super::SpawnPlacement::Source
+        world
+            .get::<InfluenceArea>(row.area)
+            .and_then(InfluenceArea::graph_settings)
+            .is_none()
+            && row.config.placement == super::SpawnPlacement::Source
     })
 }
 

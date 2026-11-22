@@ -1,0 +1,23 @@
+Stage 088 — Visit the same place from two different devices (@ws-stage-088: 0, is #chapter, #part-of @workspace-stages: 88) { r_4Q5SBSHA1RWKWRFA6E020GYG0A
+**Status** Pending verification.
+
+## Capability
+
+Use actual entry estimates and runtime caps to host the street, house and ball for an editor and a restricted visitor with independent views and detail.
+
+## Completion checks
+
+- [ ] Walk the route on both clients, edit as the authorized participant, revoke a grant and reconnect. Check published fields, input ownership and each device’s peak costs.
+
+## Implementation references
+
+**Provider handoffs** [087 · Offline City](087-find-and-revisit-a-place-within-a-city-budget.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua) · [036 · Character Starter](036-customize-one-characters-appearance.lingua)
+
+[Hosted world and offline publication joins](../features/Hosted-World.lingua) · [05.T11](../features/Hosted-World.lingua#task-05t11) · [05.T12](../features/Hosted-World.lingua#task-05t12)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 087](087-find-and-revisit-a-place-within-a-city-budget.lingua) · [Next · 089](089-take-an-authorized-copy-of-a-hosted-place-offline.lingua)
+} r_4Q5SBSHA1RWKWRFA6E020GYG0A

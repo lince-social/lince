@@ -1,0 +1,23 @@
+Stage 041 — Furnish a room with Fiote and continue by hand (@ws-stage-041: 0, is #chapter, #part-of @workspace-stages: 41) { r_4KFV9XNMZDX5N7861HZEDS46CT
+**Status** Pending verification.
+
+## Capability
+
+Give the Agent a bounded room selection and real permitted assets. Submit the same model edits as the native authoring controls and return stable receipts.
+
+## Completion checks
+
+- [ ] Let Fiote place furniture, cancel an outstanding request, move one created object manually and reopen the result.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua) · [017 · Agent Context](017-give-fiote-the-context-of-a-selection.lingua)
+
+[Agent authoring and native continuation](../features/Agent-Authoring.lingua) · [07.T08](../features/Agent-Authoring.lingua#task-07t08)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 040](040-annotate-a-structure-on-an-anatomical-reference.lingua) · [Next · 042](042-keep-a-character-controllable-while-anatomical-detail-unloads.lingua)
+} r_4KFV9XNMZDX5N7861HZEDS46CT

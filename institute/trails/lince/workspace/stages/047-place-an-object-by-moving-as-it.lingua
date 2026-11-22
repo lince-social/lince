@@ -1,0 +1,23 @@
+Stage 047 — Place an object by moving as it (@ws-stage-047: 0, is #chapter, #part-of @workspace-stages: 47) { r_45T7WZZY2ERHBP8KABYPY6MT6V
+**Status** Pending verification.
+
+## Capability
+
+Enter the selected occurrence’s movement profile and route movement to a native transform preview. Commit or cancel through normal editing.
+
+## Completion checks
+
+- [ ] Move and turn one of two shared-definition objects. Cancel once, then commit, undo and reopen with the other copy’s pose intact.
+
+## Implementation references
+
+**Provider handoffs** [044 · Exploration](044-enter-an-objects-available-scale-and-return.lingua) · [046 · Functional](046-choose-the-behavior-detail-of-one-occurrence.lingua)
+
+[Possession for placement and play](../features/Possession.lingua) · [POS.T01](../features/Possession.lingua#task-post01) · [POS.T02](../features/Possession.lingua#task-post02)
+
+Use the applicable fixture, tolerances and recovery cases in [Exploration and possession](../contracts/Exploration-contracts.lingua#ordered-integration-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 046](046-choose-the-behavior-detail-of-one-occurrence.lingua) · [Next · 048](048-play-as-an-object-in-a-temporary-trial.lingua)
+} r_45T7WZZY2ERHBP8KABYPY6MT6V

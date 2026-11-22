@@ -1,0 +1,33 @@
+Composed electronics workbench acceptance (@ws-electronics-integration: 0, is #chapter, #part-of @workspace-development, #requires @ws-electronic-libraries, #requires @ws-electronic-prototyping, #requires @ws-electronics-workbench, #requires @ws-mixed-signal-circuits, #requires @ws-firmware-devices, #requires @ws-electromechanical-devices, #requires @ws-contract-11a, #requires @ws-contract-15a) { r_1308MY18JSHCVRCTY8Z2WR3ZNE
+Status: Pending. Owner refinement, 2026-11-22: prove the complete electronic object through real library, construction, instrument, firmware and coupled-device implementations.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and ownership
+
+Require verified exports from Electronic Libraries, Electronic Prototyping, Electronics Workbench, Mixed Signal Circuits, Firmware Devices and Electromechanical Devices, plus full 11a and 15a acceptance. This planned numerical integration is not a prerequisite for existing core or base 15a acceptance. Earlier providers close their independent proofs before this join; reopen them only for a discovered defect or an explicitly owned extension.
+
+Own the late composition adapters and EB acceptance evidence. Shared result, instrument, clock, model and command changes remain coordinated with their existing owners, one writer at a time. Do not create another instrument runtime or scheduler. Pin the bounded combined fixture, mappings, backend versions, tolerances and resource limits before implementation.
+
+## Ordered work
+
+### Task EBI.T01
+
+- [ ] Import ELB's actual supported model package, inspect and repair a deliberate terminal-order mismatch, then execute its reference manifest through MSG's admitted evaluator. Confirm source/version/units and independent expected electrical outputs; parsing and metadata inspection cannot satisfy numerical validation. Build EPT's real prototype, power its extracted net graph, and observe supply/open-return consequences through EWB. Cross-probe component/pin/contact/net identities into the intended schematic and 11a's corresponding PCB realization. Preserve opens/shorts as discrepancies instead of rewriting design intent. Package a supported subcircuit with exposed ports, parameters, retained internals and its experiment; prove two independent instances.
+
+### Task EBI.T02
+
+- [ ] Connect real mixed-signal and firmware event observations to the existing instrument channels. Implement triggered bounded digital capture, an actual VCD writer and one actual I²C decoder, selected and pinned with the fixture. Independently inspect the exported transitions and decoded known transactions; map each result to source pins, firmware identity, run clock and validity. Test short pulses, unknown/high-impedance values, malformed transactions and truncated capture. Preserve bounded pre/post-trigger retention and explicit missing coverage. These late adapters do not delay EWB's earlier analog measurements or numeric export.
+
+### Task EBI.T03
+
+- [ ] Compose the proved firmware, declared sensor input and electromechanical load in the named prototype using actual supported GPIO/PWM/driver bridges. Show a changed input changing firmware output and motor response; load changes must affect current/back-EMF through the validated coupling. Keep protocol, electrical and mechanical observations separately identified. Check independent timing and energy references. Replay 15a's already validated detailed/cheap stateful transition on its own named pair while unrelated functional content continues. No motor/firmware transition is inferred from that proof; unsupported state transfer remains unavailable or requires the declared restart.
+
+### Task EBI.T04
+
+- [ ] Complete EB.W01–EB.W07 and EB.P01/EB.P02 through native controls, mapping each to EB.R01–EB.R14 and actual provider evidence. Exercise cross-view selection, offline package reopening, restricted hosted observation, source rights, missing dependencies, stale edits, cancellation at synchronization boundaries and authority loss. Preserve per-instance memory and one output writer. Verify edit-panel geometry, focus and reachable controls. Measure setup, simulated-time throughput, event/sample/instruction counts, coupling error, peak resources and final release with fixed observables. Retain unchanged provider evidence; record composition defects and their owning repairs.
+
+## Completion
+
+Publish implemented late adapters, exact supported formats/decoder, independent references, native replay, measured bounds and remaining unsupported scope. Close the Electronics workbench contract only after the actual combined workflows pass. Current outcome: unbuilt and unverified.
+} r_1308MY18JSHCVRCTY8Z2WR3ZNE

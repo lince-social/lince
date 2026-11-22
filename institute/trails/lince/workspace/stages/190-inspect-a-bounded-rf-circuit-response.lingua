@@ -1,0 +1,20 @@
+Stage 190 — Inspect a bounded RF circuit response (@ws-stage-190: 0, is #chapter, #part-of @workspace-stages: 190) { r_0S15S5H9P9ZQTFR0CZQGKHTHSV
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Choose one RF network method with calibrated ports, reference impedances, frequency range and independent data at the stated terminals.
+
+## Completion checks
+
+- [ ] Compare one network response with the independent reference and report measured error and cost. Surface the boundary of the method’s frequency and model coverage.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](164-measure-a-circuits-layout-parasitics.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 189](189-use-an-hdl-defined-digital-part.lingua)
+} r_0S15S5H9P9ZQTFR0CZQGKHTHSV

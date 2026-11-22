@@ -1,5 +1,5 @@
 Workspace contracts and acceptance (@workspace-contracts: 0, is #chapter, #part-of @workspace-development) { r_4MD1EBB8N5BM32HGQ7KBE1PFE6
-[Workspace development](Workspace-Development.lingua) owns scheduling. These Records preserve the former plans as detailed contracts and whole-workflow acceptance joins. They are not a serial implementation backlog. Each Record links its contributing feature packages; their full task text and real prerequisite graph live there.
+Follow the [ordered stage files](Workspace-Stages.lingua) from [Workspace development](Workspace-Development.lingua). These contracts retain the original task and workflow identifiers, detailed requirements, fixtures and combined acceptance checks. Each contract links its contributing feature packages. The numbered stage with its last contributor calls for the combined replay.
 
 ## Contract Records
 
@@ -43,6 +43,10 @@ Workspace contracts and acceptance (@workspace-contracts: 0, is #chapter, #part-
 ## Added real-world composition contracts
 
 - [World data and composition](contracts/World-composition-contracts.lingua) joins @ws-world-composition, @ws-offline-city, @ws-scene-reconstruction, @ws-generated-scenes and @ws-live-scene-reconstruction. WCO delivers local regional refinement after Imports; RCN/GEN/LRC own real creation methods; WC.R01–WC.R26 and WC.W01–WC.W12 define alignment, replacement, curation, fragments, source quality and bounded city-scale use. Core acceptance joins the complete proof through 15.T11/15.W10. Geographic source, registration and package services retain their existing owners.
+
+## Expanded electronics workbench contracts
+
+- [Electronics workbench, component knowledge and programmable devices](contracts/Electronics-workbench-contracts.lingua) requires @ws-electronics-integration. It joins Electronic libraries, Physical prototyping, Instruments/experiments, Mixed signal, Firmware and Electromechanical devices with existing 11a/15a evidence, through owned EBI integration tasks. EB.R01–EB.R14 and EB.W01–EB.W07 retain the research and actual acceptance. This planned expanded electronics claim is separate from existing core/base circuit completion; it does not add a thermal gate to firmware or basic motors.
 
 ## Conversion coverage
 

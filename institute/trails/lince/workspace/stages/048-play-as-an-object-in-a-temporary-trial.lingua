@@ -1,0 +1,23 @@
+Stage 048 — Play as an object in a temporary trial (@ws-stage-048: 0, is #chapter, #part-of @workspace-stages: 48) { r_6A55FH66ZZHETJ9F7RT46FP5PK
+**Status** Pending verification.
+
+## Capability
+
+Start a bounded Play session with its own state and fenced controller. Offer Discard or an explicit Keep pose action.
+
+## Completion checks
+
+- [ ] Drive a differently shaped object, release focus and discard. Repeat, keep the final pose and undo it. Revoke control mid-trial and check that held input clears.
+
+## Implementation references
+
+[Possession for placement and play](../features/Possession.lingua) · [POS.T03](../features/Possession.lingua#task-post03) · [POS.T04](../features/Possession.lingua#task-post04) · [POS.T05](../features/Possession.lingua#task-post05) · [POS.T06](../features/Possession.lingua#task-post06)
+
+Use the applicable fixture, tolerances and recovery cases in [Exploration and possession](../contracts/Exploration-contracts.lingua#ordered-integration-and-acceptance).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [Exploration and possession](../contracts/Exploration-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 047](047-place-an-object-by-moving-as-it.lingua) · [Next · 049](049-edit-a-molecule-as-a-structure.lingua)
+} r_6A55FH66ZZHETJ9F7RT46FP5PK

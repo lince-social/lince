@@ -1,0 +1,21 @@
+Stage 005 — Reuse a definition from another document (@ws-stage-005: 0, is #chapter, #part-of @workspace-stages: 5) { r_4H4VS9HJBZYMM2ZM9BHQ1AMGDG
+**Status** Pending verification.
+
+## Capability
+
+Import a small permitted dependency closure. Display which definitions were reused, brought in, conflicting or unavailable.
+
+## Completion checks
+
+- [ ] Open B39 twice, including a same-name definition with different content. Inspect both revisions and verify existing instances still reference their original source.
+
+## Implementation references
+
+[Durable model and accepted-change foundation](../features/Model.lingua) · [02.T08](../features/Model.lingua#task-02t08)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 004](004-recover-an-edit-receipt-after-a-lost-reply.lingua) · [Next · 006](006-save-a-behavior-choice-on-an-occurrence.lingua)
+} r_4H4VS9HJBZYMM2ZM9BHQ1AMGDG

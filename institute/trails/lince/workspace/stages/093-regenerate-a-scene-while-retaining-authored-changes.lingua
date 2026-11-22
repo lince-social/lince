@@ -1,0 +1,21 @@
+Stage 093 — Regenerate a scene while retaining authored changes (@ws-stage-093: 0, is #chapter, #part-of @workspace-stages: 93) { r_01ESVXKC8PE8WJCSJD20J605MA
+**Status** Pending verification.
+
+## Capability
+
+Offer comparison and three-way review between the previous candidate, a regenerated candidate and current edits. Keep explicit attribution for inferred content.
+
+## Completion checks
+
+- [ ] Move an object manually, regenerate its neighborhood and resolve a conflict. Undo adoption and open the accepted result with the worker unavailable.
+
+## Implementation references
+
+[Generated scenes and editable model candidates](../features/Generated-Scenes.lingua) · [GEN.T05](../features/Generated-Scenes.lingua#task-gent05) · [GEN.T06](../features/Generated-Scenes.lingua#task-gent06)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 092](092-generate-an-editable-scene-candidate-from-a-prompt.lingua) · [Next · 094](094-attach-a-live-camera-to-a-place.lingua)
+} r_01ESVXKC8PE8WJCSJD20J605MA

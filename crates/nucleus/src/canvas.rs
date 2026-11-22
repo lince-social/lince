@@ -26,6 +26,7 @@ pub const MAX_STATE_PLACEMENTS: usize = 16_384;
 pub mod appearance;
 pub mod authoring;
 pub mod room;
+pub mod scene;
 mod state;
 mod validation;
 

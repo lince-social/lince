@@ -1,0 +1,21 @@
+Stage 056 — Add a bounded transient visual effect (@ws-stage-056: 0, is #chapter, #part-of @workspace-stages: 56) { r_182F5MGM5GCEC3ZT4QXTQ7F2PT
+**Status** Pending verification.
+
+## Capability
+
+Author a trail or particle-style output with explicit capacity, lifetime and sampling. Reuse the workspace render and asset lifecycle.
+
+## Completion checks
+
+- [ ] Drive two occurrences with a captured sequence, exhaust the output budget and measure release after the final effect expires.
+
+## Implementation references
+
+[Procedural appearance authoring](../features/Procedural-Appearance.lingua) · [VIS.T03](../features/Procedural-Appearance.lingua#task-vist03) · [VIS.T04](../features/Procedural-Appearance.lingua#task-vist04)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 055](055-design-an-appearance-controlled-by-a-parameter.lingua) · [Next · 057](057-bind-a-control-to-an-object-action.lingua)
+} r_182F5MGM5GCEC3ZT4QXTQ7F2PT

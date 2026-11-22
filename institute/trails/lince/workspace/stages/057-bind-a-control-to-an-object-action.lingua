@@ -1,0 +1,23 @@
+Stage 057 — Bind a control to an object action (@ws-stage-057: 0, is #chapter, #part-of @workspace-stages: 57) { r_5DTARXRWVQRH2W6F7NVWS7D4MF
+**Status** Pending verification.
+
+## Capability
+
+Map a discrete or continuous possessed-object input to a typed public action on a hatch or lamp. Expose ranges, units, cancel and target focus.
+
+## Completion checks
+
+- [ ] Invoke the same action from the inspector, a sensor, Fiote and the remapped control. Lose focus while holding the control and reopen with no held-input replay.
+
+## Implementation references
+
+**Provider handoffs** [054 · Behavior Authoring](054-trace-why-a-behavior-fired.lingua) · [048 · Possession](048-play-as-an-object-in-a-temporary-trial.lingua)
+
+[Custom object controls and possession actions](../features/Object-Control-Bindings.lingua) · [CTL.T01](../features/Object-Control-Bindings.lingua#task-ctlt01) · [CTL.T02](../features/Object-Control-Bindings.lingua#task-ctlt02) · [CTL.T03](../features/Object-Control-Bindings.lingua#task-ctlt03) · [CTL.T04](../features/Object-Control-Bindings.lingua#task-ctlt04)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 056](056-add-a-bounded-transient-visual-effect.lingua) · [Next · 058](058-compare-two-authored-object-behaviors.lingua)
+} r_5DTARXRWVQRH2W6F7NVWS7D4MF

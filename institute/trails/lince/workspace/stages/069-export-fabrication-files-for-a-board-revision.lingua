@@ -1,0 +1,21 @@
+Stage 069 — Export fabrication files for a board revision (@ws-stage-069: 0, is #chapter, #part-of @workspace-stages: 69) { r_0PGP3BAPYB3HSKMW4XX0077V0Q
+**Status** Pending verification.
+
+## Capability
+
+Generate the supported copper, mask, outline and drill files plus placement, connectivity and bill of materials from one accepted board revision.
+
+## Completion checks
+
+- [ ] Read the bounded export with an independent parser or viewer. Compare hole locations, nets and quantities, and inspect losses for an unsupported feature.
+
+## Implementation references
+
+[PCB layout, checks and fabrication data](../features/Pcb.lingua) · [11a.T06](../features/Pcb.lingua#task-11at06)
+
+Use the applicable fixture, tolerances and recovery cases in [11a · Electronic design](../contracts/Electronic-design-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 068](068-find-a-board-design-error.lingua) · [Next · 070](070-use-a-whole-board-as-one-functional-device.lingua)
+} r_0PGP3BAPYB3HSKMW4XX0077V0Q

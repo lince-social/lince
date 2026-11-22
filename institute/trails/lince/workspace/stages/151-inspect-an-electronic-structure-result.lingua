@@ -1,0 +1,22 @@
+Stage 151 — Inspect an electronic-structure result (@ws-stage-151: 0, is #chapter, #part-of @workspace-stages: 151) { r_6XEPEW5JQY8X2YMD37CFZZ26CT
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+For a separately selected small reference specimen, expose the chosen method, units, covered observable and convergence through the shared laboratory.
+
+## Completion checks
+
+- [ ] Reopen the independently checked observable with method and source lineage. A parameter or element outside the declared scope is marked unsupported.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Molecular and protein physical studies](../features/Molecular-Dynamics.lingua) · [21.T01](../features/Molecular-Dynamics.lingua#task-21t01)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 150](150-observe-motion-in-a-molecular-sample.lingua) · [Next · 152](152-compare-a-molecular-reaction-result.lingua)
+} r_6XEPEW5JQY8X2YMD37CFZZ26CT

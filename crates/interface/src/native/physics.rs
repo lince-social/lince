@@ -628,6 +628,18 @@ fn simulate(world: &mut World) {
         };
         let mut ticks = 0;
         while world.resource::<Simulation>().accumulated >= STEP && ticks < 8 {
+            if spatial
+                && ticks > 0
+                && world
+                    .resource::<crate::native::area_effects::Influences>()
+                    .has_fields()
+            {
+                // A catch-up step starts at the preceding step's pose. Reusing
+                // the render frame's force can keep accelerating a passing body.
+                crate::native::topology::physics::apply(world);
+                crate::native::topology::influence::update(world);
+                crate::native::topology::physics::update_body_forces(world);
+            }
             world.resource_mut::<Simulation>().accumulated -= STEP;
             let original = *world.resource::<Time>();
             let mut step = original;

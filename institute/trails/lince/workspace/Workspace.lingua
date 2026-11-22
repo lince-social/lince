@@ -1,4 +1,6 @@
 Workspace (@workspace: 0) {
+[Workspace refactor delivery](Workspace-Refactor.lingua) is the starting point for building and verifying each stage in the Laboratory showcase.
+
 The best workspace should blur the barrier between programs, making them feel like parts of a whole. With many features in a base app, we can make each appearance of a workflow enjoy the level of control of a CAD in a molecule scale, the reality of a street-view with a fake castle mashed together, or the plentiful level of metadata that exists around one specific idea, it's automations, transfers, definitions...
 
 Such workspace would have the possibility of opening apps in windows normally, being a wayland compositor or something better, and being able to spawn Lince's native components/widgets: Sands, Castles, Areas of Influence... So it has available to the experience Lince gives to the user the usage of all the programs in the world the user wants. The extra work is baking it into a generic program in a way that elevates each experience, being an improvement over the original idea if possible and an ever growing combination of ways one can combine the growing features together.
@@ -32,7 +34,7 @@ For that a system that allows for maximum control of the scenes, is needed, the 
 
 That and more is the scope of the Workspace work before we start dealing with Hardware in Ailuros, all of the crazy ideas of Dynamicware are not to be thought of in the plan of Workspace, they are some natural conclusion to Lince meeting Needs, with the least amount of moving parts, for now it should be focused on software of the tasks above. Later features of robotics will redefine the capabilities of the workspace, having even more integration with reality with projectors and cameras to sync actions in the real world with actions in Lince. For now we whould focus on having the best software experience we can with our Workspace integrating everything the user uses in a computer.
 
-Development is organized in [Workspace development](interface/workspace/Workspace-Development.lingua), with verified shared foundations, explicit feature dependencies and parallel branches where their interfaces permit it.
+Start with [Workspace development](Workspace-Development.lingua) for the [ordered stage files](Workspace-Stages.lingua), the current baseline handoff and the feature dependencies.
 
 ## Already built:
 

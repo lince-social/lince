@@ -1609,7 +1609,8 @@ fn edit_panel_usable_bounds() {
                 },
             ));
         if scale == 1.0 {
-            settle(&mut app);
+            // Apply the host viewport before targeting the icon-only toolbar.
+            app.update();
             let toggle = app
                 .world()
                 .get::<crate::native::edit_mode::EditMode>(root)

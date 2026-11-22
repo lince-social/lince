@@ -1,0 +1,20 @@
+Stage 184 — Estimate noise over a frequency band (@ws-stage-184: 0, is #chapter, #part-of @workspace-stages: 184) { r_6A8B6EKXR73EJVAYRS1H1N553E
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select a supported noise model, source conditions and measurement band. Record the result’s spectral-density units and integration convention.
+
+## Completion checks
+
+- [ ] Compare the bounded reference’s density and integrated noise with independent expected values. Show the effect of changing bandwidth.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](119-run-a-repeatable-circuit-experiment.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 183](183-measure-a-circuits-ac-response.lingua) · [Next · 185](185-inspect-the-spectrum-of-a-captured-signal.lingua)
+} r_6A8B6EKXR73EJVAYRS1H1N553E

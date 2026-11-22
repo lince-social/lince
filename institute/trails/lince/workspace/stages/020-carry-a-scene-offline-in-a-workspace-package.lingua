@@ -1,0 +1,21 @@
+Stage 020 — Carry a scene offline in a Workspace package (@ws-stage-020: 0, is #chapter, #part-of @workspace-stages: 20) { r_5VJBYZP9N0K6P36WN7WJAPYGYF
+**Status** Pending verification.
+
+## Capability
+
+Export the selected profile and its permitted dependency closure to the ordinary portable package. Reopen it with network access disabled.
+
+## Completion checks
+
+- [ ] Inspect the package, open the supplied scene offline, then remove a required payload and see an actionable missing-dependency result.
+
+## Implementation references
+
+[Shared representations, demand and offline packages](../features/Assets.lingua) · [06.T05](../features/Assets.lingua#task-06t05)
+
+Use the applicable fixture, tolerances and recovery cases in [06 · Offline coverage](../contracts/Offline-coverage-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 019](019-share-geometry-within-a-bounded-working-set.lingua) · [Next · 021](021-apply-an-areas-influence-to-selected-objects.lingua)
+} r_5VJBYZP9N0K6P36WN7WJAPYGYF

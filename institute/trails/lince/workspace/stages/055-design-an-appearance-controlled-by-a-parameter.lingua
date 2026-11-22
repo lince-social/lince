@@ -1,0 +1,23 @@
+Stage 055 — Design an appearance controlled by a parameter (@ws-stage-055: 0, is #chapter, #part-of @workspace-stages: 55) { r_4FVBN18FYARNE3A6CC89212PZB
+**Status** Pending verification.
+
+## Capability
+
+Bind a region, falloff, material or emission curve to exposed native handles. Keep preview and source values available for editing.
+
+## Completion checks
+
+- [ ] Edit the origin and curve of a visual pulse, cancel, then save another value and reopen. Replay a captured input with the behavior evaluator idle.
+
+## Implementation references
+
+**Provider handoffs** [052 · Object Recipes](052-publish-an-object-with-editable-controls.lingua) · [020 · Assets](020-carry-a-scene-offline-in-a-workspace-package.lingua)
+
+[Procedural appearance authoring](../features/Procedural-Appearance.lingua) · [VIS.T01](../features/Procedural-Appearance.lingua#task-vist01) · [VIS.T02](../features/Procedural-Appearance.lingua#task-vist02)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 054](054-trace-why-a-behavior-fired.lingua) · [Next · 056](056-add-a-bounded-transient-visual-effect.lingua)
+} r_4FVBN18FYARNE3A6CC89212PZB

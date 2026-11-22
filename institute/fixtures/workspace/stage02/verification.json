@@ -1,0 +1,499 @@
+{
+  "source_base": "d46f719a7d8daab088ca5d58ba250a67fac3190c",
+  "changes": {
+    "crates/nucleus/src/canvas/scene.rs": "1074ca63ac7c9e0339dc6896edfb5df6b018d5ce172514c78692cece84da8a9a",
+    "crates/nucleus/src/canvas.rs": "20bf7992eab0b1866600cbe1b2a338979c018ee25e5e5e9ca208107c974dd17c",
+    "crates/store/src/workspace_scene.rs": "984a0007df6c17efaa7b954a1132f4f0b8cf0d0868709ea5b270b76c0acaa9cd",
+    "crates/store/src/workspace_scene/tests.rs": "4973cd757032626a49dabb18bb7f08f76d6e99421d4cf2b51ec868dfdb14e43f",
+    "crates/store/src/lib.rs": "a02560f5941affd13c2fff8aed650a878ac9eff86992ae70cf8d3a1e46cb756d",
+    "crates/store/Cargo.toml": "b7a97a4e97cf0cc1f729dd4e0ceb5395615d62b075a5418601037551a7a476ce",
+    "crates/interface/src/native/edit_mode.rs": "45e675cba4bdc05f7e51ce959b9da99bd442fad53da70479db819318636133bb",
+    "crates/interface/src/native/edit_mode/scene.rs": "eebb25666bb82f67a449c5693877741dcf07ca2dc360359e16e9010f48f370fe",
+    "crates/interface/src/native/edit_mode/scene/tests.rs": "c87eb70c86fe5c4981cf2a0976f0a323c8338af5481ab605685bfa72a9742593",
+    "crates/sandbox/Cargo.toml": "b00ac1b68e81a0301e2a11491cf7b33a0382253bb650cb4921479b0d93d8416d",
+    "crates/sandbox/examples/workspace_scene.rs": "68a2bf9ccea6965ed613685c09cc3c6045737a25eab68f3b711d890f19c9fb76",
+    "Cargo.lock": "b3c93be1320a04fdac830f6a8fb36dba8ed2404a13b4bd132ebf79ffb5960d46"
+  },
+  "replay_binary_sha256": "0cd55741eaaeab1d3c6563231784ceb883ca83e87580c88664a67c93832887af",
+  "checks": {
+    "store": [
+      "test workspace_scene::tests::measure_small_scene_commits_and_verified_opens ... ignored, run after compilation in an isolated local storage measurement window",
+      "test workspace_scene::tests::equivalent_decimals_round_trip_and_wrong_root_cannot_move_a_slot ... ok",
+      "test workspace_scene::tests::incomplete_corrupt_and_unsupported_scenes_fail_closed ... ok",
+      "test workspace_scene::tests::writers_from_one_base_publish_only_one_complete_successor ... ok",
+      "two-slot save 36.041931ms, open 621.417µs, immutable page sizes [57, 555, 382, 567, 451], snapshot descriptor 64 bytes",
+      "test workspace_scene::tests::stable_handles_reuse_one_definition_and_detect_conflicting_writes ... ok",
+      "test workspace_scene::tests::interrupted_writer_preserves_the_last_complete_root ... ok",
+      "test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 33 filtered out; finished in 0.10s"
+    ],
+    "native_edit": [
+      "test native::edit_mode::panels::tests::title_bar_pointer_drag_moves_the_panel_without_recreating_its_contents ... ok",
+      "test native::edit_mode::panels::tests::dragging_panels_keeps_them_screen_fixed_clamps_edges_and_does_not_move_the_other_panel ... ok",
+      "test native::edit_mode::panels::tests::settled_panels_do_not_keep_invalidating_layout ... ok",
+      "test native::edit_mode::panels::tests::minimizing_preserves_content_scroll_and_position_until_restored ... ok",
+      "test native::edit_mode::panels::tests::default_panels_start_apart_on_wide_and_narrow_screens_and_respect_reserved_space ... ok",
+      "test native::edit_mode::tests::appearance_inspector_scrolls_to_keyboard_focus_only_while_editing ... ok",
+      "test native::edit_mode::tests::asynchronous_workspace_switch_saves_the_bound_name_and_refreshes_the_selected_row ... ok",
+      "test native::edit_mode::tests::panel_anchor_stays_visible_beside_a_leftmost_edit_button_and_reserved_bars ... ok",
+      "test native::edit_mode::tests::edit_button_emits_one_scoped_event_and_close_restores_focus ... ok",
+      "test native::edit_mode::tests::canvas_colors_save_valid_fields_and_stay_with_their_workspace ... ok",
+      "test native::edit_mode::tests::panel_and_child_wheel_events_use_one_shared_bounded_scroll_path ... ok",
+      "test native::edit_mode::tests::general_settings_are_separate_and_tab_entities_survive_navigation ... ok",
+      "test native::edit_mode::tests::fractional_panel_anchoring_is_independent_of_rounded_pixel_width ... ok",
+      "test native::edit_mode::tests::park_customization_link_keeps_keyboard_focus_inside_the_rebuilt_panel ... ok",
+      "test native::edit_mode::tests::store_credits_only_appear_in_tabs_and_reselection_keeps_filter ... ok",
+      "test native::edit_mode::tests::unrelated_panel_changes_do_not_undo_manual_scrolling_of_a_focused_modal ... ok",
+      "test native::edit_mode::panels::tests::real_ui_layout_keeps_panel_headers_and_restore_controls_inside_the_viewport ... ok",
+      "test native::edit_mode::tests::workspace_controls_send_stable_identity_requests_without_changing_park_membership ... ok",
+      "test native::edit_mode::tests::workspace_name_saves_from_its_row_and_pointer_focus_has_no_outline ... ok",
+      "test native::edit_mode::tests::workspace_rows_keep_delete_icons_with_their_workspace ... ok",
+      "test native::edit_mode::workspaces::tests::duplicate_workspace_rows_leave_panel_order_intact ... ok",
+      "test native::edit_mode::workspaces::tests::reordered_rows_retain_draft_entities_caret_focus_scroll_and_fixed_panel_children ... ok",
+      "test native::edit_mode::tests::selected_tabs_preserve_content_and_scroll ... ok",
+      "test native::edit_mode::tests::store_cards_have_inert_content_previews_and_all_tabs_have_bottom_space ... ok",
+      "test native::edit_mode::tests::text_properties_save_while_typing_without_replacing_the_focused_editor ... ok",
+      "test native::edit_mode::tests::reopening_customization_after_each_tab_renders_its_settings_and_keeps_focus ... ok",
+      "test native::edit_mode::tests::all_edit_panel_tabs_activate_render_and_reopen ... ok",
+      "move retained 57 definition bytes in one shared allocation and copied 2 placement rows (384 inline bytes plus strings)",
+      "test native::edit_mode::scene::tests::native_conflict_retains_the_draft_and_can_save_a_copy ... ok",
+      "test native::edit_mode::tests::workspace_and_store_controls_work_with_filtering_and_default_content ... ok",
+      "test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 2013 filtered out; finished in 4.49s"
+    ]
+  },
+  "validated_head": "sha256:511217f45c35d22bab96bdfe300f4c14ad2ca97706f07cce44847e41471e0ee3",
+  "expectations_before_restart": {
+    "first": {
+      "root": "root_01M821ZM5C8SBV6SMCJYQ558BA",
+      "slot": "slot_01M821ZMAH9S7R5KZQ5Z7X09NW"
+    },
+    "second": {
+      "root": "root_01M821ZM5C8SBV6SMCJYQ558BA",
+      "slot": "slot_01M821ZMGE8CZBMW1S2H7JTSM7"
+    },
+    "part": "part_01M821ZMAH8B4T5013AK9VYMMH",
+    "record": "r_01M821ZMTV88Z9ANQCMSQF5JSK"
+  },
+  "reopened": {
+    "head": "sha256:511217f45c35d22bab96bdfe300f4c14ad2ca97706f07cce44847e41471e0ee3",
+    "document": "doc_01M821ZM5C8H1VFVPZ4SX16TXW",
+    "definitions": [
+      {
+        "id": "part_01M821ZMAH8B4T5013AK9VYMMH",
+        "name": "Screw"
+      }
+    ],
+    "placements": [
+      {
+        "id": "slot_01M821ZMAH9S7R5KZQ5Z7X09NW",
+        "part": "part_01M821ZMAH8B4T5013AK9VYMMH",
+        "revision": "sha256:cdbe09559c16a7f774ebfe831bf00ff8154b1b5228647e54696aeaf2df2ce26d",
+        "metres": [
+          {
+            "scale": 0,
+            "value": "0"
+          },
+          {
+            "scale": 0,
+            "value": "0"
+          },
+          {
+            "scale": 0,
+            "value": "0"
+          }
+        ],
+        "record": null
+      },
+      {
+        "id": "slot_01M821ZMGE8CZBMW1S2H7JTSM7",
+        "part": "part_01M821ZMAH8B4T5013AK9VYMMH",
+        "revision": "sha256:cdbe09559c16a7f774ebfe831bf00ff8154b1b5228647e54696aeaf2df2ce26d",
+        "metres": [
+          {
+            "scale": 3,
+            "value": "0.125"
+          },
+          {
+            "scale": 3,
+            "value": "-0.002"
+          },
+          {
+            "scale": 0,
+            "value": "0"
+          }
+        ],
+        "record": "r_01M821ZMTV88Z9ANQCMSQF5JSK"
+      }
+    ],
+    "root": "root_01M821ZM5C8SBV6SMCJYQ558BA",
+    "selected_in_inspector": "slot_01M821ZMGE8CZBMW1S2H7JTSM7"
+  },
+  "wide": {
+    "viewport": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        1000.0,
+        900.0
+      ]
+    ],
+    "edit_panel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        420.0,
+        848.0
+      ]
+    ],
+    "edit_toggle": [
+      [
+        4.0,
+        856.0
+      ],
+      [
+        44.0,
+        896.0
+      ]
+    ],
+    "focused_apply": [
+      [
+        17.0,
+        612.0
+      ],
+      [
+        393.0,
+        643.0
+      ]
+    ]
+  },
+  "narrow": {
+    "viewport": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        360.0,
+        700.0
+      ]
+    ],
+    "edit_panel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        360.0,
+        648.0
+      ]
+    ],
+    "edit_toggle": [
+      [
+        4.0,
+        656.0
+      ],
+      [
+        44.0,
+        696.0
+      ]
+    ],
+    "focused_apply": [
+      [
+        17.0,
+        412.0
+      ],
+      [
+        333.0,
+        443.0
+      ]
+    ]
+  },
+  "stage001_regression": {
+    "last_action": {
+      "action": "settled",
+      "frame": 222,
+      "elapsed_ms": 14730.317905,
+      "observed": {
+        "bodies": 2,
+        "awake_bodies": 0,
+        "position": [
+          -400.1885535087872,
+          0.20235071889118345
+        ],
+        "falling_elevation": 9.99980742685195
+      }
+    },
+    "idle": {
+      "observed_ms": 1528.2223880000001,
+      "native_wake_signals": 0,
+      "measurement_wake_signals": 1,
+      "process_cpu_ticks": 27,
+      "awake_bodies": 0,
+      "position_unchanged": true
+    },
+    "viewport": {
+      "logical_width": 1920.0,
+      "logical_height": 1052.0,
+      "scale_factor": 1.0
+    }
+  },
+  "system": {
+    "os": "linux",
+    "architecture": "x86_64",
+    "kernel": "6.18.63",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+    "available_parallelism": 8,
+    "system_memory_kib": 16112604,
+    "build_profile": "development"
+  },
+  "graphics": {
+    "name": "Intel(R) Iris(R) Xe Graphics (TGL GT2)",
+    "backend": "Vulkan",
+    "device_type": "IntegratedGpu",
+    "driver": "Intel open-source Mesa driver",
+    "driver_info": "Mesa 26.1.2",
+    "vendor": 32902,
+    "device": 39497,
+    "status": "Selected graphics device"
+  },
+  "scene_bytes": {
+    "HEAD": 73,
+    "pages/033b42892be7dccbdd0a7782c307e0e8d39a8e9a702873ca11f664a4390e87e9.json": 57,
+    "pages/eeadae5d1626747a1eed262503629745f1113aeec334caece1a4a8af87b9cfd5.json": 529,
+    "pages/a0789c98f1f3cf88c302199d7e2c7c5ee037533d79471c3c2a8f2a57b5b5dba1.json": 382,
+    "pages/10ca2d32e2909f7ffa40f88e73ad00d78a61f3deb8bf4b4497fb1f67271e0b66.json": 564,
+    "pages/511217f45c35d22bab96bdfe300f4c14ad2ca97706f07cce44847e41471e0ee3.json": 451
+  },
+  "sample_unit": "microseconds, complete local store save and verified reopen pairs, one definition and two placements",
+  "storage_window": {
+    "started_unix": 1795365518.7036018,
+    "seconds": 0.8148386478424072,
+    "samples": 26,
+    "competing_build_or_test": 0
+  },
+  "warm_save": {
+    "p50_ms": 18.075,
+    "p95_ms": 20.501,
+    "p99_ms": 21.526
+  },
+  "warm_open": {
+    "p50_ms": 0.584,
+    "p95_ms": 0.7,
+    "p99_ms": 0.865
+  },
+  "samples": [
+    [
+      14580,
+      524
+    ],
+    [
+      17533,
+      615
+    ],
+    [
+      18097,
+      554
+    ],
+    [
+      17263,
+      635
+    ],
+    [
+      16446,
+      572
+    ],
+    [
+      16383,
+      623
+    ],
+    [
+      16475,
+      865
+    ],
+    [
+      17402,
+      265
+    ],
+    [
+      16930,
+      569
+    ],
+    [
+      19235,
+      655
+    ],
+    [
+      17185,
+      576
+    ],
+    [
+      16990,
+      584
+    ],
+    [
+      20364,
+      661
+    ],
+    [
+      19206,
+      700
+    ],
+    [
+      17951,
+      638
+    ],
+    [
+      18348,
+      578
+    ],
+    [
+      20456,
+      591
+    ],
+    [
+      18268,
+      550
+    ],
+    [
+      18637,
+      600
+    ],
+    [
+      18508,
+      521
+    ],
+    [
+      19445,
+      550
+    ],
+    [
+      17298,
+      556
+    ],
+    [
+      17000,
+      612
+    ],
+    [
+      16574,
+      655
+    ],
+    [
+      20501,
+      574
+    ],
+    [
+      15779,
+      595
+    ],
+    [
+      16300,
+      638
+    ],
+    [
+      16696,
+      638
+    ],
+    [
+      21526,
+      566
+    ],
+    [
+      18075,
+      795
+    ],
+    [
+      17531,
+      549
+    ],
+    [
+      18217,
+      586
+    ],
+    [
+      21514,
+      575
+    ],
+    [
+      19362,
+      583
+    ],
+    [
+      19045,
+      681
+    ],
+    [
+      18271,
+      502
+    ],
+    [
+      19765,
+      589
+    ],
+    [
+      19077,
+      545
+    ],
+    [
+      18669,
+      596
+    ],
+    [
+      17629,
+      565
+    ]
+  ],
+  "native_process_resources": [
+    "Command being timed: \"target/debug/examples/workspace_scene /home/user/git/lince-social/lince/target/stage002-VBPaNlI4/accepted\"",
+    "\tUser time (seconds): 14.58",
+    "\tSystem time (seconds): 0.98",
+    "\tPercent of CPU this job got: 146%",
+    "\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:10.64",
+    "\tAverage shared text size (kbytes): 0",
+    "\tAverage unshared data size (kbytes): 0",
+    "\tAverage stack size (kbytes): 0",
+    "\tAverage total size (kbytes): 0",
+    "\tMaximum resident set size (kbytes): 670976",
+    "\tAverage resident set size (kbytes): 0",
+    "\tMajor (requiring I/O) page faults: 685",
+    "\tMinor (reclaiming a frame) page faults: 164457",
+    "\tVoluntary context switches: 108634",
+    "\tInvoluntary context switches: 918",
+    "\tSwaps: 0",
+    "\tFile system inputs: 1833376",
+    "\tFile system outputs: 3272",
+    "\tSocket messages sent: 0",
+    "\tSocket messages received: 0",
+    "\tSignals delivered: 0",
+    "\tPage size (bytes): 4096",
+    "\tExit status: 0"
+  ],
+  "storage_process_resources": [
+    "Command being timed: \"target/debug/deps/store-98526fd6ccfd61fb --exact workspace_scene::tests::measure_small_scene_commits_and_verified_opens --ignored --nocapture\"",
+    "\tUser time (seconds): 0.06",
+    "\tSystem time (seconds): 0.07",
+    "\tPercent of CPU this job got: 17%",
+    "\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:00.78",
+    "\tAverage shared text size (kbytes): 0",
+    "\tAverage unshared data size (kbytes): 0",
+    "\tAverage stack size (kbytes): 0",
+    "\tAverage total size (kbytes): 0",
+    "\tMaximum resident set size (kbytes): 8100",
+    "\tAverage resident set size (kbytes): 0",
+    "\tMajor (requiring I/O) page faults: 8",
+    "\tMinor (reclaiming a frame) page faults: 337",
+    "\tVoluntary context switches: 746",
+    "\tInvoluntary context switches: 1",
+    "\tSwaps: 0",
+    "\tFile system inputs: 25616",
+    "\tFile system outputs: 25064",
+    "\tSocket messages sent: 0",
+    "\tSocket messages received: 0",
+    "\tSignals delivered: 0",
+    "\tPage size (bytes): 4096",
+    "\tExit status: 0"
+  ]
+}

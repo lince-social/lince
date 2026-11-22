@@ -1,0 +1,23 @@
+Stage 113 — Find a reusable part in a catalogue (@ws-stage-113: 0, is #chapter, #part-of @workspace-stages: 113) { r_5YXEJ04DDMY5GYSEDBAEXW9XXM
+**Status** Pending verification.
+
+## Capability
+
+Read a real part-file format and an actual read-only SQLite catalogue with configurable fields. Search by typed parameter, import symbol, footprint and model artifacts, and inspect pin mapping and permissions.
+
+## Completion checks
+
+- [ ] Fetch and place a known part from the catalogue and open its locally permitted closure offline. A missing model pin or redistribution right appears explicitly.
+
+## Implementation references
+
+**Provider handoffs** [066 · Schematics](066-draw-a-circuit-with-named-nets.lingua)
+
+[Reusable electronic libraries and source adapters](../features/Electronic-Libraries.lingua) · [ELB.T01](../features/Electronic-Libraries.lingua#task-elbt01) · [ELB.T02](../features/Electronic-Libraries.lingua#task-elbt02) · [ELB.T03](../features/Electronic-Libraries.lingua#task-elbt03)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 112](112-play-a-run-in-an-opt-in-canvas-area.lingua) · [Next · 114](114-update-a-library-part-without-losing-local-work.lingua)
+} r_5YXEJ04DDMY5GYSEDBAEXW9XXM

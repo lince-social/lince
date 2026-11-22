@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 pub mod creation;
 
 pub(crate) mod editing;
+pub mod graph_layout;
 
 pub const MAX_AREAS: usize = 256;
 pub const MAX_POINTS: usize = 128;
@@ -125,6 +126,8 @@ pub struct InfluenceArea {
     pub sorting: Option<crate::native::area_effects::Sorting>,
     pub immunity: crate::native::area_effects::Immunity,
     pub scale: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph_layout: Option<graph_layout::Settings>,
     pub force_mode: crate::native::area_effects::ForceMode,
     #[serde(default)]
     pub hole: bool,
@@ -165,9 +168,24 @@ impl InfluenceArea {
             sorting: None,
             immunity: Default::default(),
             scale: 1.0,
+            graph_layout: None,
             force_mode: Default::default(),
             hole: false,
         }
+    }
+
+    pub fn graph_settings(&self) -> Option<&graph_layout::Settings> {
+        if self
+            .protein
+            .as_ref()
+            .is_some_and(|p| p.group_with_source || p.grouping.active())
+        {
+            return None;
+        }
+        self.graph_layout
+            .as_ref()
+            .or_else(|| self.protein.as_ref()?.motion.as_ref())
+            .filter(|settings| settings.enabled)
     }
 
     pub fn validate(&self) -> bool {
@@ -457,8 +475,16 @@ pub fn spawn_area(
     world: &mut World,
     root: Entity,
     workspace: u64,
-    area: InfluenceArea,
+    mut area: InfluenceArea,
 ) -> Option<Entity> {
+    // Older saves kept these settings on the Protein subscription.
+    if let Some(previous) = area
+        .protein
+        .as_mut()
+        .and_then(|protein| protein.motion.take())
+    {
+        area.graph_layout.get_or_insert(previous);
+    }
     if !area.validate() {
         return None;
     }

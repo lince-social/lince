@@ -1,0 +1,22 @@
+Stage 155 — Inspect failure under a selected material model (@ws-stage-155: 0, is #chapter, #part-of @workspace-stages: 155) { r_63P31QSQQGHF24HJYJY1QBER2X
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select one failure or fracture law and an independently documented specimen. Show where its applicability, history and numerical resolution limit the result.
+
+## Completion checks
+
+- [ ] Compare the chosen failure observable and energy with the reference under refinement. Reject a transfer that discards required history.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Nonlinear materials and failure](../features/Nonlinear.lingua) · [21.T02](../features/Nonlinear.lingua#task-21t02)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 154](154-evaluate-a-history-dependent-material-law.lingua) · [Next · 156](156-evaluate-one-manufacturing-process.lingua)
+} r_63P31QSQQGHF24HJYJY1QBER2X

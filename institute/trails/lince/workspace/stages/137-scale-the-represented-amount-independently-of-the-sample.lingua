@@ -1,0 +1,21 @@
+Stage 137 — Scale the represented amount independently of the sample (@ws-stage-137: 0, is #chapter, #part-of @workspace-stages: 137) { r_7RM34X93NQWGCHJPJMWSH57F7Z
+**Status** Pending verification.
+
+## Capability
+
+Expose represented bulk quantity, simulated sample and admitted replicas in the shared experiment inspector. Meter only the requested numerical work.
+
+## Completion checks
+
+- [ ] Scale the bulk amount while retaining the same sample, then explicitly add a replica. Inspect worker cost, computed property, undo and the separate laboratory endpoint.
+
+## Implementation references
+
+[Derived-model adoption and shared laboratory integration](../features/Scientific-Adoption.lingua) · [17.T06](../features/Scientific-Adoption.lingua#task-17t06) · [17.T07](../features/Scientific-Adoption.lingua#task-17t07) · [17.T08](../features/Scientific-Adoption.lingua#task-17t08)
+
+Use the applicable fixture, tolerances and recovery cases in [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 136](136-apply-a-derived-property-to-a-selected-object.lingua) · [Next · 138](138-observe-someone-elses-bounded-experiment.lingua)
+} r_7RM34X93NQWGCHJPJMWSH57F7Z

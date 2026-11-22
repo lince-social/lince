@@ -1,0 +1,22 @@
+Stage 163 — Feed a temperature change back into a circuit (@ws-stage-163: 0, is #chapter, #part-of @workspace-stages: 163) { r_7ZGT6YT1K9RF9PEK3F5AR6NHHA
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select a temperature-dependent device model with an independently validated feedback range. Couple it to the thermal result through the shared runtime.
+
+## Completion checks
+
+- [ ] Compare the reference operating point and balance with one-way and feedback runs, then force a failed exchange and inspect coherent rollback.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Electrothermal and specialist device physics](../features/Device-Physics.lingua) · [21.T05](../features/Device-Physics.lingua#task-21t05)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 162](162-show-heat-produced-by-a-simulated-circuit.lingua) · [Next · 164](164-measure-a-circuits-layout-parasitics.lingua)
+} r_7ZGT6YT1K9RF9PEK3F5AR6NHHA

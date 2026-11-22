@@ -1,0 +1,23 @@
+Stage 079 — Build a local place from several data sources (@ws-stage-079: 0, is #chapter, #part-of @workspace-stages: 79) { r_5QTXQ19ZTJQSARQDP0YPBHWQP0
+**Status** Pending verification.
+
+## Capability
+
+Add supplied terrain, footprints, heights and appearance as attributed inputs. Run the supported extrusion and roof operations and preview the revisioned candidate before accepting it.
+
+## Completion checks
+
+- [ ] Build WC.F02 in a fictional root. Inspect one building’s contributing inputs, source age and unknown coverage and reopen the accepted layered scene.
+
+## Implementation references
+
+**Provider handoffs** [078 · Imports](078-refresh-an-imported-model-while-keeping-local-edits.lingua)
+
+[Curated scenes, regional refinement and reusable places](../features/World-Composition.lingua) · [WCO.T01](../features/World-Composition.lingua#task-wcot01) · [WCO.T02](../features/World-Composition.lingua#task-wcot02) · [WCO.T03](../features/World-Composition.lingua#task-wcot03)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 078](078-refresh-an-imported-model-while-keeping-local-edits.lingua) · [Next · 080](080-make-a-composed-place-walkable.lingua)
+} r_5QTXQ19ZTJQSARQDP0YPBHWQP0

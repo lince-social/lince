@@ -1,0 +1,23 @@
+Stage 035 — Navigate as a supplied character (@ws-stage-035: 0, is #chapter, #part-of @workspace-stages: 35) { r_0MPKV01NSHTWGBX1FRSXP7CHCA
+**Status** Pending verification.
+
+## Capability
+
+Select the starter occurrence, switch first- and third-person control, and use the room’s support and camera conventions.
+
+## Completion checks
+
+- [ ] Walk the supplied character through the room while a second participant observes. Confirm the local camera, movement owner and remote presence stay independent.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Supplied character appearance and navigation](../features/Character-Starter.lingua) · [05.T14](../features/Character-Starter.lingua#task-05t14)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 034](034-assemble-two-parts-around-a-constrained-joint.lingua) · [Next · 036](036-customize-one-characters-appearance.lingua)
+} r_0MPKV01NSHTWGBX1FRSXP7CHCA

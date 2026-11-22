@@ -19,11 +19,19 @@ pub(crate) struct RelationLink {
     pub uid: String,
 }
 
+/// Source-only callers can still pass the complete preset to `spawn_area`.
+/// The Area takes ownership of the embedded layout settings on creation.
 pub fn config() -> Config {
+    Config {
+        motion: Some(crate::native::area::graph_layout::Settings::default()),
+        ..records()
+    }
+}
+
+fn records() -> Config {
     let mut config = Config {
         hide_filled: true,
         relations: true,
-        motion: Some(Default::default()),
         width: 320.0,
         max_height: Some(800.0),
         ..Config::records()
@@ -41,7 +49,8 @@ pub fn spawn(world: &mut World, root: Entity) -> Option<Entity> {
         .map_or(DVec2::ZERO, |view| view.center);
     let mut area = InfluenceArea::new(AreaShape::Circle, center, DVec2::splat(1200.0));
     area.name = "Relation Castle".into();
-    area.protein = Some(config());
+    area.protein = Some(records());
+    area.graph_layout = Some(crate::native::area::graph_layout::Settings::default());
     let entity = crate::native::area::spawn_area(world, root, workspace, area)?;
     if !crate::native::workspace_config::enabled(world, root, workspace) {
         crate::native::workspace_config::set_physics(world, root, workspace, true);

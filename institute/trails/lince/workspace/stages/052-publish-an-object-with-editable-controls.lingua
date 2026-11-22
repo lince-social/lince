@@ -1,0 +1,23 @@
+Stage 052 — Publish an object with editable controls (@ws-stage-052: 0, is #chapter, #part-of @workspace-stages: 52) { r_5PG252FYR8VBSNJ22YK2ZB6TC3
+**Status** Pending verification.
+
+## Capability
+
+Build the reusable OA.F01 hatch from a mesh recipe. Expose typed width, height, ports and actions, and support inspecting, forking and saving its internals.
+
+## Completion checks
+
+- [ ] Change one of two occurrences, make it unique and reopen it. A broken link identifies the source parameter and preserves the last accepted shape.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Reusable object recipes and public interfaces](../features/Object-Recipes.lingua) · [REC.T01](../features/Object-Recipes.lingua#task-rect01) · [REC.T02](../features/Object-Recipes.lingua#task-rect02) · [REC.T03](../features/Object-Recipes.lingua#task-rect03) · [REC.T04](../features/Object-Recipes.lingua#task-rect04)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 051](051-open-a-protein-as-its-own-workspace.lingua) · [Next · 053](053-compose-an-objects-behavior-from-events.lingua)
+} r_5PG252FYR8VBSNJ22YK2ZB6TC3

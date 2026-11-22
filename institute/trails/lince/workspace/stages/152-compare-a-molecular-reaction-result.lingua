@@ -1,0 +1,22 @@
+Stage 152 — Compare a molecular reaction result (@ws-stage-152: 0, is #chapter, #part-of @workspace-stages: 152) { r_6BY27YHCST3HDAJW5FXDMSYWYK
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+For a separately selected reference calculation, define the input states and one reaction observable with an independent measurement or solution.
+
+## Completion checks
+
+- [ ] Inspect the result and its uncertainty alongside the reference and show what happens when required data or applicability is missing.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Molecular and protein physical studies](../features/Molecular-Dynamics.lingua) · [21.T01](../features/Molecular-Dynamics.lingua#task-21t01)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 151](151-inspect-an-electronic-structure-result.lingua) · [Next · 153](153-evaluate-a-folding-observable.lingua)
+} r_6BY27YHCST3HDAJW5FXDMSYWYK

@@ -1,0 +1,21 @@
+Stage 030 — Edit a chosen group of mesh copies (@ws-stage-030: 0, is #chapter, #part-of @workspace-stages: 30) { r_3QQ7535CVYQHCEWGYG2D63VFHJ
+**Status** Pending verification.
+
+## Capability
+
+Use native multi-selection to apply a visual or shape edit to the captured occurrences and keep the source relationship inspectable.
+
+## Completion checks
+
+- [ ] In B40 edit two of three copies and reopen. The unselected copy keeps its original shape and appearance.
+
+## Implementation references
+
+[Native mesh and room authoring](../features/Geometry.lingua) · [07.T07](../features/Geometry.lingua#task-07t07)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 029](029-preview-a-topology-edit-before-committing-it.lingua) · [Next · 031](031-reduce-mesh-detail-while-protecting-an-opening.lingua)
+} r_3QQ7535CVYQHCEWGYG2D63VFHJ

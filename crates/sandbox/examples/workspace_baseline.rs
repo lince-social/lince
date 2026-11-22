@@ -13,15 +13,13 @@
 use avian3d::prelude::Sleeping;
 use bevy::{
     diagnostic::FrameCount,
-    input::{ButtonState, mouse::MouseButtonInput},
     input_focus::InputFocus,
     math::DVec2,
-    picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
     time::TimeUpdateStrategy,
     ui_widgets::Activate,
-    window::{CursorMoved, PrimaryWindow, WindowEvent},
+    window::PrimaryWindow,
     winit::WinitSettings,
 };
 use lince_sandbox::{
@@ -45,6 +43,11 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
+#[path = "workspace_baseline/reopen.rs"]
+mod reopen;
+#[path = "workspace_baseline/timing.rs"]
+mod timing;
 
 const AREA_TARGET: DVec2 = DVec2::new(-400.0, 0.0);
 const SAND_START: DVec2 = DVec2::new(-300.0, -200.0);
@@ -91,79 +94,9 @@ fn activate(world: &mut World, root: Entity, action: EditAction) {
     world.resource::<WakeSignal>().ring();
 }
 
-fn pointer(world: &mut World, position: Vec2) {
-    let window = world
-        .query_filtered::<Entity, With<PrimaryWindow>>()
-        .single(world)
-        .unwrap();
-    let previous = world
-        .get::<Window>(window)
-        .unwrap()
-        .cursor_position()
-        .unwrap_or(position);
-    world
-        .get_mut::<Window>(window)
-        .unwrap()
-        .bypass_change_detection()
-        .set_cursor_position(Some(position));
-    world.write_message(WindowEvent::CursorMoved(CursorMoved {
-        window,
-        position,
-        delta: None,
-    }));
-    mouse_input(
-        world,
-        window,
-        position,
-        PointerAction::Move {
-            delta: position - previous,
-        },
-    );
-    world.resource::<WakeSignal>().ring();
-}
-
-fn mouse_input(world: &mut World, window: Entity, position: Vec2, action: PointerAction) {
-    let target = bevy::camera::RenderTarget::Window(bevy::window::WindowRef::Entity(window))
-        .normalize(Some(window))
-        .unwrap();
-    world.write_message(PointerInput::new(
-        PointerId::Mouse,
-        Location { target, position },
-        action,
-    ));
-}
-
-fn button(world: &mut World, pressed: bool) {
-    let window = world
-        .query_filtered::<Entity, With<PrimaryWindow>>()
-        .single(world)
-        .unwrap();
-    world.write_message(WindowEvent::MouseButtonInput(MouseButtonInput {
-        window,
-        button: MouseButton::Left,
-        state: if pressed {
-            ButtonState::Pressed
-        } else {
-            ButtonState::Released
-        },
-    }));
-    let position = world
-        .get::<Window>(window)
-        .unwrap()
-        .cursor_position()
-        .unwrap();
-    mouse_input(
-        world,
-        window,
-        position,
-        if pressed {
-            PointerAction::Press(PointerButton::Primary)
-        } else {
-            PointerAction::Release(PointerButton::Primary)
-        },
-    );
-    world.resource::<WakeSignal>().ring();
-}
+#[path = "workspace_scene/pointer.rs"]
+mod native_pointer;
+use native_pointer::{button, pointer};
 
 fn record(world: &mut World, action: &str, observed: Value) {
     let state = world.resource::<Baseline>();
@@ -280,6 +213,16 @@ fn replay(world: &mut World) {
     let Some(root) = world.resource::<Baseline>().root else {
         return;
     };
+    let timed = world.contains_resource::<timing::Timing>();
+    if timed && (timing::FIRST..timing::FIRST + timing::FRAMES).contains(&frame) {
+        timing::drag(world, frame);
+        return;
+    }
+    let frame = if timed && frame >= timing::FIRST + timing::FRAMES {
+        frame - timing::FRAMES
+    } else {
+        frame
+    };
     match frame {
         12 => {
             assert!(lince_sandbox::workspace_config::set_physics(
@@ -387,6 +330,9 @@ fn replay(world: &mut World) {
                 "native_pointer_target",
                 json!({"screen":screen.to_array(),"position":before.to_array()}),
             );
+            if timed {
+                return;
+            }
             let path = world
                 .resource::<Baseline>()
                 .directory
@@ -471,7 +417,12 @@ fn observe(world: &mut World) {
                 Some(requested.elapsed().as_secs_f64() * 1000.0);
         }
     }
-    if frame < 70 || world.resource::<Baseline>().captured {
+    let timed = world.contains_resource::<timing::Timing>();
+    if timed {
+        timing::observe(world);
+    }
+    if frame < 70 + if timed { timing::FRAMES } else { 0 } || world.resource::<Baseline>().captured
+    {
         return;
     }
     assert!(
@@ -545,7 +496,7 @@ fn observe(world: &mut World) {
         .iter_entities()
         .find_map(|entity| entity.get::<Window>())
         .map(|window| json!({"logical_width":window.width(),"logical_height":window.height(),"scale_factor":window.scale_factor()}));
-    let report = json!({
+    let mut report = json!({
         "workflow":"01.W01",
         "status":"observed",
         "scope":"Existing native canvas only; future scale, hosting and scientific capabilities are not exercised.",
@@ -562,9 +513,17 @@ fn observe(world: &mut World) {
         "idle":{"observed_ms":idle_ms,"native_wake_signals":state.native_wakes.load(Ordering::Relaxed)-state.idle_native_wakes,"measurement_wake_signals":1,"process_cpu_ticks":cpu_ticks().zip(state.idle_cpu_ticks).map(|(end,start)|end.saturating_sub(start)),"awake_bodies":awake,"position_unchanged":true},
         "process":{"resident_kib":proc_kib("VmRSS:"),"peak_resident_kib":proc_kib("VmHWM:")},
         "resources":state.sampled_resources,
-        "measurement_limits":["Managed texture sizes and retained payloads are estimates, not total GPU residency.","CPU ticks are Linux process counters; no per-Sand CPU attribution.","Native wake signals exclude the single measurement wake and are not all OS wake-ups.","Active timing includes fixture setup, edit-panel/workspace switching and a pre-drag screenshot; it is not an isolated navigation benchmark.","Shared development-machine load, including concurrent compilation, is uncontrolled and can affect wall-clock timing.","Development run is baseline evidence, not a future-stage performance pass."],
+        "measurement_limits":["Managed texture sizes and retained payloads are estimates, not total GPU residency.","CPU ticks are Linux process counters; no per-Sand CPU attribution.","Native wake signals exclude the single measurement wake and are not all OS wake-ups.","Active timing includes fixture setup, edit-panel/workspace switching and a pre-drag screenshot; it is not an isolated navigation benchmark.","Machine load and exclusivity must be recorded independently for each run.","Development run is baseline evidence, not a future-stage performance pass."],
         "qualitative_review":{"status":"pending","image":"settled.png"}
     });
+    if timed {
+        report["timed_drag"] = world.resource::<timing::Timing>().report();
+        report["clock"]["physics"] = json!("real elapsed time, normal fixed-step schedule");
+        report["measurement_limits"] = json!([
+            "Application presentation state, not scanout. CPU ticks cover the process. Exact GPU duration and residency unavailable."
+        ]);
+        report["qualitative_review"] = json!("See separate correctness replay");
+    }
     let directory = state.directory.clone();
     fs::write(
         directory.join("baseline.json"),
@@ -573,6 +532,10 @@ fn observe(world: &mut World) {
     .unwrap();
     world.resource_mut::<Baseline>().captured = true;
     world.insert_resource(WinitSettings::continuous());
+    if timed {
+        world.write_message(AppExit::Success);
+        return;
+    }
     world.spawn(Screenshot::primary_window())
         .observe(save_to_disk(directory.join("settled.png")))
         .observe(|capture: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
@@ -594,6 +557,10 @@ fn main() {
             .nth(1)
             .expect("provide a new output directory"),
     );
+    if std::env::args().nth(2).as_deref() == Some("--reopen") {
+        reopen::run(directory);
+        return;
+    }
     fs::create_dir(&directory).expect("baseline requires a new output directory");
     std::thread::spawn(|| {
         std::thread::sleep(Duration::from_secs(120));
@@ -609,6 +576,17 @@ fn main() {
         counter.fetch_add(1, Ordering::Relaxed);
         target.ring();
     }));
+    match std::env::args().nth(2).as_deref() {
+        Some("--timing") => {
+            app.init_resource::<timing::Timing>();
+        }
+        None => {
+            app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
+                1.0 / 60.0,
+            )));
+        }
+        Some(arg) => panic!("Unknown baseline mode: {arg}"),
+    }
     let now = Instant::now();
     app.add_plugins(bevy::log::LogPlugin::default())
         .insert_resource(WorkspaceFile::new(directory.join("interface.json")))
@@ -641,9 +619,6 @@ fn main() {
             captured: false,
         })
         .insert_resource(WinitSettings::continuous())
-        .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
-            1.0 / 60.0,
-        )))
         .add_systems(Startup, |world: &mut World| {
             world
                 .query::<&mut Window>()

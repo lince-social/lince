@@ -145,6 +145,7 @@ pub(crate) fn new(world: &World, root: Entity, count: usize) -> Result<Numbered,
             zoom: 1.0,
             colors: Default::default(),
             color_overrides: [false; 2],
+            showoff_bracket: None,
         });
     }
     Ok(Numbered {

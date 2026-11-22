@@ -1,0 +1,23 @@
+Stage 117 — Probe a simulated signal on a scope (@ws-stage-117: 0, is #chapter, #part-of @workspace-stages: 117) { r_2Y2YFCVB3QHC35BTY8JQZK77KG
+**Status** Pending verification.
+
+## Capability
+
+Attach an ideal differential probe or a meter with declared loading. Trigger a bounded capture against simulation time and inspect values with cursors.
+
+## Completion checks
+
+- [ ] Measure a divider with both probe models, then trigger on the RC edge. Compare voltage, loading difference and elapsed time with reference values at two display rates.
+
+## Implementation references
+
+**Provider handoffs** [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua)
+
+[Electronic instruments and repeatable experiments](../features/Electronics-Workbench.lingua) · [EWB.T01](../features/Electronics-Workbench.lingua#task-ewbt01) · [EWB.T02](../features/Electronics-Workbench.lingua#task-ewbt02)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 116](116-find-a-wiring-discrepancy-on-a-prototype.lingua) · [Next · 118](118-diagnose-a-circuit-fault.lingua)
+} r_2Y2YFCVB3QHC35BTY8JQZK77KG

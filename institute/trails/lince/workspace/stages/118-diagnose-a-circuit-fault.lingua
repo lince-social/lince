@@ -1,0 +1,21 @@
+Stage 118 — Diagnose a circuit fault (@ws-stage-118: 0, is #chapter, #part-of @workspace-stages: 118) { r_4Y8WVGEZ8T5FM5797ANPSESQEE
+**Status** Pending verification.
+
+## Capability
+
+Distinguish source wiring, an unsupported model, a solver failure and an exceeded authored rating. Show linked terminals, limits and any defined damage state.
+
+## Completion checks
+
+- [ ] Remove a return, then exceed a declared rating for its stated dwell time. Restore the circuit and exercise the documented reset, power-cycle and restart behavior.
+
+## Implementation references
+
+[Electronic instruments and repeatable experiments](../features/Electronics-Workbench.lingua) · [EWB.T03](../features/Electronics-Workbench.lingua#task-ewbt03)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 117](117-probe-a-simulated-signal-on-a-scope.lingua) · [Next · 119](119-run-a-repeatable-circuit-experiment.lingua)
+} r_4Y8WVGEZ8T5FM5797ANPSESQEE

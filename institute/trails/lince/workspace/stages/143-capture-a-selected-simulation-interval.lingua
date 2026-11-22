@@ -1,0 +1,23 @@
+Stage 143 — Capture a selected simulation interval (@ws-stage-143: 0, is #chapter, #part-of @workspace-stages: 143) { r_70ZE9PSHWCN3GYDSAB6S8QVH61
+**Status** Planned optional capability. Current verification is pending.
+
+## Capability
+
+Record a bounded selection with its clock, sampling, source and budget in indexed chunks. Implement the declared checkpoint, retention and coverage policy.
+
+## Completion checks
+
+- [ ] Start and stop a short capture, interrupt it and reopen the partial artifact. Inspect which observations exist and the size and time bounds.
+
+## Implementation references
+
+**Provider handoffs** [141 · Mechanical Transitions](141-replace-a-detailed-mechanism-with-an-aggregate.lingua) · [039 · Character Motion](039-play-an-authored-movement-clip.lingua)
+
+[Optional scoped recording and playback](../features/Recording.lingua) · [20.T01](../features/Recording.lingua#task-20t01) · [20.T02](../features/Recording.lingua#task-20t02)
+
+Use the applicable fixture, tolerances and recovery cases in [20 · Recording](../contracts/Recording-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 142](142-let-physical-joints-drive-an-authored-rig.lingua) · [Next · 144](144-scrub-a-simulation-recording-without-executing-it.lingua)
+} r_70ZE9PSHWCN3GYDSAB6S8QVH61

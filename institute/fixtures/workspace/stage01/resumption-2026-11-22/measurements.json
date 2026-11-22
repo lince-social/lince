@@ -1,0 +1,41 @@
+{
+  "input": {
+    "n": 192,
+    "p50_ms": 51.534,
+    "p95_ms": 56.498,
+    "p99_ms": 82.859
+  },
+  "frame": {
+    "n": 765,
+    "p50_ms": 40.037,
+    "p95_ms": 44.674,
+    "p99_ms": 49.801
+  },
+  "active": {
+    "elapsed_seconds": 30.809,
+    "cpu_seconds": 65.53,
+    "percent_one_logical_cpu": 212.7
+  },
+  "idle": {
+    "elapsed_seconds": 4.574,
+    "cpu_seconds": 0.78,
+    "percent_one_logical_cpu": 17.05
+  },
+  "peak_resident_kib": [
+    732512,
+    734440,
+    734572
+  ],
+  "idle_wakes": [
+    0,
+    0,
+    0
+  ],
+  "idle_awake": [
+    0,
+    0,
+    0
+  ],
+  "cache": "Fresh process, new synthetic workspace in each replay. OS file cache and graphics driver caches warm from preflight. No cache flush.",
+  "revision": "d46f719a7d8daab088ca5d58ba250a67fac3190c"
+}

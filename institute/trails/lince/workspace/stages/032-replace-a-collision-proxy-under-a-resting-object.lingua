@@ -1,0 +1,21 @@
+Stage 032 — Replace a collision proxy under a resting object (@ws-stage-032: 0, is #chapter, #part-of @workspace-stages: 32) { r_79S51RTVQC1AEN5J129DX8KWVE
+**Status** Pending verification.
+
+## Capability
+
+Publish separate render and collision products. Switch support at an accepted physics boundary and retire obsolete generations safely.
+
+## Completion checks
+
+- [ ] Replace support beneath a sleeping object and inspect contact, wake and position. A late proxy for the previous source cannot become active.
+
+## Implementation references
+
+[Simplification and safe support products](../features/Simplification.lingua) · [08.T03](../features/Simplification.lingua#task-08t03)
+
+Use the applicable fixture, tolerances and recovery cases in [08 · Cave and simplification](../contracts/Cave-and-simplification-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 031](031-reduce-mesh-detail-while-protecting-an-opening.lingua) · [Next · 033](033-carve-a-traversable-overhang.lingua)
+} r_79S51RTVQC1AEN5J129DX8KWVE

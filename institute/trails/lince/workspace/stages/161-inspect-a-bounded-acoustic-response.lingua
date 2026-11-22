@@ -1,0 +1,22 @@
+Stage 161 — Inspect a bounded acoustic response (@ws-stage-161: 0, is #chapter, #part-of @workspace-stages: 161) { r_7MV9GRMVEHYZBP6577PF0RB12R
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select a documented acoustic case and state its source, receiver, boundary conditions and supported frequency or time range.
+
+## Completion checks
+
+- [ ] Compare one response at the receiver with the independent reference. Vary resolution and retain the measured error, extent and cost.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Thermal structural and further coupled studies](../features/Coupled-Physics.lingua) · [21.T04](../features/Coupled-Physics.lingua#task-21t04)
+
+Use the applicable fixture, tolerances and recovery cases in [21 · Specialist science](../contracts/Specialist-science-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 160](160-inspect-a-bounded-fluid-flow-result.lingua) · [Next · 162](162-show-heat-produced-by-a-simulated-circuit.lingua)
+} r_7MV9GRMVEHYZBP6577PF0RB12R

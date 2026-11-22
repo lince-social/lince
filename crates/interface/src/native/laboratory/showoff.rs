@@ -72,6 +72,7 @@ pub fn open(world: &mut World) {
             .map(|entry| entry.id)
     }) {
         workspace::switch(world, root, workspace);
+        model_workbench(world, root, workspace);
         return;
     }
     if let Err(error) = populate(world, root) {
@@ -218,9 +219,98 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
     }
     let model = assets::spawn(world, root, workspace, DVec2::new(-230.0, 400.0), model);
     world.entity_mut(model).insert(assets::CenteredAsset);
+    model_workbench(world, root, workspace);
     EditAction::Close.apply(world, root);
     DesktopAction::Unfocus.apply(world, root);
     Ok(())
+}
+
+/// Install once, in the saved showcase. Preserve edits and intentional deletions on later visits.
+fn model_workbench(world: &mut World, root: Entity, workspace: u64) {
+    use crate::native::{
+        canvas_host::Identity,
+        item_properties::Attachment,
+        topology::{
+            Spatial,
+            rooms::{Member, Room},
+        },
+    };
+    use nucleus::canvas::room;
+    if world
+        .get::<Workspaces>(root)
+        .and_then(|w| w.entries.iter().find(|e| e.id == workspace))
+        .is_none_or(|e| e.showoff_bracket.is_some())
+    {
+        return;
+    }
+
+    let room_id = nucleus::new_uid("placement");
+    let bracket_id = nucleus::new_uid("placement");
+    let origin = DVec2::new(-740.0, 440.0);
+    let offset = DVec2::new(500.0, 200.0);
+    let frame = sand(world, root, workspace, SandKind::Text,
+        "Model workbench
+Edit → Workspaces → Scene document
+Choose Try the bracket example. Drag the Bracket, undo, save and reopen.",
+        origin.to_array(), [375.0, 248.0]);
+    world.entity_mut(frame).insert((
+        Identity(room_id.clone()),
+        Room(room::Room {
+            name: "Model workbench".into(),
+            ..default()
+        }),
+    ));
+    let bracket = sand(
+        world,
+        root,
+        workspace,
+        SandKind::Text,
+        "Bracket
+Drag in Edit mode.",
+        (origin + offset).to_array(),
+        [238.0, 114.0],
+    );
+    world.entity_mut(bracket).insert((
+        Identity(bracket_id.clone()),
+        Attachment {
+            uid: nucleus::new_uid("r"),
+        },
+        Member(room::Member {
+            room: room_id,
+            parent: None,
+            role: room::Role::Content,
+            local: nucleus::canvas::Pose {
+                position: [offset.x, 0.0, offset.y],
+                ..room::identity_pose()
+            },
+        }),
+    ));
+    let falling = sand(
+        world,
+        root,
+        workspace,
+        SandKind::Text,
+        "Gravity
+Raise Y and release.",
+        [150.0, 220.0],
+        [218.0, 120.0],
+    );
+    world.entity_mut(falling).insert((
+        Name::new("Showoff · gravity"),
+        Spatial {
+            elevation: 80.0,
+            depth: Some(10.0),
+            ..default()
+        },
+    ));
+    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let entry = spaces
+        .entries
+        .iter_mut()
+        .find(|e| e.id == workspace)
+        .unwrap();
+    entry.showoff_bracket = Some(bracket_id);
+    workspace::request_save(world);
 }
 
 fn mesh_effect() -> nucleus::shader_effect::Effect {
@@ -301,4 +391,60 @@ fn sand(
         layout.rules = crate::layout::Rules::fixed(size);
     }
     entity
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::native::{canvas_host::Identity, workspace::Workspace};
+
+    #[test]
+    fn opening_an_older_showoff_preserves_edits_and_upgrades_only_once() {
+        let (mut app, root) = crate::native::edit_mode::tests::fixture();
+        let world = app.world_mut();
+        let mut old =
+            serde_json::to_value(&world.get::<Workspaces>(root).unwrap().entries[0]).unwrap();
+        assert!(old.get("showoff_bracket").is_none());
+        old["name"] = NAME.into();
+        world.get_mut::<Workspaces>(root).unwrap().entries[0] =
+            serde_json::from_value::<Workspace>(old).unwrap();
+        let custom = spawn_sand(
+            world,
+            root,
+            1,
+            SandKind::Text,
+            "My existing work",
+            DVec2::new(33., 71.),
+        );
+        open(world);
+        assert_eq!(
+            world.get::<CanvasItem>(custom).unwrap().position,
+            DVec2::new(33., 71.)
+        );
+        let entry = &world.get::<Workspaces>(root).unwrap().entries[0];
+        let bracket = entry.showoff_bracket.clone().unwrap();
+        let saved: Workspace =
+            serde_json::from_value(serde_json::to_value(entry).unwrap()).unwrap();
+        let item = world
+            .query::<(Entity, &Identity)>()
+            .iter(world)
+            .find(|(_, i)| i.0 == bracket)
+            .unwrap()
+            .0;
+        world.despawn(item);
+        let count = world.query::<&CanvasItem>().iter(world).count();
+        world.get_mut::<Workspaces>(root).unwrap().entries[0] = saved;
+        open(world);
+        assert_eq!(world.query::<&CanvasItem>().iter(world).count(), count);
+        assert!(
+            world
+                .query::<&Identity>()
+                .iter(world)
+                .all(|i| i.0 != bracket)
+        );
+        assert_eq!(
+            world.get::<CanvasItem>(custom).unwrap().position,
+            DVec2::new(33., 71.)
+        );
+    }
 }

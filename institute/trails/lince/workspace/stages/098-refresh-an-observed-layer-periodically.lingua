@@ -1,0 +1,23 @@
+Stage 098 — Refresh an observed layer periodically (@ws-stage-098: 0, is #chapter, #part-of @workspace-stages: 98) { r_679234E91Y6TGTPFST4T5FZXED
+**Status** Pending verification.
+
+## Capability
+
+Give a bounded task an update cadence and target policy. Publish permitted generations, preserve manual edits and mark stale or missing coverage.
+
+## Completion checks
+
+- [ ] Change the scene twice, verify two distinct derived revisions, then remove one view. Inspect source and edits and stop the task without a further publish.
+
+## Implementation references
+
+[One-shot and periodic observed world models](../features/Observed-Models.lingua) · [OMD.T03](../features/Observed-Models.lingua#task-omdt03) · [OMD.T04](../features/Observed-Models.lingua#task-omdt04)
+
+Use the applicable fixture, tolerances and recovery cases in [Camera feeds and Fiote vision](../contracts/Camera-vision-contracts.lingua#canonical-fixture-and-acceptance).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [Camera feeds and Fiote vision](../contracts/Camera-vision-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 097](097-create-a-model-layer-from-one-observation.lingua) · [Next · 099](099-reconstruct-changing-geometry-from-live-cameras.lingua)
+} r_679234E91Y6TGTPFST4T5FZXED

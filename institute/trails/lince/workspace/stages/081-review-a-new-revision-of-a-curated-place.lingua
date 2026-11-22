@@ -1,0 +1,21 @@
+Stage 081 — Review a new revision of a curated place (@ws-stage-081: 0, is #chapter, #part-of @workspace-stages: 81) { r_0GP51SYZM8QX91DS6Y6503NRCG
+**Status** Pending verification.
+
+## Capability
+
+Pin or follow each source, compare changed inputs and accept or reject a candidate while retaining fixed placements and repairable surface attachments.
+
+## Completion checks
+
+- [ ] Interrupt a refresh, reopen the previous revision offline, then adopt a valid update. Inspect contributions, cost and support on both revisions.
+
+## Implementation references
+
+[Curated scenes, regional refinement and reusable places](../features/World-Composition.lingua) · [WCO.T05](../features/World-Composition.lingua#task-wcot05) · [WCO.T06](../features/World-Composition.lingua#task-wcot06)
+
+Use the applicable fixture, tolerances and recovery cases in [World composition](../contracts/World-composition-contracts.lingua#fixtures-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 080](080-make-a-composed-place-walkable.lingua) · [Next · 082](082-replace-a-selected-region-of-a-place.lingua)
+} r_0GP51SYZM8QX91DS6Y6503NRCG

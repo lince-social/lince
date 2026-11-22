@@ -1,0 +1,20 @@
+Stage 188 — Run firmware for another MCU architecture (@ws-stage-188: 0, is #chapter, #part-of @workspace-stages: 188) { r_0K927C5FYX78QTT1JB8C6K387Y
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Select one additional target after the first MCU is proven. Publish its actual compiler, emulator, pin and peripheral matrix, reset and storage semantics.
+
+## Completion checks
+
+- [ ] Run a target-specific compiled reference, compare observed pin or bus timing and diagnose an unsupported peripheral. Keep instance state independent.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](123-edit-a-firmware-program-and-reload-it.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 187](187-use-live-audio-with-a-simulated-circuit.lingua) · [Next · 189](189-use-an-hdl-defined-digital-part.lingua)
+} r_0K927C5FYX78QTT1JB8C6K387Y

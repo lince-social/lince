@@ -1,0 +1,23 @@
+Stage 072 — Light a lamp from a simulated power source (@ws-stage-072: 0, is #chapter, #part-of @workspace-stages: 72) { r_13DARA5KBCTV0T3RF4Q7197C85
+**Status** Pending verification.
+
+## Capability
+
+Connect the functional trigger, electrical driver, supply, load and emitted light on B44 with explicit units, thresholds and sample timing.
+
+## Completion checks
+
+- [ ] Close the switch, measure the powered load and see the lamp respond. Open the return and observe the loss of output while an authored glow in the same scene stays lit.
+
+## Implementation references
+
+**Provider handoffs** [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua) · [070 · Electronic Devices](070-use-a-whole-board-as-one-functional-device.lingua)
+
+[Powered circuit and mixed functional signals](../features/Powered-Circuit.lingua) · [15a.T04](../features/Powered-Circuit.lingua#task-15at04)
+
+Use the applicable fixture, tolerances and recovery cases in [15a · Circuit and transition](../contracts/Circuit-and-transition-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 071](071-solve-a-small-circuit-on-the-desktop.lingua) · [Next · 073](073-substitute-a-cheaper-equivalent-circuit.lingua)
+} r_13DARA5KBCTV0T3RF4Q7197C85

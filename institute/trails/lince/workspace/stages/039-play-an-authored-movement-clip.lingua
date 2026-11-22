@@ -1,0 +1,23 @@
+Stage 039 — Play an authored movement clip (@ws-stage-039: 0, is #chapter, #part-of @workspace-stages: 39) { r_6SN7DVPZCFPQ8KP603W5FNRR9R
+**Status** Pending verification.
+
+## Capability
+
+Keyframe the shared pose coordinates, define the supported retarget map and control clip blending with instance-local state.
+
+## Completion checks
+
+- [ ] Play the fixture’s idle-to-walk transition on two occurrences at different times. Inspect a joint curve and reject an incompatible retarget.
+
+## Implementation references
+
+**Provider handoffs** [038 · Character Rig](038-bind-a-surface-to-a-rig.lingua)
+
+[Authored motion and body controllers](../features/Character-Motion.lingua) · [11.T08](../features/Character-Motion.lingua#task-11t08)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 038](038-bind-a-surface-to-a-rig.lingua) · [Next · 040](040-annotate-a-structure-on-an-anatomical-reference.lingua)
+} r_6SN7DVPZCFPQ8KP603W5FNRR9R

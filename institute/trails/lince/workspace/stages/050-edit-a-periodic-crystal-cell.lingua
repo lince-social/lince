@@ -1,0 +1,21 @@
+Stage 050 — Edit a periodic crystal cell (@ws-stage-050: 0, is #chapter, #part-of @workspace-stages: 50) { r_3ZTQCY1ZT4MCXN6P32Y5D48TJQ
+**Status** Pending verification.
+
+## Capability
+
+Expose lattice vectors, symmetry, site occupancy and a bounded supercell preview in local units. Retain source-to-site correspondence through the supported CIF exchange.
+
+## Completion checks
+
+- [ ] Open a nonorthogonal cell, edit one site and compare the expanded count against the independent fixture. Diagnose duplicates or invalid occupancy before export.
+
+## Implementation references
+
+[Structural molecules crystals and proteins](../features/Molecules.lingua) · [12.T01](../features/Molecules.lingua#task-12t01) · [12.T02](../features/Molecules.lingua#task-12t02)
+
+Use the applicable fixture, tolerances and recovery cases in [12 · Molecular structure](../contracts/Molecular-structure-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 049](049-edit-a-molecule-as-a-structure.lingua) · [Next · 051](051-open-a-protein-as-its-own-workspace.lingua)
+} r_3ZTQCY1ZT4MCXN6P32Y5D48TJQ

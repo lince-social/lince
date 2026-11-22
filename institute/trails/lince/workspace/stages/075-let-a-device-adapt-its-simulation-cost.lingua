@@ -1,0 +1,25 @@
+Stage 075 — Let a device adapt its simulation cost (@ws-stage-075: 0, is #chapter, #part-of @workspace-stages: 75) { r_1QBBX1FR9NGGGC01A20GC01WM1
+**Status** Pending verification.
+
+## Capability
+
+Resolve required observables, pinned overrides, accuracy, dwell and peak budgets against only verified alternatives. Expose every effective choice and its reason.
+
+## Completion checks
+
+- [ ] Vary demand around a threshold on B44. Check bounded switching, continuity and weak-client observation, then reopen the permitted package offline.
+
+## Implementation references
+
+**Provider handoffs** [074 · Numerical Transitions](074-change-circuit-fidelity-during-a-running-event.lingua)
+
+[Adaptive circuit policy and shared/offline acceptance](../features/Circuit-Policy.lingua) · [15a.T07](../features/Circuit-Policy.lingua#task-15at07) · [15a.T08](../features/Circuit-Policy.lingua#task-15at08)
+
+Use the applicable fixture, tolerances and recovery cases in [15a · Circuit and transition](../contracts/Circuit-and-transition-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [15a · Circuit and transition](../contracts/Circuit-and-transition-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 074](074-change-circuit-fidelity-during-a-running-event.lingua) · [Next · 076](076-place-a-supplied-model-as-an-editable-layer.lingua)
+} r_1QBBX1FR9NGGGC01A20GC01WM1

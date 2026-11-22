@@ -1,0 +1,23 @@
+Stage 115 — Wire a physical prototype by its contacts (@ws-stage-115: 0, is #chapter, #part-of @workspace-stages: 115) { r_439ENHCVBHAVF8NPV022XJQMGB
+**Status** Pending verification.
+
+## Capability
+
+Insert or reseat parts in an explicit socket or breadboard contact group, then attach jumpers by endpoint. Keep wire shape editable separately.
+
+## Completion checks
+
+- [ ] Test the split rail, center gap, rotated device, occupied hole and insulated crossing against independently named contact groups. Reroute one jumper and retain its net.
+
+## Implementation references
+
+**Provider handoffs** [066 · Schematics](066-draw-a-circuit-with-named-nets.lingua)
+
+[Physical electronic prototyping and contact topology](../features/Electronic-Prototyping.lingua) · [EPT.T01](../features/Electronic-Prototyping.lingua#task-eptt01) · [EPT.T02](../features/Electronic-Prototyping.lingua#task-eptt02) · [EPT.T03](../features/Electronic-Prototyping.lingua#task-eptt03)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 114](114-update-a-library-part-without-losing-local-work.lingua) · [Next · 116](116-find-a-wiring-discrepancy-on-a-prototype.lingua)
+} r_439ENHCVBHAVF8NPV022XJQMGB

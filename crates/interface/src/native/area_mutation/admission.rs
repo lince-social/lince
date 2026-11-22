@@ -85,6 +85,7 @@ pub(super) fn same_configuration(
         sorting,
         immunity,
         scale,
+        graph_layout,
         force_mode,
         hole,
     } = current;
@@ -109,6 +110,7 @@ pub(super) fn same_configuration(
         && match_all == &previous.match_all
         && immunity == &previous.immunity
         && scale == &previous.scale
+        && graph_layout == &previous.graph_layout
         && force_mode == &previous.force_mode
         && hole == &previous.hole
         && id == &previous.id

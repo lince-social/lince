@@ -1,0 +1,21 @@
+Stage 121 — Build a reusable electrical subcircuit (@ws-stage-121: 0, is #chapter, #part-of @workspace-stages: 121) { r_0C4NEAPSD8A451291ZY1QWSEXN
+**Status** Pending verification.
+
+## Capability
+
+Compose admitted primitives behind declared terminals and parameters. Bind a supported environmental input with explicit units and expose the subcircuit in the schematic.
+
+## Completion checks
+
+- [ ] Instantiate it twice and compare its PWM and filtered response against the reference. Missing or incompatible models produce a diagnostic before a run can claim success.
+
+## Implementation references
+
+[Mixed signal circuits and reusable electrical models](../features/Mixed-Signal-Circuits.lingua) · [MSG.T03](../features/Mixed-Signal-Circuits.lingua#task-msgt03) · [MSG.T04](../features/Mixed-Signal-Circuits.lingua#task-msgt04)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 120](120-run-analog-and-digital-parts-on-one-clock.lingua) · [Next · 122](122-run-compiled-firmware-on-a-simulated-device.lingua)
+} r_0C4NEAPSD8A451291ZY1QWSEXN

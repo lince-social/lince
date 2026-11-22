@@ -1,0 +1,23 @@
+Stage 078 — Refresh an imported model while keeping local edits (@ws-stage-078: 0, is #chapter, #part-of @workspace-stages: 78) { r_3W1DAD66QQ5R894G47J6C50J5A
+**Status** Pending verification.
+
+## Capability
+
+Compare previous import, new source and local overrides. Offer explicit repair for split, missing or ambiguous correspondence and retain fixed placements.
+
+## Completion checks
+
+- [ ] Rename one source element and delete another with an attachment. Reimport and inspect the preserved edit, last pose and available repair.
+
+## Implementation references
+
+[Imported bases, splats and authored overlays](../features/Imports.lingua) · [09.T03](../features/Imports.lingua#task-09t03)
+
+Use the applicable fixture, tolerances and recovery cases in [09 · Imported base](../contracts/Imported-base-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [09 · Imported base](../contracts/Imported-base-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 077](077-align-a-model-to-measured-points.lingua) · [Next · 079](079-build-a-local-place-from-several-data-sources.lingua)
+} r_3W1DAD66QQ5R894G47J6C50J5A

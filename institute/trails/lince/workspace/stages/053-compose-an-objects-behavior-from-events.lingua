@@ -1,0 +1,23 @@
+Stage 053 — Compose an object’s behavior from events (@ws-stage-053: 0, is #chapter, #part-of @workspace-stages: 53) { r_4HXFWE6MQER9HF58C9HGMXNYW9
+**Status** Pending verification.
+
+## Capability
+
+Connect a typed input, predicate, timer, state and action in the native recipe editor. Save a reusable fragment for the lamp or hatch.
+
+## Completion checks
+
+- [ ] Trigger the hatch with two occurrences using the same fragment. Check hold and retrigger against the expected events and reject an invalid cycle.
+
+## Implementation references
+
+**Provider handoffs** [052 · Object Recipes](052-publish-an-object-with-editable-controls.lingua) · [046 · Functional](046-choose-the-behavior-detail-of-one-occurrence.lingua)
+
+[Native behavior composition](../features/Behavior-Authoring.lingua) · [BHV.T01](../features/Behavior-Authoring.lingua#task-bhvt01) · [BHV.T02](../features/Behavior-Authoring.lingua#task-bhvt02) · [BHV.T03](../features/Behavior-Authoring.lingua#task-bhvt03)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 052](052-publish-an-object-with-editable-controls.lingua) · [Next · 054](054-trace-why-a-behavior-fired.lingua)
+} r_4HXFWE6MQER9HF58C9HGMXNYW9

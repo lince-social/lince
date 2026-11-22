@@ -1,0 +1,23 @@
+Stage 111 — Start a tour and take back control (@ws-stage-111: 0, is #chapter, #part-of @workspace-stages: 111) { r_5AJBXXNQCC754DZ47YXRAS9STX
+**Status** Planned optional capability. Current verification is pending.
+
+## Capability
+
+Offer an opt-in, budgeted observation tour with a selected route, dwell, reduced-motion preferences and immediate manual takeover.
+
+## Completion checks
+
+- [ ] Interrupt the tour during a scale transition, return to the starting subject and inspect demand cleanup. Private or missing content cannot become the next target.
+
+## Implementation references
+
+**Provider handoffs** [044 · Exploration](044-enter-an-objects-available-scale-and-return.lingua)
+
+[Optional automatic exploration](../features/Automatic-Exploration.lingua) · [AUTO.T01](../features/Automatic-Exploration.lingua#task-autot01) · [AUTO.T02](../features/Automatic-Exploration.lingua#task-autot02) · [AUTO.T03](../features/Automatic-Exploration.lingua#task-autot03)
+
+Use AUTO.W01 in the owner Record for this optional proof.
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 110](110-use-the-refactored-desktop-as-one-workspace.lingua) · [Next · 112](112-play-a-run-in-an-opt-in-canvas-area.lingua)
+} r_5AJBXXNQCC754DZ47YXRAS9STX

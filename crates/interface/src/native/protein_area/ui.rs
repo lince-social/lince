@@ -24,7 +24,6 @@ use std::fmt::Write as _;
 pub(crate) enum Command {
     HideFilled,
     Relations,
-    Motion,
     Placement(SpawnPlacement),
     SettlingTicks(u16),
     SpawnTarget(String),
@@ -51,9 +50,6 @@ pub(crate) enum Command {
 
 #[derive(Clone, Copy)]
 enum Field {
-    CenterForce,
-    Repulsion,
-    Cooling,
     Organ,
     Width,
     Gap,
@@ -267,14 +263,6 @@ impl Action for Command {
                         config.bindings = Config::records().bindings;
                     }
                 }
-                Self::Motion => {
-                    config.motion = if config.motion.is_some() {
-                        None
-                    } else {
-                        config.grouping = Default::default();
-                        Some(Default::default())
-                    };
-                }
                 Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
                 Self::ListenRecord => {
                     config.listen_record_selection = !config.listen_record_selection
@@ -365,16 +353,6 @@ impl Action for Command {
                 _ => {}
             }
         }
-        if matches!(self, Self::Motion)
-            && configuration
-                .as_ref()
-                .is_some_and(|config| config.motion.is_some())
-            && let Some(workspace) = world
-                .get::<crate::native::workspace::WorkspaceMember>(owner)
-                .copied()
-        {
-            crate::native::workspace_config::set_physics(world, root, workspace.0, true);
-        }
         set_configuration(world, owner, configuration);
         crate::native::edit_mode::render_panel(world, root);
     }
@@ -407,16 +385,6 @@ pub(super) fn inputs(world: &mut World) {
             continue;
         }
         match field {
-            Field::CenterForce | Field::Repulsion | Field::Cooling => {
-                if let (Some(number), Some(motion)) = (number, config.motion.as_mut()) {
-                    match field {
-                        Field::CenterForce => motion.center = f64::from(number),
-                        Field::Repulsion => motion.repulsion = f64::from(number),
-                        Field::Cooling => motion.cooling = f64::from(number),
-                        _ => {}
-                    }
-                }
-            }
             Field::Organ => {
                 config.source = Source::Organ(value.clone());
                 config.enabled = true;
@@ -619,47 +587,6 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
                 },
                 "Connect spawned Records using the query's included links",
             );
-            text_button(
-                world,
-                panel,
-                owner,
-                Command::Motion,
-                if config.motion.is_some() {
-                    "Center and repulsion: on"
-                } else {
-                    "Center and repulsion: off"
-                },
-                "Pull only this Protein's spawned Sands toward its center and keep them apart. Motion settles until something changes.",
-            );
-            if let Some(motion) = &config.motion {
-                input(
-                    world,
-                    panel,
-                    owner,
-                    Field::CenterForce,
-                    "Center force",
-                    motion.center.to_string(),
-                    "0 to 100",
-                );
-                input(
-                    world,
-                    panel,
-                    owner,
-                    Field::Repulsion,
-                    "Repulsion",
-                    motion.repulsion.to_string(),
-                    "0 to 100000",
-                );
-                input(
-                    world,
-                    panel,
-                    owner,
-                    Field::Cooling,
-                    "Settling speed",
-                    motion.cooling.to_string(),
-                    "0.1 to 10; higher values settle sooner",
-                );
-            }
         }
         crate::native::dropdown::spawn(
             world,
@@ -848,7 +775,11 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
     if filtering {
         return;
     }
-    if config.motion.is_none() {
+    if world
+        .get::<InfluenceArea>(owner)
+        .and_then(InfluenceArea::graph_settings)
+        .is_none()
+    {
         grouping_controls(world, panel, owner, &config);
     }
     label(world, panel, "Row template", 18.0);

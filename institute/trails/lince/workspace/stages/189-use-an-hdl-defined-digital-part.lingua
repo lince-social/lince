@@ -1,0 +1,20 @@
+Stage 189 — Use an HDL-defined digital part (@ws-stage-189: 0, is #chapter, #part-of @workspace-stages: 189) { r_5Q9500VJ6D5Y1FBDK96YR4HNTE
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Admit a declared HDL subset with a bounded evaluator, terminal mapping and logic/time semantics in the mixed-signal workbench.
+
+## Completion checks
+
+- [ ] Run an independently specified truth table and clocked transition, then exercise an unsupported construct and a conflicting driver.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](121-build-a-reusable-electrical-subcircuit.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 188](188-run-firmware-for-another-mcu-architecture.lingua) · [Next · 190](190-inspect-a-bounded-rf-circuit-response.lingua)
+} r_5Q9500VJ6D5Y1FBDK96YR4HNTE

@@ -1,0 +1,96 @@
+     Running unittests src/main.rs (target/debug/deps/xtask-6766671f517434fe)
+running 8 tests
+test workspace::tests::starter_repacking_preserves_skin_and_keeps_only_admitted_clips ... ok
+test workspace::tests::local_payload_reads_reject_traversal_absolute_paths_and_symlinks ... ok
+test workspace::tests::preparation_is_reproducible_and_does_not_replace_existing_data ... ok
+test workspace::tests::prepared_scenes_and_replays_are_bounded_complete_inputs_without_runtime_claims ... ok
+test workspace::tests::changed_payloads_sizes_and_missing_required_cases_are_rejected ... ok
+test workspace::tests::missing_contract_ownership_and_divergent_hosting_replays_are_rejected ... ok
+test workspace::tests::an_updated_hash_does_not_hide_a_blocked_doorway_or_bad_geographic_data ... ok
+test workspace::tests::cycles_dangling_references_and_public_private_payload_mixing_are_rejected ... ok
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 104 filtered out; finished in 0.33s
+     Running tests/workspace_sync.rs (target/debug/deps/workspace_sync-6b5876d28c72e2e4)
+running 21 tests
+test editing_a_concurrently_removed_element_retains_a_rejectable_conflict ... ok
+test history_pages_are_disjoint_and_keep_a_cursor_when_rows_are_filtered ... ok
+test composed_record_crossings_use_local_part_coordinates_and_current_actor ... ok
+test admission_separate_views_revocation_and_review_are_explicit ... ok
+test declared_composed_controls_recheck_actor_ceiling_and_policy_suspension ... ok
+test history_pages_bound_large_record_drafts_without_skipping_changes ... ok
+test identity_refinement_and_restoration_use_separate_declared_authority ... ok
+test independent_edits_merge_and_workspace_audiences_limit_topology_authority ... ok
+test pending_proposals_do_not_survive_revoked_and_regranted_organ_authentication ... ok
+test manager_snapshots_and_history_omit_policy_references_to_hidden_records ... ok
+test moving_an_area_previews_and_commits_all_crossings_once ... ok
+test publish_reports_every_rejected_element_and_never_silently_omits_it ... ok
+test record_creation_and_deletion_require_review_and_workspace_grants ... ok
+test workspace_presence_and_client_contract_are_bounded ... ok
+test presentation_is_shared_but_area_effects_never_lend_authority ... ok
+test shared_area_assignments_cannot_delegate_local_fiote_authority ... ok
+test review_and_preview_recheck_the_original_author_without_borrowing_manager_authority ... ok
+test reviewers_can_accept_an_editors_proposal_without_topology_editing_permission ... ok
+test workspace_ceiling_rolls_back_data_and_topology_together ... ok
+test shared_text_is_previewed_atomically_and_retained_in_collaborative_documents ... ok
+test durable_history_receipts_and_inert_personal_drafts_survive_reopening ... ok
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.54s
+     Running tests/effects.rs (target/debug/deps/effects-af70b3a3f99e0616)
+running 4 tests
+test a_rule_gate_that_does_not_pass_is_a_complete_projection ... ok
+test copied_enabled_integrations_and_external_work_never_attach_live_services ... ok
+test shell_effects_remain_unexecuted_and_report_incomplete ... ok
+test queued_entry_captures_project_privately_and_replay_exactly ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.26s
+     Running tests/workspace_live.rs (target/debug/deps/workspace_live-28506a1eadf6b044)
+running 3 tests
+test network_workspace_merges_signed_edits_reconnects_retries_and_revokes ... ok
+test capacity_load_merges_concurrent_edits_and_revokes_all_live_readers ... ok
+test sustained_network_consequences_tolerate_slow_readers_and_connection_churn ... ok
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.41s
+     Running tests/workspace_sync.rs (target/debug/deps/workspace_sync-bf2b68225a5e4912)
+running 2 tests
+test two_live_views_receive_host_changes_and_revoke_without_further_snapshots ... ok
+test workspace_feeds_are_bounded_and_replacement_retains_other_presence ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.64s
+     Running tests/workspace_area_steps.rs (target/debug/deps/workspace_area_steps-36787247b2620b53)
+running 1 test
+test area_trajectory_is_independent_of_render_frame_batching ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
+     Running unittests src/lib.rs (target/debug/deps/lince_interface-eb77aafa50407026)
+running 28 tests
+test native::physics::manipulation::tiled_group_resize_preserves_free_attachments_and_restores_its_compound_on_untile ... ok
+test native::physics::tests::bound_record_fields_keep_moving_while_focused ... ok
+test native::physics::manipulation::compound_preview_changes_only_its_visible_part_and_committed_offsets_survive_physics ... ok
+test native::physics::tests::collisions_separate_sands_and_settle_without_crossing_box_boundaries ... ok
+test native::physics::tests::following_uses_the_current_physics_position_without_relative_screen_motion ... ok
+test native::physics::tests::attached_clock_cards_cannot_push_their_clock_or_gain_workspace_bodies ... ok
+test native::physics::manipulation::moving_and_resizing_previews_drive_scaled_colliders_without_authoring_until_commit ... ok
+test native::physics::manipulation::partially_tiled_or_suppressed_groups_exclude_hidden_colliders_without_losing_group_homes ... ok
+test native::physics::tests::motion_timer_sleeps_until_started_and_releases_its_thread_on_drop ... ok
+test native::physics::tests::editing_a_sand_holds_it_and_releasing_focus_resumes_the_force ... ok
+test native::physics::tests::area_reach_changes_wake_offscreen_bodies_and_apply_real_motion ... ok
+test native::physics::tests::grouped_sands_keep_their_spacing_under_forces_and_release_joints_when_ungrouped ... ok
+test native::physics::tests::repulsion_moves_outwards_and_pins_and_other_workspaces_are_unchanged ... ok
+test native::physics::tests::room_owners_and_members_release_independent_workspace_physics_bodies ... ok
+test native::physics::tests::size_and_immunity_update_colliders_and_saved_force_without_resizing_the_sand ... ok
+test native::physics::tests::layout_children_resume_independent_motion_only_after_detaching ... ok
+test native::physics::tests::protein_membership_wakes_only_matching_source_bodies_and_stops_force_on_disconnect ... ok
+test native::physics::tests::repeated_fixed_steps_agree_within_one_millionth_of_a_canvas_unit ... ok
+test native::physics::tests::tiling_and_fullscreen_suppression_remove_physics_until_released ... ok
+test native::physics::tests::toggles_start_real_motion_and_stop_at_current_positions_without_stale_velocity ... ok
+test native::physics::tests::room_floor_proxy_stops_a_body_and_releases_its_collision_when_removed ... ok
+test native::physics::tests::workspace_tiling_pauses_motion_and_free_mode_resumes_from_the_authored_position ... ok
+test native::physics::tests::workspace_holes_keep_hidden_physics_active_and_collisions_separate ... ok
+test native::physics::tests::moving_a_held_sand_keeps_pushing_after_other_sands_sleep ... ok
+test native::physics::tests::weak_constant_attraction_keeps_moving_outside_the_area ... ok
+test native::physics::manipulation::preview_motion_pushes_sleeping_neighbors_at_the_visible_position_in_both_physics_paths ... ok
+test native::physics::tests::weak_attraction_reaches_its_target_before_sleeping ... ok
+test native::physics::tests::settled_sands_wake_when_quantity_switches_between_loose_areas ... ok
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 2009 filtered out; finished in 29.40s
+     Running unittests src/lib.rs (target/debug/deps/lince_interface-eb77aafa50407026)
+running 5 tests
+test native::topology::physics::tests::indexed_picking_preserves_openings_and_both_sides ... ok
+test native::topology::physics::tests::room_body_rebase_preserves_velocity_and_collider_signature ... ok
+test native::topology::physics::tests::shared_geometry_is_released_after_the_last_instance ... ok
+test native::topology::physics::tests::pinned_group_stays_fixed_and_unpinning_enables_spatial_forces ... ok
+test native::topology::physics::tests::child_colliders_stop_unpinned_sands_at_pinned_solids ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2032 filtered out; finished in 1.04s

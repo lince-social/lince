@@ -1,0 +1,25 @@
+Stage 061 — Drive a hatch’s travel from its CAD dimensions (@ws-stage-061: 0, is #chapter, #part-of @workspace-stages: 61) { r_40R6MB8ZMDAQ7SMEMQV29JW42K
+**Status** Pending verification.
+
+## Capability
+
+Map the exposed opening width in the exact recipe to actuator travel and detection-region geometry through typed units, ranges and explicit dependencies.
+
+## Completion checks
+
+- [ ] Change the width once, then operate the hatch repeatedly. The travel follows the new dimension and movement reuses the accepted solid. Diagnose a deleted parameter.
+
+## Implementation references
+
+**Provider handoffs** [060 · Cad](060-keep-solid-face-references-through-a-rebuild.lingua) · [054 · Behavior Authoring](054-trace-why-a-behavior-fired.lingua)
+
+[CAD and behavior parameter bindings](../features/Cad-Behavior-Bindings.lingua) · [CBN.T01](../features/Cad-Behavior-Bindings.lingua#task-cbnt01) · [CBN.T02](../features/Cad-Behavior-Bindings.lingua#task-cbnt02) · [CBN.T03](../features/Cad-Behavior-Bindings.lingua#task-cbnt03) · [CBN.T04](../features/Cad-Behavior-Bindings.lingua#task-cbnt04)
+
+Use the applicable fixture, tolerances and recovery cases in [Object authoring](../contracts/Object-authoring-contracts.lingua#acceptance-and-retained-handoff).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [Object authoring](../contracts/Object-authoring-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 060](060-keep-solid-face-references-through-a-rebuild.lingua) · [Next · 062](062-finish-an-exact-part-inside-an-assembly.lingua)
+} r_40R6MB8ZMDAQ7SMEMQV29JW42K

@@ -1,0 +1,20 @@
+Stage 185 — Inspect the spectrum of a captured signal (@ws-stage-185: 0, is #chapter, #part-of @workspace-stages: 185) { r_3N59J1Q6EWPCH5PH083QP347J9
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Apply an explicitly configured FFT to bounded workbench samples. Show sample rate, window, frequency bins and amplitude convention.
+
+## Completion checks
+
+- [ ] Capture a known tone, identify its expected bin and amplitude and show what the selected window or insufficient sampling does to the result.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](119-run-a-repeatable-circuit-experiment.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 184](184-estimate-noise-over-a-frequency-band.lingua) · [Next · 186](186-pass-a-saved-audio-signal-through-a-circuit.lingua)
+} r_3N59J1Q6EWPCH5PH083QP347J9

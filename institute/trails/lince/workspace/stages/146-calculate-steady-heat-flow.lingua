@@ -1,0 +1,21 @@
+Stage 146 — Calculate steady heat flow (@ws-stage-146: 0, is #chapter, #part-of @workspace-stages: 146) { r_52PT6RRB55RY49PWDN4NDCNB1H
+**Status** Pending verification.
+
+## Capability
+
+Apply the supported conductivity and thermal boundary conditions to a bounded slab. Present a source-linked temperature field and heat flux with units.
+
+## Completion checks
+
+- [ ] Compare the temperature gradient and integrated heat flow with the analytic slab and refine the mesh. Report an invalid boundary assignment.
+
+## Implementation references
+
+[Verified elasticity and thermal models](../features/Continuum.lingua) · [19.T01](../features/Continuum.lingua#task-19t01) · [19.T03](../features/Continuum.lingua#task-19t03) · [19.T04](../features/Continuum.lingua#task-19t04)
+
+Use the applicable fixture, tolerances and recovery cases in [19 · Continuum and thermal](../contracts/Continuum-and-thermal-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 145](145-calculate-elastic-deformation-of-a-part.lingua) · [Next · 147](147-follow-heating-or-cooling-over-time.lingua)
+} r_52PT6RRB55RY49PWDN4NDCNB1H

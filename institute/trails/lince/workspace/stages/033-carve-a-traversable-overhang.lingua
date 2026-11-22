@@ -1,0 +1,25 @@
+Stage 033 — Carve a traversable overhang (@ws-stage-033: 0, is #chapter, #part-of @workspace-stages: 33) { r_0N9VYXDMM8C7X49QCKC3B08GP8
+**Status** Pending verification.
+
+## Capability
+
+Build a cave floor, ceiling and overhang with the bounded connected geometry tools and retain usable support through simplification.
+
+## Completion checks
+
+- [ ] Walk under the overhang and through the protected passage, then edit and reopen it. Check clearance against the authored dimensions.
+
+## Implementation references
+
+**Provider handoffs** [032 · Simplification](032-replace-a-collision-proxy-under-a-resting-object.lingua)
+
+[Cave authoring and optimization integration](../features/Caves.lingua) · [08.T01](../features/Caves.lingua#task-08t01)
+
+Use the applicable fixture, tolerances and recovery cases in [08 · Cave and simplification](../contracts/Cave-and-simplification-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [08 · Cave and simplification](../contracts/Cave-and-simplification-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 032](032-replace-a-collision-proxy-under-a-resting-object.lingua) · [Next · 034](034-assemble-two-parts-around-a-constrained-joint.lingua)
+} r_0N9VYXDMM8C7X49QCKC3B08GP8

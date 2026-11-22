@@ -1,0 +1,93 @@
+{
+  "base_revision": "bee6f4cc6ea92826122c27ec5bdeb4f1cf02603b",
+  "published_head": "sha256:9fd8e69dd58adb0cda6249ea7893600079d0b3025f8e723ef77c2505ba943df8",
+  "profiles": [
+    "composition/1",
+    "canvas-room/1"
+  ],
+  "binding": {
+    "handle": {
+      "root": "root_01M82428Q98KDSJY6EPZXXNMAZ",
+      "slot": "slot_01M82429GY8T6BWN1NNAX1T8WM"
+    },
+    "placement": "placement_01M82428P687GRD6ZE5K9W9Q18",
+    "room": "placement_01M82428P68N4T230RMSX2ZQ5Y"
+  },
+  "published_slots_after_undo": [
+    {
+      "id": "slot_01M82429A38RRV4EPNENR9FTHD",
+      "metres": [
+        {
+          "scale": 0,
+          "value": "0"
+        },
+        {
+          "scale": 0,
+          "value": "0"
+        },
+        {
+          "scale": 0,
+          "value": "0"
+        }
+      ],
+      "part": "part_01M82429A38CAT528KHHA70K0T",
+      "record": null,
+      "revision": "sha256:632deb61334badda017d2ed81f3ee7168bc06ab1132dcb9932b6630f1bab78ed"
+    },
+    {
+      "id": "slot_01M82429GY8T6BWN1NNAX1T8WM",
+      "metres": [
+        {
+          "scale": 0,
+          "value": "5"
+        },
+        {
+          "scale": 0,
+          "value": "0"
+        },
+        {
+          "scale": 0,
+          "value": "1"
+        }
+      ],
+      "part": "part_01M82429A38CAT528KHHA70K0T",
+      "record": "r_01M82428P68NVSCDA1Y3X6JGRK",
+      "revision": "sha256:632deb61334badda017d2ed81f3ee7168bc06ab1132dcb9932b6630f1bab78ed"
+    }
+  ],
+  "pointer_drag": {
+    "canvas_before": [
+      240.0,
+      -100.0
+    ],
+    "canvas_after": [
+      320.0,
+      -68.0
+    ],
+    "room_origin": [
+      -260.0,
+      -200.0
+    ],
+    "model_xz_metres": [
+      5.8,
+      1.32
+    ]
+  },
+  "reopened_screenshot_sha256": "ebbc73eadaea581569137771d254be3ae7f0610d62df89843e504f237db6339c",
+  "passed_tests": {
+    "native_edit": 30,
+    "canvas_input_selection_rooms": 34,
+    "scene_store": 5,
+    "room_hierarchy": 1
+  },
+  "source_sha256": {
+    "crates/nucleus/src/canvas/scene.rs": "d2711bd1e6d7b213effe369aa2744694043aabb15245e5de5bcee22a05743e49",
+    "crates/store/src/workspace_scene.rs": "4a0929dbbb2253d29e08592c8264d8f2feede5ad317573ac029e1371a9827690",
+    "crates/interface/src/native/edit_mode/scene.rs": "dad3818d8c5e15681757e102e032095846e4b952f354b94487673dee056ceb76",
+    "crates/interface/src/native/edit_mode/scene/bridge.rs": "4b9ab38112b831683793a8171f101f4688fa7367e177c181f9468ad3909fae2e",
+    "crates/interface/src/native/canvas_pan.rs": "ceb30ef347ba23789b9033c48cda589a70e2f15728c03f9b4802d61a1741d9a2",
+    "crates/interface/src/native/topology/input.rs": "43e285f11bb2415621b1b9169ca101526b6f0a3563a0de9a26547e2176311e6c",
+    "crates/interface/src/native/canvas_selection.rs": "f46c2a8b45c66e06560aeee87f2af43e7ab23db03bab74448c7afff4dc3f965b",
+    "crates/sandbox/examples/workspace_scene/bridge.rs": "3989f09275613d7b485f709887978e05d6b42349cb8ab0aa415952809cdf9217"
+  }
+}

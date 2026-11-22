@@ -1,0 +1,23 @@
+Stage 084 — Travel from a globe to a local place (@ws-stage-084: 0, is #chapter, #part-of @workspace-stages: 84) { r_000RNMEGDKDBDGNP8GM7Z2FW4D
+**Status** Pending verification.
+
+## Capability
+
+Load the supplied ellipsoid and optional outer context as data, convert declared frames and expose flat and curved views with a horizon.
+
+## Completion checks
+
+- [ ] Travel from the globe into the B25 room and measure the 40 mm ball. Inspect poles, dateline, missing local relief and the optional outer frame.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua)
+
+[Globe, sparse scale and geographic layers](../features/Geography.lingua) · [05.T01](../features/Geography.lingua#task-05t01) · [05.T02](../features/Geography.lingua#task-05t02) · [05.T03](../features/Geography.lingua#task-05t03)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 083](083-move-a-fragment-into-a-different-world.lingua) · [Next · 085](085-navigate-the-same-scale-range-in-an-invented-world.lingua)
+} r_000RNMEGDKDBDGNP8GM7Z2FW4D

@@ -1,0 +1,23 @@
+Stage 018 — Open a coarse scene and refine it on demand (@ws-stage-018: 0, is #chapter, #part-of @workspace-stages: 18) { r_5Y9168XXRBW5CZ08V4N0APN66N
+**Status** Pending verification.
+
+## Capability
+
+Publish revisioned local source layers with a cheap covering product. Drive refinement from the visible area and current source generation.
+
+## Completion checks
+
+- [ ] On a supplied mesh and height fixture, open the coarse scene, zoom in, reverse direction and inspect which products become resident or obsolete.
+
+## Implementation references
+
+**Provider handoffs** [014 · Selection](014-connect-typed-ports.lingua)
+
+[Shared representations, demand and offline packages](../features/Assets.lingua) · [05.T04a](../features/Assets.lingua#task-05t04a) · [05.T05](../features/Assets.lingua#task-05t05)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 017](017-give-fiote-the-context-of-a-selection.lingua) · [Next · 019](019-share-geometry-within-a-bounded-working-set.lingua)
+} r_5Y9168XXRBW5CZ08V4N0APN66N

@@ -1,0 +1,39 @@
+Firmware-backed programmable devices (@ws-firmware-devices: 0, is #chapter, #part-of @workspace-development, #requires @ws-mixed-signal-circuits) { r_12HX4ZF7EPGXJJYVJVCFBXRZFD
+Status pending. Owner refinement, 2026-11-22. Run actual compiled firmware in a supported simulated microcontroller, connect it to ordinary circuit ports, and inspect its behavior through native controls.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and ownership
+
+Consume verified [Mixed-signal circuits](Mixed-Signal-Circuits.lingua) exports for time, events, digital resolution, analog bridges and instance ownership. Own the emulator adapter, firmware artifact mapping and native execution proof. Reuse existing editors, bounded jobs, grants, probes and persistence. Shared clock, pin schema and solver changes have one owner. This is a downstream workbench extension with its own acceptance.
+
+Wokwi demonstrates loading compiled firmware and custom device models. Its analog API documents limited analog support, so firmware behavior and electrical accuracy need separate evidence. [Project configuration](https://docs.wokwi.com/vscode/project-config) · [Custom chips](https://docs.wokwi.com/chips-api/getting-started) · [Analog limits](https://docs.wokwi.com/chips-api/analog)
+
+## Ordered work
+
+### Task FWD.T01
+
+- [ ] Before implementation, select one supported MCU and pin a trusted existing emulator backend, evaluating [AVR8js](https://github.com/wokwi/avr8js) or [simavr](https://github.com/buserror/simavr) against the fixture below. Integrate that backend and publish its instruction/peripheral coverage, license, clock model and limits. Load a validated compiled artifact with architecture, memory layout, image hash and backend revision. Preserve supplied toolchain/source revisions and optional symbols. Imported binaries provide a complete entry path. Community firmware/model packages remain inert until explicit start through an admitted trusted runtime. Real-device flashing and equipment control belong to Ailuros.
+
+### Task FWD.T02
+
+- [ ] Map stable logical pins to actual MCU functions, pin multiplexing, direction, pull configuration, timers, interrupts, ADC and PWM capabilities. Reuse mixed-signal time/event ordering and voltage-to-logic/logic-to-voltage bridges, with declared reference, thresholds, drive/loading and sampling assumptions. Implement UART plus I²C for the first proof. Publish timing, address/ACK and electrical-boundary behavior. Check missing pull-ups, wrong address, unpowered operation and a declared brownout/reset policy at the selected fidelity. Unsupported peripherals and electrical effects have inspectable capability status. Actual instruction execution must drive the observed pin/protocol results.
+
+### Task FWD.T03
+
+- [ ] Keep flash, RAM, registers, timers and nonvolatile storage per instance. Define load, reset, power-cycle, stop and snapshot/resume semantics, including retained state. Advertised snapshots capture compatible firmware/backend identity, MCU/peripheral state and the associated mixed-signal clock/event state. Firmware/model reload advances the instance generation, resolves state compatibility and rejects stale output. Bound instruction work per scheduling slice, event/serial buffers, memory, catch-up and snapshot cost. Cancel/delete releases workers and subscriptions. Report simulated cycles and achieved host cost alongside configured MCU frequency.
+
+### Task FWD.T04
+
+- [ ] Deliver native code editing and build/load through the existing editor/job family or an implemented compiler adapter with declared toolchain and actual host privileges/grants. Show diagnostics and artifact identity, and retain imported-binary use when compilation is unavailable. Provide Run/Pause/Reset and supported stepping with explicit instruction versus synchronized domain-event boundaries. Expose bounded serial/protocol traces and available registers/symbols. Source breakpoints and a small framebuffer are capabilities only when their adapters work. Preserve readable controls, keyboard access and edit-panel-geometry. Opening a scene restores configured artifacts and saved state through its explicit execution lifecycle.
+
+### Task FWD.T05
+
+- [ ] Prove the native fixture using actual compiled firmware. Save/reopen and resume supported state, compare two independent instances, edit/build/load a changed program, then exercise failed compilation, malformed images, reload during pending events, cancellation and resource release. Export permitted artifacts, backend/model dependencies, pin mappings, state policy and provenance through existing packages. Reopen and execute the supported package offline. Publish actual timing, electrical assumptions, protocol traces, artifact hashes and measured limits for the full workbench contract's composed acceptance.
+
+## Fixture and completion
+
+Use one timed button/sensor-to-LED program with ADC input, PWM output, UART status, an I²C peripheral and persistent counters. Pin source, compiled image and independent expected timing/protocol outcomes. Change sensor input, remove pull-ups, alter the address, remove supply and cross the declared brownout threshold. Inspect circuit and firmware results together. Repeat reset, power-cycle and supported snapshot/resume, proving separate persistent state across two instances. Record simulation-time error, host CPU/memory, queue bounds and release.
+
+The full [electronics workbench contract](../contracts/Electronics-workbench-contracts.lingua) consumes this verified export. Additional architectures, peripherals, debug features and electrical models require their own adapters and reference cases. Current outcome is unbuilt and unverified.
+} r_12HX4ZF7EPGXJJYVJVCFBXRZFD

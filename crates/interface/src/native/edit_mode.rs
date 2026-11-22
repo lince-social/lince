@@ -44,6 +44,7 @@ pub use crate::native::sand_text_editor::TextAction;
 
 mod workspaces;
 pub(crate) mod panels;
+pub(crate) mod scene;
 
 #[derive(Component)]
 pub(crate) struct FocusScroll;
@@ -1589,6 +1590,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
     };
     if !store {
         let _presentation = nucleus::performance::Span::new("edit-workspace-presentation");
+        scene::panel(world, root, panel, active);
         let heading = world
             .spawn((
                 Node {
@@ -1899,7 +1901,12 @@ pub(crate) mod tests {
     struct Toggles(Vec<(Entity, bool)>);
 
     pub(crate) fn fixture() -> (App, Entity) {
+        fixture_with(|_| {})
+    }
+
+    fn fixture_with(configure: impl FnOnce(&mut App)) -> (App, Entity) {
         let mut app = App::new();
+        configure(&mut app);
         crate::native::laboratory::isolate(app.world_mut());
         app.init_resource::<Assets<Font>>()
             .init_resource::<Typography>()
@@ -1986,9 +1993,9 @@ pub(crate) mod tests {
                 let Val::Px(maximum) = node.max_width else {
                     panic!("pixel width")
                 };
-                assert!((left - 10.8 * scale).abs() < 0.001);
+                assert_eq!(left, 0.0, "Edit begins at the usable left edge");
                 assert_eq!(node.right, Val::Auto);
-                assert!((maximum - 338.4 * scale).abs() < 0.001);
+                assert!((maximum - 360.0 * scale).abs() < 0.001);
             }
         }
     }
@@ -2634,7 +2641,12 @@ pub(crate) mod tests {
 
     #[cfg_attr(test, test)]
     fn edit_button_emits_one_scoped_event_and_close_restores_focus() {
-        let (mut app, root) = fixture();
+        let (mut app, root) = fixture_with(|app| {
+            // TabNavigation traverses the visible UI hierarchy.
+            app.init_resource::<Assets<Mesh>>()
+                .init_resource::<Assets<bevy::mesh::skinning::SkinnedMeshInverseBindposes>>()
+                .add_plugins(bevy::camera::visibility::VisibilityPlugin);
+        });
         let draws = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let requested = draws.clone();
         app.insert_resource(crate::native::wake::WakeSignal::new(move || {
@@ -2645,6 +2657,8 @@ pub(crate) mod tests {
         let toggle = app.world().get::<EditMode>(root).unwrap().toggle;
         app.world_mut().resource_mut::<InputFocus>().set(toggle, FocusCause::Navigated);
         activate(&mut app, root, EditAction::Toggle);
+        // The queued action builds the controls in PostUpdate. Propagate the new hierarchy before tabbing.
+        app.update();
         assert!(draws.load(std::sync::atomic::Ordering::Relaxed) > 0);
         assert!(app.world().get::<EditMode>(root).unwrap().enabled);
         assert!(!app.world().get::<EditMode>(other).unwrap().enabled);

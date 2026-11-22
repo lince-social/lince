@@ -1,0 +1,21 @@
+Stage 068 — Find a board design error (@ws-stage-068: 0, is #chapter, #part-of @workspace-stages: 68) { r_5M7JCENCDWP6Y9ZP4J8309EBXA
+**Status** Pending verification.
+
+## Capability
+
+Implement the selected electrical and physical design rules with named objects, tolerances and repair locations in the editor.
+
+## Completion checks
+
+- [ ] Induce a missing supply, clearance violation or unconnected pad. Inspect the offending objects, repair them and rerun the same rule.
+
+## Implementation references
+
+[PCB layout, checks and fabrication data](../features/Pcb.lingua) · [11a.T05](../features/Pcb.lingua#task-11at05)
+
+Use the applicable fixture, tolerances and recovery cases in [11a · Electronic design](../contracts/Electronic-design-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 067](067-route-a-board-from-its-schematic.lingua) · [Next · 069](069-export-fabrication-files-for-a-board-revision.lingua)
+} r_5M7JCENCDWP6Y9ZP4J8309EBXA

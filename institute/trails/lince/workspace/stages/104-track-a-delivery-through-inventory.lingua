@@ -1,0 +1,23 @@
+Stage 104 — Track a delivery through inventory (@ws-stage-104: 0, is #chapter, #part-of @workspace-stages: 104) { r_129RGV5826PZXMXJZM0XGMQRBE
+**Status** Pending verification.
+
+## Capability
+
+Use native forms for supplier stock, reservation, production and partial delivery. Carry units, source evidence and accepted quantities through each operation.
+
+## Completion checks
+
+- [ ] Race two reservations on the same stock and retry a partial delivery. Check conservation and exactly-once accounting in the authoritative ledger.
+
+## Implementation references
+
+**Provider handoffs** [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Stock production and operational scenarios](../features/Operations.lingua) · [13.T01](../features/Operations.lingua#task-13t01)
+
+Use the applicable fixture, tolerances and recovery cases in [13 · Operational workflow](../contracts/Operational-workflow-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 103](103-lay-out-a-corridor-on-surveyed-terrain.lingua) · [Next · 105](105-preview-the-consequences-of-a-delay.lingua)
+} r_129RGV5826PZXMXJZM0XGMQRBE

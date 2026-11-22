@@ -103,7 +103,11 @@ pub(super) fn initial(
         } else {
             0
         };
-        if config.motion.is_none() {
+        if world
+            .get::<InfluenceArea>(source)
+            .and_then(InfluenceArea::graph_settings)
+            .is_none()
+        {
             world.entity_mut(entity).insert(RoomFrame(target.entity));
         }
         let area = world.get::<InfluenceArea>(target.entity).unwrap();

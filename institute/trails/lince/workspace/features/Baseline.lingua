@@ -1,7 +1,7 @@
-Baseline and isolated resumption (@ws-baseline: 0, is #chapter, #part-of @workspace-development) { r_1XVD7J300DVRQT7MWK2WHF3NPP
-Status: Pending isolated resumption; existing checked items below are historical evidence, not a passed current baseline.
+Baseline and isolated resumption (@ws-baseline: 0, is #chapter, #part-of @workspace-development, #done) { r_1XVD7J300DVRQT7MWK2WHF3NPP
+**Status** Done on 2026-11-22. [November replay, findings and reproduction steps](../../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md)
 
-[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+[Stage 001 · Current replay, commands and completion checks](../stages/001-re-establish-the-desktop-baseline.lingua) · [Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
 
 ## Start gate
 
@@ -13,7 +13,7 @@ This is a core work package. Start only after the named providers publish verifi
 
 ## Delivered boundary
 
-Current verified native baseline, fixture rights/counts, measured device budgets, known defects and first-consumer contract decisions. Historical completion is retained separately from this pending recheck.
+Current verified native baseline, fixture rights/counts, measured device budgets, known defects and first-consumer contract decisions. Both the October and November observations are retained.
 
 ## Ownership and possible overlap
 
@@ -25,15 +25,15 @@ Independent ready packages may proceed together only after file/service ownershi
 
 Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
 
-- [ ] Revalidate the historical baseline under the isolated-resumption procedure before publishing a current handoff. Do not stop or modify other agents to obtain exclusivity.
+- [x] Revalidate the historical baseline under the isolated-resumption procedure before publishing a current handoff. Do not stop or modify other agents to obtain exclusivity.
 
 ### Task 01.T01
 
-- [x] **01.T01.** Current units, canvas/Area/physics, persistence, accepted revisions, authority and isolation audited; [source reuse](../../../../../fixtures/workspace/stage01/source-audit.json) and native/test evidence retained.
+- [x] **01.T01.** Current units, canvas/Area/physics, persistence, accepted revisions, authority and isolation audited; [source reuse](../../../../fixtures/workspace/stage01/source-audit.json) and native/test evidence retained.
 
 ### Task 01.T02
 
-- [x] **01.T02.** Public/synthetic B25–B28/B38 data, coarse context, budgets and actual device selected; [sources](../../../../../fixtures/workspace/stage01/sources.json), profile and machine record retained.
+- [x] **01.T02.** Public/synthetic B25–B28/B38 data, coarse context, budgets and actual device selected; [sources](../../../../fixtures/workspace/stage01/sources.json), profile and machine record retained.
 
 ### Task 01.T03
 
@@ -61,11 +61,11 @@ Read the applicable architecture, requirement IDs, fixtures and proof recipes in
 
 ## Completion and handoff
 
-Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+**01.W01** The native desktop replays pointer hit and drag, the queued physics toggle, Area attraction and independent gravity. The Sand stopped 0.277 canvas units from its target. Both bodies slept and the foreign workspace kept its position after reopening. Catch-up physics now evaluates spatial Area forces at each fixed step. Three separate wall-clock runs provide frame, input, idle CPU, memory and graphics observations. [November replay, findings and reproduction steps](../../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md)
 
-Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+**01.W02** The fixture checker reopened ten cases and five roots. All 19 asset sizes, hashes and rights declarations were checked. Independent GLB vertex bounds and node scales gave the expected 40 mm ball and 7 mm feature. [Input review](../../../../fixtures/workspace/stage01/resumption-2026-11-22/input-review.json) · [Fixture check](../../../../fixtures/workspace/stage01/resumption-2026-11-22/fixture.json)
 
-Consumers: [Durable model and accepted-change foundation](Model.lingua)
+**01.W03** The 49 first-consumer decisions and B33–B36 hosting specifications retain their original phase and authority owners. B37 remains deferred. [Proof scope and test results](../../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md)
 
-Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+The next consumer is [Stage 002 · Save and reopen a tiny scene](../stages/002-save-and-reopen-a-tiny-scene.lingua).
 } r_1XVD7J300DVRQT7MWK2WHF3NPP

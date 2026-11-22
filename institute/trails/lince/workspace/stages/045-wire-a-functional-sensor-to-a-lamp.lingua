@@ -1,0 +1,23 @@
+Stage 045 — Wire a functional sensor to a lamp (@ws-stage-045: 0, is #chapter, #part-of @workspace-stages: 45) { r_2XRENCNPGT7JFZM06PVD679G4V
+**Status** Pending verification.
+
+## Capability
+
+Place a sensor and lamp, bind a typed signal and drive the supported device models through existing activities. Place an independently glowing object beside them.
+
+## Completion checks
+
+- [ ] Trigger and clear the sensor in B42. The connected lamp follows the event while the authored glow keeps its configured intensity.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua) · [017 · Agent Context](017-give-fiote-the-context-of-a-selection.lingua)
+
+[Functional devices and model policy](../features/Functional.lingua) · [07.T10](../features/Functional.lingua#task-07t10)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 044](044-enter-an-objects-available-scale-and-return.lingua) · [Next · 046](046-choose-the-behavior-detail-of-one-occurrence.lingua)
+} r_2XRENCNPGT7JFZM06PVD679G4V

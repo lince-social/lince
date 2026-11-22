@@ -1,0 +1,21 @@
+Stage 009 — Pin a second presentation of the same content (@ws-stage-009: 0, is #chapter, #part-of @workspace-stages: 9) { r_5MBEAFFT2H1GA62B74TW141QTY
+**Status** Pending verification.
+
+## Capability
+
+Give each view its own anchor, layout and input focus while both presentations share accepted content and resource demand.
+
+## Completion checks
+
+- [ ] Edit the content on a surface and read it on the HUD. Close one view, then both, and inspect the remaining source and resource leases.
+
+## Implementation references
+
+[Frames and independent local views](../features/Frames.lingua) · [03.T06](../features/Frames.lingua#task-03t06) · [03.T07](../features/Frames.lingua#task-03t07)
+
+Use the applicable fixture, tolerances and recovery cases in [03 · Frames and views](../contracts/Frames-and-views-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 008](008-inspect-one-model-in-flat-and-spatial-views.lingua) · [Next · 010](010-invite-someone-to-a-tiny-document.lingua)
+} r_5MBEAFFT2H1GA62B74TW141QTY

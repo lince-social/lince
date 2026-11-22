@@ -1,0 +1,23 @@
+Stage 037 — Pose an articulated model (@ws-stage-037: 0, is #chapter, #part-of @workspace-stages: 37) { r_3CWB0WG8QKA98JM9ZF66C74RZM
+**Status** Pending verification.
+
+## Capability
+
+Give the character and the differently shaped mechanism stable links, reference poses, joint limits and native forward or supported inverse pose controls.
+
+## Completion checks
+
+- [ ] Move an end effector through a supported pose, encounter an unreachable pose, then undo and recover the previous configuration on each fixture.
+
+## Implementation references
+
+**Provider handoffs** [034 · Relations](034-assemble-two-parts-around-a-constrained-joint.lingua) · [032 · Simplification](032-replace-a-collision-proxy-under-a-resting-object.lingua) · [036 · Character Starter](036-customize-one-characters-appearance.lingua)
+
+[Articulated models and editable deformation](../features/Character-Rig.lingua) · [11.T06](../features/Character-Rig.lingua#task-11t06)
+
+Use the applicable fixture, tolerances and recovery cases in [11 · Assembly and character](../contracts/Assembly-and-character-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 036](036-customize-one-characters-appearance.lingua) · [Next · 038](038-bind-a-surface-to-a-rig.lingua)
+} r_3CWB0WG8QKA98JM9ZF66C74RZM

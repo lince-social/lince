@@ -18,11 +18,13 @@ use bevy::{
         renderer::RenderDevice,
         view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
     },
+    ui_widgets::Activate,
 };
 use lince_sandbox::{
     actions::{Action, ActionButton},
     container::BoxRoot,
     edit_mode::EditAction,
+    icons::{Icon, IconButton},
     topology::{terrain::Effect, view::View},
 };
 use std::{path::PathBuf, time::Instant};
@@ -139,7 +141,13 @@ async fn main() {
         .single(app.world())
         .unwrap();
     EditAction::Open.apply(app.world_mut(), root);
-    activate(app.world_mut(), "Floor");
+    let floor = app
+        .world_mut()
+        .query::<(Entity, &IconButton)>()
+        .iter(app.world())
+        .find_map(|(entity, button)| (button.icon == Icon::Floor).then_some(entity))
+        .expect("Floor toolbar button");
+    app.world_mut().trigger(Activate { entity: floor });
     for _ in 0..3 {
         step(&mut app);
     }

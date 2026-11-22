@@ -54,4 +54,7 @@ Pass relevant independent correctness/security/performance checks and native acc
 Consumers: [PCB layout, checks and fabrication data](Pcb.lingua); [First bounded numerical jobs and circuit references](Numerical-Runtime.lingua)
 
 Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+
+Additional independent consumers: [Electronic libraries](Electronic-Libraries.lingua) and [Physical prototyping](Electronic-Prototyping.lingua). Publish stable component/terminal identities, parameter units, source mappings and accepted connectivity operations for real adapters. Prototyping adds an explicit realization/contact graph with source correspondence and intended-net discrepancies; it does not make mesh touching conductive. Later reusable subcircuit/model authoring consumes these same identities. The [expanded electronics contract](../contracts/Electronics-workbench-contracts.lingua) owns those additional proofs.
+
 } r_52ADF52G0MSY1TYMX8XK75SNYM

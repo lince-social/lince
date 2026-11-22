@@ -1,0 +1,25 @@
+Stage 135 — Run an experiment on a standalone specimen (@ws-stage-135: 0, is #chapter, #part-of @workspace-stages: 135) { r_0V8YQTS0E55F5TTT7DB8Q7PS1H
+**Status** Pending verification.
+
+## Capability
+
+Open a specimen as its own workspace root and run a bounded structure-measurement or conformation-comparison protocol. Expose conditions, results, plots and export.
+
+## Completion checks
+
+- [ ] Compare the native measurement with a known reference, cancel a repeat and reopen the retained result with its source and worker identity.
+
+Exercise the existing fast Laboratory Protein interaction when this workflow touches Protein UI. Read visible labels and Add filter choices and select a choice through native input. [Protein requirements](../../../Lince.lingua)
+
+## Implementation references
+
+**Provider handoffs** [051 · Molecules](051-open-a-protein-as-its-own-workspace.lingua) · [071 · Numerical Runtime](071-solve-a-small-circuit-on-the-desktop.lingua)
+
+[Independent microscopic laboratory](../features/Laboratory.lingua) · [17.T04](../features/Laboratory.lingua#task-17t04)
+
+Use the applicable fixture, tolerances and recovery cases in [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 134](134-derive-an-oriented-effective-material-property.lingua) · [Next · 136](136-apply-a-derived-property-to-a-selected-object.lingua)
+} r_0V8YQTS0E55F5TTT7DB8Q7PS1H

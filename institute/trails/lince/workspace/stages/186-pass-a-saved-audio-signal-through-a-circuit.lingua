@@ -1,0 +1,20 @@
+Stage 186 — Pass a saved audio signal through a circuit (@ws-stage-186: 0, is #chapter, #part-of @workspace-stages: 186) { r_4HXFWDRJZSEE550A87G7GNEX69
+**Status** Deferred until this individual method is selected and its reference and limits are pinned.
+
+## Capability
+
+Admit an offline sample stream as a named stimulus and collect a bounded output with declared conversion, timebase and channel mapping.
+
+## Completion checks
+
+- [ ] Filter a known local signal and compare the output timing and gain with the independent reference. Reopen the experiment with the same input revision.
+- [ ] Publish this method’s version, covered inputs and conditions, independent reference, error and resource bounds. Replay cancellation, quota and affected desktop behavior for this method.
+
+## Implementation references
+
+[Earlier working capability](119-run-a-repeatable-circuit-experiment.lingua) · [Further electronics methods and scope](../contracts/Electronics-workbench-contracts.lingua#further-methods-and-completion)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 185](185-inspect-the-spectrum-of-a-captured-signal.lingua) · [Next · 187](187-use-live-audio-with-a-simulated-circuit.lingua)
+} r_4HXFWDRJZSEE550A87G7GNEX69

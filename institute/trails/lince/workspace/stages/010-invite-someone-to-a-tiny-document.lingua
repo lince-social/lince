@@ -1,0 +1,23 @@
+Stage 010 — Invite someone to a tiny document (@ws-stage-010: 0, is #chapter, #part-of @workspace-stages: 10) { r_4P1JFPS64QQYDRKG03CZC4QZW1
+**Status** Pending verification.
+
+## Capability
+
+Use the existing host policy to admit an identified editor and, when explicitly enabled, a restricted visitor. Carry revisions through reconnect and revocation.
+
+## Completion checks
+
+- [ ] Have the editor change the allowed object and the visitor inspect its public projection. Revoke access and verify a delayed request cannot expose or change private data.
+
+## Implementation references
+
+**Provider handoffs** [006 · Model](006-save-a-behavior-choice-on-an-occurrence.lingua)
+
+[Tiny-document hosting and access](../features/Hosting.lingua) · [02.T06](../features/Hosting.lingua#task-02t06)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 009](009-pin-a-second-presentation-of-the-same-content.lingua) · [Next · 011](011-see-the-cost-before-joining.lingua)
+} r_4P1JFPS64QQYDRKG03CZC4QZW1

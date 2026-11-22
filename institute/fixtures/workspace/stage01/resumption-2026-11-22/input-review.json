@@ -1,0 +1,83 @@
+{
+  "workflows": [
+    "01.W02",
+    "01.W03"
+  ],
+  "assets_checked": 19,
+  "cases": [
+    "B25",
+    "B26",
+    "B27",
+    "B28",
+    "B38",
+    "B41",
+    "B33",
+    "B34",
+    "B35",
+    "B36"
+  ],
+  "roots": [
+    "earth-site",
+    "standalone-room",
+    "blank-grid",
+    "private-study",
+    "invented-extent"
+  ],
+  "physical_extents_metres": {
+    "home/ball": [
+      0.04,
+      0.04,
+      0.04
+    ],
+    "arbitrary-seven-mm-feature": [
+      0.007,
+      0.007,
+      0.007
+    ]
+  },
+  "source_rights": "Natural Earth 4.1.0 public domain. MIT synthetic geometry and Fiote mesh/rig. Private study is a synthetic restricted fixture.",
+  "requirements": 49,
+  "host_cases": [
+    "B33",
+    "B34",
+    "B35",
+    "B36"
+  ],
+  "participants": [
+    "host",
+    "editor",
+    "visitor"
+  ],
+  "entry_outcomes": [
+    {
+      "name": "ready",
+      "meaning": "Required granted closure and capabilities fit the admitted selected profile."
+    },
+    {
+      "name": "adjusted",
+      "meaning": "A visible lower visual/coverage profile fits; accepted facts/physics/authority do not change."
+    },
+    {
+      "name": "partial",
+      "meaning": "Useful required closure is available; optional appearance/source/detail is missing, denied or capped."
+    },
+    {
+      "name": "refused",
+      "meaning": "Required granted capability/support/data cannot fit or be provided; state the concrete reason."
+    },
+    {
+      "name": "materializing",
+      "meaning": "Admitted required products are in progress with bounded queues and useful coarse coverage where valid."
+    },
+    {
+      "name": "offline-draft",
+      "meaning": "Permitted cached viewing and local draft remain usable; no automatic mutation replay or new source/host requests."
+    },
+    {
+      "name": "reconcile",
+      "meaning": "Same authority returns; resolve recorded request outcomes and current grants/base before explicit draft reconciliation."
+    }
+  ],
+  "B37": "deferred-no-stage01-experiment",
+  "source_changes": "Reviewed changes since 148620af to native edit panels, workspace switching, topology rendering, physics and engine/transport tests. Historical fixture inputs remain intact. Historic Markdown references denote the former contracts now indexed in Workspace-Contracts.lingua."
+}

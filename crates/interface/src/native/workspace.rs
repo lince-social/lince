@@ -63,6 +63,9 @@ pub struct Workspace {
     pub colors: crate::native::canvas_background::CanvasColors,
     #[serde(default)]
     pub color_overrides: [bool; 2],
+    /// Saved identity of the model workbench installed in a Laboratory showoff workspace.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub showoff_bracket: Option<String>,
 }
 
 #[derive(Component)]
@@ -112,6 +115,7 @@ impl Default for Workspaces {
                 zoom: 1.0,
                 colors: Default::default(),
                 color_overrides: [false; 2],
+                showoff_bracket: None,
             }],
             trash: Vec::new(),
             trash_retention_days: default_trash_retention_days(),

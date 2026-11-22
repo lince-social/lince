@@ -1,0 +1,23 @@
+Stage 043 — Look out from a selected object (@ws-stage-043: 0, is #chapter, #part-of @workspace-stages: 43) { r_5ZQTKVEFC885YF5HEATAK6T6NZ
+**Status** Pending verification.
+
+## Capability
+
+Offer Observe and Follow on ordinary selections using a declared viewpoint or a bounds-based fallback in the object’s frame.
+
+## Completion checks
+
+- [ ] Follow a moving noncharacter occurrence, release it and compare its source and pose with the initial state. Show loss of the subject or access.
+
+## Implementation references
+
+**Provider handoffs** [024 · Navigation](024-use-content-from-inside-the-room.lingua)
+
+[Exploration and object perspectives](../features/Exploration.lingua) · [EXP.T01](../features/Exploration.lingua#task-expt01) · [EXP.T02](../features/Exploration.lingua#task-expt02)
+
+Use the applicable fixture, tolerances and recovery cases in [Exploration and possession](../contracts/Exploration-contracts.lingua#ordered-integration-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 042](042-keep-a-character-controllable-while-anatomical-detail-unloads.lingua) · [Next · 044](044-enter-an-objects-available-scale-and-return.lingua)
+} r_5ZQTKVEFC885YF5HEATAK6T6NZ

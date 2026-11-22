@@ -1,0 +1,23 @@
+Stage 028 — Shape a room in the native editor (@ws-stage-028: 0, is #chapter, #part-of @workspace-stages: 28) { r_16NM8VPTNFWQMB9BEF6D8XFSB8
+**Status** Pending verification.
+
+## Capability
+
+Use planar and connected-mesh operations, dimensions, openings and appearance on the supplied Room. Preserve the editable source behind its display surface.
+
+## Completion checks
+
+- [ ] Make a measured opening in a wall and inspect both sides from the room. Save, reopen and undo the edit.
+
+## Implementation references
+
+**Provider handoffs** [024 · Navigation](024-use-content-from-inside-the-room.lingua)
+
+[Native mesh and room authoring](../features/Geometry.lingua) · [07.T01](../features/Geometry.lingua#task-07t01) · [07.T02](../features/Geometry.lingua#task-07t02)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 027](027-play-inside-a-focused-native-castle.lingua) · [Next · 029](029-preview-a-topology-edit-before-committing-it.lingua)
+} r_16NM8VPTNFWQMB9BEF6D8XFSB8

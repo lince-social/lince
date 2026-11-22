@@ -1502,3 +1502,53 @@ Concepts give Records meaning. Their source Vocabulary helps distinguish matchin
 Areas of influence (@areas-of-influence: 0, #instinct) {
 An Area applies enabled effects within its reach. Its drawn shape and effect reach can differ. Place an Area around an ordinary Sand, enable workspace physics to observe attraction or repulsion, and inspect inclusion, exclusion and immunity when an effect does not apply. Record filters and Protein-backed Areas are introduced separately.
 }
+
+Trails — Knowledge to learn and use (@trails: 0, is #chapter, #contains "ergon/Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1", #contains "scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6", #contains "ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D", #contains "Lince.lingua#r_YJQ36ETAKE8J7F8Y65DG7V43MB") { r_7A4AY51TXG87NVHR9J1XNZTJQ9
+Develop connected knowledge for understanding, investigation, making, maintenance and preservation. The subject entrances below are the curriculum itself; there is no separate numbered inventory.
+
+**Structure.** Keep only `ascholia/`, `scholazein/`, `lince/` and `ergon/` directly under `institute/trails/`. Keep one descriptively named entrance Record per subject inside its branch. Put its scope in that Record and connect it to its broader branch with `contains` assertions. An entrance may begin with only its description; `outline` means its formation is unfinished. Reuse an existing entrance and its identity instead of maintaining a second planning Record. Shared knowledge may serve several branches. Put proposals spanning subjects into the relevant subject entrance, using ordinary links to the other subjects; do not create parallel planning branches.
+
+**Order.** Develop breadth first: shared area foundations across the tree, then major branches across those areas, then specializations. Hephaestus has mathematics, physics, chemistry, computing, engineering and scientific inquiry. Astronomy belongs within physics; productive infrastructure belongs within engineering; clean manufacturing belongs within production engineering. Pure theory retains its scope alongside practical applications. Deep existing material can supply a bounded prerequisite without becoming a compulsory detour.
+
+**Formation.** Start accessibly and introduce notation and assumptions where used. Progress through substantial reading, connected explanations, worked examples, practice, advanced theory, independent investigation, criticism and revision. Divide large readings into explicit sections. Match evidence to the subject and the claimed depth; descriptions, file counts and related completed subjects do not complete a trail. For practical systems, connect inputs, skills, materials, energy, equipment, transport, losses, maintenance, recovery and cooperation.
+
+**Sources.** Inspect primary sources and record authors, editions, language, actual passages, availability, attribution and reuse terms. Distinguish inspected selections from larger assignments, and original calculations from reproduced published results or physical experiments. Prefer open, preservable sources; keep PDFs, EPUBs, datasets and other source media external to this repository. Preserve source identities and references.
+
+**Connections.** Use ordinary Records and meaningful assertions. Imports provide discovery; directories do not establish learning order. Open this map's branches separately; the map links the curriculum without importing every source into one publication. A Protein selects the endpoints and connections of matching predicates; contextual links do not automatically join that selection. Publish predicate meanings with the content. Do not add reverse assertions merely to display incoming links. Retrieval does not enact actions. No separate Trail feature, manifest or personal operational data is required.
+
+**Verification and continuity.** Check syntax, identities, targets, selected routes and reachability, discovery, export and relocated reopening. Independently check calculations and preserve reused material. Distinguish authored, locally checked, published and learner-demonstrated work. Keep the description, completed work, unfinished scope, next breadth-first step and verification evidence in the subject’s entrance Record. Update that entrance after each completed block; do not recreate Markdown inventories or delete an entrance when it is developed.
+
+**Sensitive material.** Assess explanations, exercises and combined source selections for harmful operational detail. Preserve safe scientific context and use benign models or published observations where appropriate. A reported sensitive stop remains **TODO — sensitive data** on the affected trail, with its reason and safe remaining scope; do not repeatedly retry it or bypass the limit through links. Completion never requires dangerous experimentation.
+
+
+**Branches:**
+
+- [Ergon — useful labor and productive knowledge](ergon/Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1)
+- [Scholazein — pursuits of a well-spent life](scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6)
+- [Ascholia — bureaucracy and administration](ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D)
+
+- [Lince — the tool](Lince.lingua#r_YJQ36ETAKE8J7F8Y65DG7V43MB)
+
+**Current development.** The curriculum now lives in the connected subject entrances. An outline is an unfinished entrance, not a completed course. Continue development breadth first using the guidance above.
+
+The earlier skeleton migration mapped 261 former scope entries into 242 new entrances and 19 existing entrances, adding Art for its previously stated scope. Its 225 specialist scope descriptions and learning routes were preserved. Hephaestus discovers 3,752 documents; its common selection remains 644 Records. Full Hephaestus export/relocation remains unverified for this skeleton.
+
+The directory correction integrated route proposals and checkpoint evidence into their subject entrances and removed 83 redundant files. An audit preserved 908 evidence paragraphs/table rows and all 9,705 existing learning assertions, with no broken local links introduced. Warnings-as-errors Cargo check and both focused tests passed: hierarchy/reachability through the canonical Lince `@tool` and outline export/relocation. The Hephaestus parser passed; the whole-tree checker retained the same 1,398 pre-existing duplicate-definition diagnostics, with none introduced.
+
+
+**Opening to develop — Find a question and question the map.**
+
+**Optional orientation.**
+
+Introduce Philosophy's own study branch and the four main branches. Follow the same object, question, or work through several of them, distinguishing a map, a source, shared preparation, and a route. Let the reader identify a goal and relevant prior knowledge, then find a useful first step and return to its context. Include an example where questioning the chosen boundary changes the investigation.
+
+**Development scope — From scattered sources to a joined Ergon library.**
+
+This route organises the work of connecting existing knowledge into a usable whole. It joins subject mapping, source selection, passage references, concise explanations, translation, authored learning routes, updates, and preservation, using ordinary Lince features to connect Institute, external, and personally retained material.
+} r_7A4AY51TXG87NVHR9J1XNZTJQ9
+
+Extension @trails "lince.vocabulary" {
+    definitions {
+        outline "An unfinished subject entrance whose body may initially contain only its scope."
+    }
+}

@@ -1,0 +1,23 @@
+Stage 094 — Attach a live camera to a place (@ws-stage-094: 0, is #chapter, #part-of @workspace-stages: 94) { r_2S3P6A0VJ6E9VXH9EV1YM8C24R
+**Status** Pending verification.
+
+## Capability
+
+Ingest an actual network feed and an independent plugin producer with stable source ID, pose, facing, intrinsics, resolution and capture-time quality. Save the attachment and expose a transient preview.
+
+## Completion checks
+
+- [ ] Move the parent frame, change stream format, stall one source and revoke a viewer. Inspect updated frustum and metadata, lease release and absence of saved raw frames.
+
+## Implementation references
+
+**Provider handoffs** [020 · Assets](020-carry-a-scene-offline-in-a-workspace-package.lingua) · [016 · Shared Presence](016-query-only-the-authorized-part-of-a-scene.lingua)
+
+[Camera sources and spatial feed metadata](../features/Camera-Feeds.lingua) · [CFE.T01](../features/Camera-Feeds.lingua#task-cfet01) · [CFE.T02](../features/Camera-Feeds.lingua#task-cfet02) · [CFE.T03](../features/Camera-Feeds.lingua#task-cfet03) · [CFE.T04](../features/Camera-Feeds.lingua#task-cfet04)
+
+Use the applicable fixture, tolerances and recovery cases in [Camera feeds and Fiote vision](../contracts/Camera-vision-contracts.lingua#canonical-fixture-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 093](093-regenerate-a-scene-while-retaining-authored-changes.lingua) · [Next · 095](095-let-fiote-inspect-a-live-frame.lingua)
+} r_2S3P6A0VJ6E9VXH9EV1YM8C24R

@@ -1,0 +1,21 @@
+Stage 134 — Derive an oriented effective material property (@ws-stage-134: 0, is #chapter, #part-of @workspace-stages: 134) { r_1K6WPG21ZJ0FZQBRQMV8HJR63X
+**Status** Pending verification.
+
+## Capability
+
+Rotate the supported single-crystal tensor and compute the selected Voigt, Reuss and Hill estimates with explicit notation and assumptions.
+
+## Completion checks
+
+- [ ] Use an isotropic control and a rotated anisotropic example, compare independent values and reject unsupported input units or orientations.
+
+## Implementation references
+
+[Microscopic property derivation](../features/Micro-Properties.lingua) · [17.T02](../features/Micro-Properties.lingua#task-17t02)
+
+Use the applicable fixture, tolerances and recovery cases in [17 · Laboratory and adoption](../contracts/Laboratory-and-adoption-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 133](133-derive-density-from-a-crystal-cell.lingua) · [Next · 135](135-run-an-experiment-on-a-standalone-specimen.lingua)
+} r_1K6WPG21ZJ0FZQBRQMV8HJR63X

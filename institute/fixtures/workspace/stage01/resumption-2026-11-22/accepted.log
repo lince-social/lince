@@ -1,0 +1,9 @@
+2026-11-22T14:42:50.182270Z  INFO bevy_pbr::cluster: GPU clustering is supported on this device.
+2026-11-22T14:42:50.182441Z  INFO bevy_render::batching::gpu_preprocessing: GPU preprocessing is fully supported on this device.
+2026-11-22T14:42:50.189197Z  INFO bevy_winit::system: Creating new window Lince (69v0)
+2026-11-22T14:42:50.217451Z  WARN {}{task_name="org.a11y.Status proxy caching"}: zbus::proxy: Failed to populate properties cache via GetAll: org.freedesktop.DBus.Error.ServiceUnknown: The name is not activatable. Property change streams will not produce values.
+2026-11-22T14:42:54.567587Z ERROR bevy_winit::system: could not set cursor position: os error at /home/user/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winit-0.30.13/src/platform_impl/linux/wayland/window/state.rs:951: cursor position can be set only for locked cursor.
+2026-11-22T14:42:55.011423Z  INFO bevy_render::view::window::screenshot: Screenshot saved to /home/user/git/lince-social/lince/target/stage001-s0wpI5iT/accepted/before-drag.png
+2026-11-22T14:42:55.171054Z ERROR bevy_winit::system: could not set cursor position: os error at /home/user/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winit-0.30.13/src/platform_impl/linux/wayland/window/state.rs:951: cursor position can be set only for locked cursor.
+2026-11-22T14:43:06.186322Z  INFO bevy_render::view::window::screenshot: Screenshot saved to /home/user/git/lince-social/lince/target/stage001-s0wpI5iT/accepted/settled.png
+Workspace baseline observed: native drag, Area attraction, gravity, settling, workspace isolation and idle sampling.

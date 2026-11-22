@@ -1,0 +1,25 @@
+Stage 108 — Turn a site observation into a reviewed proposal (@ws-stage-108: 0, is #chapter, #part-of @workspace-stages: 108) { r_5WV1AXZZNH9KKN80ZZNNPVSS0J
+**Status** Pending verification.
+
+## Capability
+
+Attach an observation to the civil fixture, prepare a reviewable maintenance or accessibility change and publish the permitted fields.
+
+## Completion checks
+
+- [ ] Follow a corridor issue from source evidence to the reviewed proposal. Compare a reviewer’s view with a restricted visitor’s and inspect the accepted quantities.
+
+## Implementation references
+
+**Provider handoffs** [105 · Operations](105-preview-the-consequences-of-a-delay.lingua) · [103 · Manufacturing Civil](103-lay-out-a-corridor-on-surveyed-terrain.lingua)
+
+[Civic and civil operational workflows](../features/Civic.lingua) · [13.T03](../features/Civic.lingua#task-13t03) · [13.T04](../features/Civic.lingua#task-13t04)
+
+Use the applicable fixture, tolerances and recovery cases in [13 · Operational workflow](../contracts/Operational-workflow-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [13 · Operational workflow](../contracts/Operational-workflow-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 107](107-reconcile-a-design-change-with-accepted-work.lingua) · [Next · 109](109-work-across-two-independently-governed-sources.lingua)
+} r_5WV1AXZZNH9KKN80ZZNNPVSS0J

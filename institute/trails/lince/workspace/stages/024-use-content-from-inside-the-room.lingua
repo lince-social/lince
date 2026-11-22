@@ -1,0 +1,21 @@
+Stage 024 — Use content from inside the room (@ws-stage-024: 0, is #chapter, #part-of @workspace-stages: 24) { r_1N6PKNQW4C7X8JD8S6495T2YH8
+**Status** Pending verification.
+
+## Capability
+
+Route projected pointer and keyboard input to readable mounted content as the viewer approaches. Keep distant presentations within budget.
+
+## Completion checks
+
+- [ ] Approach a mounted surface, use its control, then walk away and resume navigation. Check the hit target and focus transfer at both distances.
+
+## Implementation references
+
+[Local Orbit Fly Walk and content use](../features/Navigation.lingua) · [05.T07](../features/Navigation.lingua#task-05t07)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 023](023-move-through-a-room-in-orbit-fly-or-walk.lingua) · [Next · 025](025-use-a-mounted-native-panel.lingua)
+} r_1N6PKNQW4C7X8JD8S6495T2YH8

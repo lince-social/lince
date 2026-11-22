@@ -82,6 +82,7 @@ pub enum Icon {
     EventsShared,
     Park,
     Keyboard,
+    Floor,
 }
 
 #[derive(Component, Clone)]
@@ -180,7 +181,7 @@ pub(crate) fn image(world: &World, icon: Icon) -> Option<ImageNode> {
 
 impl FromWorld for IconAtlas {
     fn from_world(world: &mut World) -> Self {
-        let rows = (Icon::Keyboard as u32 + 1).div_ceil(5);
+        let rows = (Icon::Floor as u32 + 1).div_ceil(5);
         let image = world.resource_mut::<Assets<Image>>().add(Image::new(
             Extent3d {
                 width: 640,
@@ -684,7 +685,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn atlas_contains_every_icon_and_straight_alpha_for_tinting() {
         let pixels = include_bytes!(concat!(env!("OUT_DIR"), "/icons.rgba"));
-        for index in 0..=Icon::Keyboard as usize {
+        for index in 0..=Icon::Floor as usize {
             let mut ink = false;
             for y in index / 5 * 128..(index / 5 + 1) * 128 {
                 for x in index % 5 * 128..(index % 5 + 1) * 128 {

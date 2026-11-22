@@ -1,0 +1,25 @@
+Stage 142 — Let physical joints drive an authored rig (@ws-stage-142: 0, is #chapter, #part-of @workspace-stages: 142) { r_36J9HV5RYEWSY0010Y1ZWX3NA1
+**Status** Pending verification.
+
+## Capability
+
+Map selected B41 rig links and pose coordinates to actual bodies, mass, contacts and motor limits. Define the supported handoff between animation and physical control.
+
+## Completion checks
+
+- [ ] Switch the bounded mechanism between controllers and inspect joint angles, contact and continuity. Reject an incompatible mapping and recover the last valid pose.
+
+## Implementation references
+
+**Provider handoffs** [141 · Mechanical Transitions](141-replace-a-detailed-mechanism-with-an-aggregate.lingua) · [039 · Character Motion](039-play-an-authored-movement-clip.lingua)
+
+[Physical articulated bodies](../features/Physical-Articulation.lingua) · [18.T06](../features/Physical-Articulation.lingua#task-18t06)
+
+Use the applicable fixture, tolerances and recovery cases in [18 · Rigid and articulated physics](../contracts/Rigid-and-articulated-physics-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [18 · Rigid and articulated physics](../contracts/Rigid-and-articulated-physics-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 141](141-replace-a-detailed-mechanism-with-an-aggregate.lingua) · [Next · 143](143-capture-a-selected-simulation-interval.lingua)
+} r_36J9HV5RYEWSY0010Y1ZWX3NA1

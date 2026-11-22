@@ -1,0 +1,39 @@
+Reusable electronic libraries and source adapters (@ws-electronic-libraries: 0, is #chapter, #part-of @workspace-development, #requires @ws-schematics) { r_3RPW04DYES8F9389JC87R7EKFV
+Status: Pending. Owner refinement, 2026-11-22: reusable electronic parts retain their source, mappings, supported models and usable offline dependencies.
+
+[Development graph](../Workspace-Development.lingua) · [Electronics workbench contracts](../contracts/Electronics-workbench-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified export: [Electronic definitions and schematics](Schematics.lingua). Consume its actual component, symbol, terminal, revision and command contracts. Deliver a searchable local collection and one working source adapter with native import, inspection, reuse and refresh. PCB authoring, numerical execution, geography and physical equipment integration are not prerequisites. Model execution and realized-board acceptance remain consumer proofs.
+
+## Ownership and parallel work
+
+Own library discovery, source decoding and reconciliation over existing definitions, assets, rights and offline closure. Schematics retains electronic identity and mappings; runtime consumers retain evaluator admission and numerical validation. Reserve shared schema changes with those owners. Prototyping can develop independently after Schematics publishes its verified boundary; neither package requires the other's catalogue or editor. Do not introduce a second component database, registry, save system or evaluator installer.
+
+## Ordered work
+
+### Task ELB.T01
+
+- [ ] Pin a small attributed fixture and the exact first source format/version before implementation. KiCad symbol and footprint libraries are candidates, not a promised complete importer. Deliver an actual supported part-file decoder and a read-only SQLite catalogue adapter whose configurable fields reference those source assets, alongside local authored definitions. Map provider ID/revision, typed parameters, asset/model references and attribution into existing source services; use bounded paged queries and explicit unavailable fields. The catalogue remains external source data, while accepted imports use the normal Workspace store. Remote database/service plugins can implement the same discovery/query/fetch contract with their own access and consistency semantics. Include passive parts, polarized parts, a multi-pin device and a connector, with independently specified terminal correspondence. Declare supported fields, unsupported constructs, decode limits and library rights. An unsupported shape or model stays identified rather than silently becoming a generic part.
+
+### Task ELB.T02
+
+- [ ] Provide native discovery/search/filter by source, family, typed parameter quantity/unit, package, logical terminal role and available capabilities. Separate symbol, footprint, package appearance, intended ratings, functional behavior and numerical-model availability. Search results show exact source revision, provenance, rights, dependencies and missing assets. Selecting a component inspects it before native placement through the normal schematic commands. A rating does not assert a simulated failure mechanism; a model's presence does not assert validated accuracy.
+
+### Task ELB.T03
+
+- [ ] Import reusable definitions and inert model artifacts through the existing identity and asset path. Preserve explicit symbol-pin ↔ logical-terminal ↔ package-pin/pad ↔ evaluator-terminal mappings: package pin numbering is not necessarily SPICE terminal order. Retain units, parameters, reference conventions, initial-state requirements, model version, validity range and supporting evidence where supplied; mark absent claims unknown. Include example circuits and reference-harness manifests with captured inputs and expected observables. Do not infer a model or equivalent substitute from a part name, matching appearance or successful parsing.
+
+### Task ELB.T04
+
+- [ ] Deliver native import/inspect/preview/cancel, pin revision, local fork and three-way refresh against the previous imported source and local changes. Preserve stable correspondence; expose removed, split, renamed or ambiguous terminals and conflicting edits. Accept only selected resolved changes through normal undo and revision checks. Invalidate dependent products without changing running consumers' pinned inputs. Reopen the complete supported collection offline, retaining rights and declared missing dependencies. Do not fetch arbitrary model dependencies or execute embedded artifacts merely to browse or import.
+
+### Task ELB.T05
+
+- [ ] Prove actual catalogue queries and source-file fetches, local search, attributed import, native placement, two independent occurrences, fork, conflicting refresh, undo and offline reopen against the independent mappings. Exercise incompatible units, swapped model terminals, missing assets, oversized input and stale completion. Measure decode/search/placement latency, stored and active bytes, dependency expansion and release on named hardware. Follow the shared edit-panel geometry, keyboard access and readable status rules. Export pending validation status for unsupported consumers; numerical models become validated only through the real evaluator's separate references when that consumer exists. The full workbench join must exercise an imported model through that actual consumer.
+
+## Completion and handoff
+
+Publish the implemented source adapter/decoder versions, catalogue field mappings and query limits, schemas, library fixture, reference manifests, source owners, native evidence and measured limits. Read the Electronics workbench contracts and existing Electronic-design contracts. Later PCB, prototyping and numerical consumers reuse these definitions without requiring unrelated library formats. Current outcome: unbuilt and unverified; no imported model or reference harness is certified by this plan.
+} r_3RPW04DYES8F9389JC87R7EKFV

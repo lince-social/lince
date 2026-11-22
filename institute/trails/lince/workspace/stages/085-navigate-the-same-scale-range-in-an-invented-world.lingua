@@ -1,0 +1,21 @@
+Stage 085 — Navigate the same scale range in an invented world (@ws-stage-085: 0, is #chapter, #part-of @workspace-stages: 85) { r_23E13E9AHH3YJ8S318836SXVZ7
+**Status** Pending verification.
+
+## Capability
+
+Use the same sparse refinement route for authored terrain layers and a nongeographic root. Reuse stable object identity while selecting representations at each scale.
+
+## Completion checks
+
+- [ ] Traverse both B25 and B38 inward and outward, including the 7 mm feature and a rapid reversal. Compare active costs as empty addressable extent increases.
+
+## Implementation references
+
+[Globe, sparse scale and geographic layers](../features/Geography.lingua) · [05.T04b](../features/Geography.lingua#task-05t04b) · [05.T09](../features/Geography.lingua#task-05t09) · [05.T13](../features/Geography.lingua#task-05t13)
+
+Use the applicable fixture, tolerances and recovery cases in [05 · Scale navigation and hosting](../contracts/Scale-navigation-and-hosting-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 084](084-travel-from-a-globe-to-a-local-place.lingua) · [Next · 086](086-download-a-chosen-city-region-for-offline-use.lingua)
+} r_23E13E9AHH3YJ8S318836SXVZ7

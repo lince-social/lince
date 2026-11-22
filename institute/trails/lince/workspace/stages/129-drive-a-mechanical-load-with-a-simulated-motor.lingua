@@ -1,0 +1,23 @@
+Stage 129 — Drive a mechanical load with a simulated motor (@ws-stage-129: 0, is #chapter, #part-of @workspace-stages: 129) { r_36S084VSRWE6MKP90TFA8DPH5X
+**Status** Pending verification.
+
+## Capability
+
+Couple a bounded DC winding and shaft to the rigid load. Map current to torque and rotation to back-EMF at accepted time boundaries, with explicit units and rollback.
+
+## Completion checks
+
+- [ ] Compare locked-shaft current, no-load speed and a load step with the independent references. Observe current change when the shaft is restrained and check the energy balance.
+
+## Implementation references
+
+**Provider handoffs** [121 · Mixed Signal Circuits](121-build-a-reusable-electrical-subcircuit.lingua) · [128 · Rigid](128-run-two-physical-domains-with-independent-clocks.lingua)
+
+[Electromechanical devices and coupled loads](../features/Electromechanical-Devices.lingua) · [EMC.T01](../features/Electromechanical-Devices.lingua#task-emct01) · [EMC.T02](../features/Electromechanical-Devices.lingua#task-emct02) · [EMC.T03](../features/Electromechanical-Devices.lingua#task-emct03) · [EMC.T04](../features/Electromechanical-Devices.lingua#task-emct04)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 128](128-run-two-physical-domains-with-independent-clocks.lingua) · [Next · 130](130-validate-an-imported-electrical-model.lingua)
+} r_36S084VSRWE6MKP90TFA8DPH5X

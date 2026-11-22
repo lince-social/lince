@@ -1,0 +1,23 @@
+Stage 124 — Assign a physical material directly (@ws-stage-124: 0, is #chapter, #part-of @workspace-stages: 124) { r_00WMNC5DGJGZ78MG2XSQBHGC38
+**Status** Pending verification.
+
+## Capability
+
+Expose a material selection on a bounded rod or region, including units, conditions and property provenance. Let a user choose measured steel or wood without a microscopic specimen.
+
+## Completion checks
+
+- [ ] Change steel to wood on one occurrence, reopen and inspect the effective property and evidence. The independently chosen visual appearance stays usable.
+
+## Implementation references
+
+**Provider handoffs** [030 · Geometry](030-edit-a-chosen-group-of-mesh-copies.lingua) · [046 · Functional](046-choose-the-behavior-detail-of-one-occurrence.lingua)
+
+[Material properties and offline evidence](../features/Materials.lingua) · [16.T01](../features/Materials.lingua#task-16t01) · [16.T02](../features/Materials.lingua#task-16t02)
+
+Use the applicable fixture, tolerances and recovery cases in [16 · Material property](../contracts/Material-property-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 123](123-edit-a-firmware-program-and-reload-it.lingua) · [Next · 125](125-resolve-material-properties-from-an-offline-evidence-pack.lingua)
+} r_00WMNC5DGJGZ78MG2XSQBHGC38

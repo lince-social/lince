@@ -219,4 +219,9 @@ Finish each independently scheduled specialist slice only when its actual author
   ```
 
 - [ ] After verified implementation, remove only completed task detail as required by repository planning rules; preserve this factual completion summary, unfinished requirements and usable links to the implemented contracts/evidence. Do not replace a pending task with an invented success summary. Keep the retained workflow paragraphs independently readable; replace completed instructions/examples with real contract/test links and redirect incoming anchors before pruning detail. Unfinished scope keeps its full implementation context.
+
+## Electronic branch boundary
+
+Initial digital logic, MCU firmware and bounded motor/load simulation have owned branches in [Electronics workbench contracts](Electronics-workbench-contracts.lingua). They do not wait for electrothermal or semiconductor/device-fabrication studies. Stage 21 extends actual providers for the specialist phenomena needed by its selected methods; no earlier firmware result inherits thermal, RF or silicon-level validity.
+
 } r_2W3PKPY1XVXRENJKD79RDZAY4Z

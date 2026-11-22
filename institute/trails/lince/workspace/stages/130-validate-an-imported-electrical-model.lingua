@@ -1,0 +1,23 @@
+Stage 130 — Validate an imported electrical model (@ws-stage-130: 0, is #chapter, #part-of @workspace-stages: 130) { r_45C1C8V4NP1YH5JYT1YQVFVAFR
+**Status** Pending verification.
+
+## Capability
+
+Map the real catalogue part’s terminals to the admitted evaluator and execute the revision-pinned reference manifest through the existing workbench.
+
+## Completion checks
+
+- [ ] Swap two terminals deliberately, inspect the discrepancy, repair the mapping and reproduce the expected electrical measurements on the prototype.
+
+## Implementation references
+
+**Provider handoffs** [8 required provider handoffs](../features/Electronics-Integration.lingua#start-gate-and-ownership)
+
+[Composed electronics workbench acceptance](../features/Electronics-Integration.lingua) · [EBI.T01](../features/Electronics-Integration.lingua#task-ebit01)
+
+Use the applicable fixture, tolerances and recovery cases in [Electronics workbench](../contracts/Electronics-workbench-contracts.lingua#native-workflows-and-acceptance).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 129](129-drive-a-mechanical-load-with-a-simulated-motor.lingua) · [Next · 131](131-decode-a-firmware-bus-transaction.lingua)
+} r_45C1C8V4NP1YH5JYT1YQVFVAFR

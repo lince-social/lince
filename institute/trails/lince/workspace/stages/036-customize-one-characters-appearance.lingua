@@ -1,0 +1,21 @@
+Stage 036 — Customize one character’s appearance (@ws-stage-036: 0, is #chapter, #part-of @workspace-stages: 36) { r_6Q1MNHHTVPJR9AN0FYHMTDYVTW
+**Status** Pending verification.
+
+## Capability
+
+Use the declared editable material, size and attachment parameters on a selected supplied character variant.
+
+## Completion checks
+
+- [ ] Change a garment on one of two copies, save and reopen. Compare appearances and inspect the original shared definition.
+
+## Implementation references
+
+[Supplied character appearance and navigation](../features/Character-Starter.lingua) · [07.T09](../features/Character-Starter.lingua#task-07t09)
+
+Use the applicable fixture, tolerances and recovery cases in [07 · Native authoring and behavior](../contracts/Native-authoring-and-behavior-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 035](035-navigate-as-a-supplied-character.lingua) · [Next · 037](037-pose-an-articulated-model.lingua)
+} r_6Q1MNHHTVPJR9AN0FYHMTDYVTW

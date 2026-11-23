@@ -1,5 +1,7 @@
 //! Model documents in Edit → Workspaces. State belongs to the desktop workspace, not the panel.
+pub(crate) mod accepted;
 pub(crate) mod bridge;
+mod library;
 
 use super::label;
 use crate::native::{
@@ -20,6 +22,8 @@ struct Documents(BTreeMap<u64, Session>);
 
 #[derive(Default)]
 struct Session {
+    accepted: accepted::State,
+    library: library::State,
     directory: PathBuf,
     scene: Option<Scene>,
     revision: Option<CanonicalHash>,
@@ -41,10 +45,14 @@ struct Form {
     name: Option<Entity>,
     location: Option<[Entity; 3]>,
     record: Option<Entity>,
+    request_id: Option<Entity>,
+    source_directory: Option<Entity>,
 }
 
 #[derive(Clone)]
 enum Command {
+    Accepted(accepted::Action),
+    Library(library::Action),
     Example,
     New,
     Open,
@@ -173,10 +181,14 @@ fn draw(world: &mut World, section: Entity, root: Entity, workspace: u64) {
         name: None,
         location: None,
         record: None,
+        request_id: None,
+        source_directory: None,
     };
     if let Some(scene) = &scene {
         button(world, page, "Save scene", Command::Save);
         button(world, page, "Save to a new directory", Command::SaveCopy);
+        form.request_id = accepted::controls(world, root, workspace, page);
+        form.source_directory = library::controls(world, root, workspace, page);
         if undo {
             button(world, page, "Undo scene edit", Command::Undo);
         }
@@ -188,7 +200,10 @@ fn draw(world: &mut World, section: Entity, root: Entity, workspace: u64) {
         button(world, page, "Create part and place it", Command::Add);
         for part in scene.parts.iter() {
             label(world, page, &part.name, 16.0);
-            for slot in scene.slots.iter().filter(|s| s.part == part.id) {
+            let pin = part
+                .pin(&scene.document)
+                .expect("validated scene definition");
+            for slot in scene.slots.iter().filter(|s| s.pin(&scene.document) == pin) {
                 let handle = scene.handle(slot);
                 let marker = if selected.as_ref() == Some(&handle) {
                     "Selected"
@@ -209,10 +224,11 @@ fn draw(world: &mut World, section: Entity, root: Entity, workspace: u64) {
                 world,
                 page,
                 &format!(
-                    "Root {}\nSlot {}\nDefinition {}\nRevision {}\nLocal origin element {}",
+                    "Root {}\nSlot {}\nDefinition {}\nSource document {}\nRevision {}\nLocal origin element {}",
                     scene.root.as_str(),
                     slot.id.as_str(),
                     slot.part.as_str(),
+                    slot.source.as_ref().unwrap_or(&scene.document).as_str(),
                     slot.revision.as_str(),
                     PART_ORIGIN.0
                 ),
@@ -292,7 +308,8 @@ impl Action for Command {
         let result = session.run(world, form, self);
         let success = result.is_ok();
         session.message = result.unwrap_or_else(|e| e);
-        if !success {
+        let redraw = success || matches!(self, Command::Library(_));
+        if !redraw {
             status(world, form.status, &session.message);
         }
         world
@@ -312,6 +329,8 @@ impl Action for Command {
             } else {
                 world.entity_mut(form.root).remove::<bridge::Connected>();
             }
+        }
+        if redraw {
             draw(world, form.section, form.root, form.workspace);
         }
     }
@@ -327,11 +346,20 @@ fn showoff_bracket(world: &World, root: Entity, workspace: u64) -> Option<&str> 
         .as_deref()
 }
 
+fn coordinates(world: &World, form: Form) -> Result<[DecimalValue; 3], String> {
+    let [x, y, z] = form.location.ok_or("Select a placement.")?;
+    let coordinate = |field| {
+        DecimalValue::parse_inferred(value(world, field)?.trim()).map_err(|e| e.to_string())
+    };
+    Ok([coordinate(x)?, coordinate(y)?, coordinate(z)?])
+}
+
 impl Session {
     fn remember(&mut self, previous: Scene) {
         if self.undo.len() == 16 {
             self.undo.remove(0);
         }
+        self.accepted.invalidate();
         self.undo.push(previous);
         self.redo.clear();
         self.dirty = true;
@@ -339,6 +367,8 @@ impl Session {
 
     fn run(&mut self, world: &mut World, form: Form, command: &Command) -> Result<String, String> {
         match command {
+            Command::Accepted(action) => accepted::run(self, world, form, *action),
+            Command::Library(action) => library::run(self, world, form, action),
             Command::Example => {
                 let id = showoff_bracket(world, form.root, form.workspace)
                     .ok_or("Open the model workbench in the showoff workspace.")?;
@@ -355,7 +385,7 @@ impl Session {
                     directory: self.directory.clone(),
                     ..default()
                 };
-                Ok("Drag the Bracket on the canvas, then undo the scene edit. Save to a new directory to keep a separate copy.".into())
+                Ok("Drag the Bracket and undo. Save the scene, then open Accepted edits and measurements to try recovering a lost reply.".into())
             }
             Command::New | Command::Open | Command::Save | Command::SaveCopy => {
                 let text = value(world, form.path)?;
@@ -369,15 +399,26 @@ impl Session {
                     } else {
                         None
                     };
-                    let (scene, revision) = opened
-                        .map_or_else(|| (Scene::default(), None), |o| (o.scene, Some(o.revision)));
+                    let (scene, revision, last) = opened.map_or_else(
+                        || (Scene::default(), None, None),
+                        |o| (o.scene, Some(o.revision), o.last_receipt),
+                    );
                     let projection = bridge::project(world, form.root, form.workspace, &scene);
                     let selected = scene
                         .canvas
                         .as_ref()
                         .map(|b| b.handle.clone())
                         .or_else(|| scene.slots.first().map(|s| scene.handle(s)));
+                    let mut accepted = accepted::State::opened(last);
+                    // A derived sidecar cannot prevent access to the authored scene.
+                    let recovered = match (&revision, &selected) {
+                        (Some(revision), Some(handle)) => {
+                            accepted.recover_measurement(&path, &scene, revision, handle)
+                        }
+                        _ => Ok(()),
+                    };
                     *self = Self {
+                        accepted,
                         directory: path,
                         scene: Some(scene),
                         dirty: revision.is_none(),
@@ -388,6 +429,11 @@ impl Session {
                     if let Err(reason) = projection {
                         return Ok(format!(
                             "Opened the scene. Canvas binding unavailable: {reason}"
+                        ));
+                    }
+                    if let Err(reason) = recovered {
+                        return Ok(format!(
+                            "Opened the scene. Saved measurement unavailable: {reason}"
                         ));
                     }
                     return Ok(if self.dirty {
@@ -411,6 +457,12 @@ impl Session {
                     expected,
                 )
                 .map_err(|e| e.to_string())?;
+                if self.directory != path || self.revision.as_ref() != Some(&revision) {
+                    self.accepted.invalidate();
+                }
+                if matches!(command, Command::SaveCopy) {
+                    self.accepted = default();
+                }
                 self.revision = Some(revision);
                 self.directory = path;
                 self.dirty = false;
@@ -428,6 +480,9 @@ impl Session {
                     self.scene.as_ref().unwrap(),
                     handle,
                 );
+                if self.selected.as_ref() != Some(handle) {
+                    self.accepted.invalidate();
+                }
                 self.selected = Some(handle.clone());
                 Ok("Editing this placement.".into())
             }
@@ -456,6 +511,7 @@ impl Session {
                 {
                     self.selected = scene.slots.first().map(|s| scene.handle(s));
                 }
+                self.accepted.invalidate();
                 self.dirty = true;
                 Ok("Restored the scene edit.".into())
             }
@@ -483,12 +539,7 @@ impl Session {
                         )?;
                     }
                     Command::Apply => {
-                        let [x, y, z] = form.location.ok_or("Select a placement.")?;
-                        let coordinate = |field| {
-                            DecimalValue::parse_inferred(value(world, field)?.trim())
-                                .map_err(|e| e.to_string())
-                        };
-                        let metres = [coordinate(x)?, coordinate(y)?, coordinate(z)?];
+                        let metres = coordinates(world, form)?;
                         let record = value(world, form.record.ok_or("Missing Record field.")?)?;
                         let record = record.trim();
                         let handle = self.selected.as_ref().ok_or("Select a placement.")?;

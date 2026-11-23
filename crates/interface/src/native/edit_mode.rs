@@ -529,10 +529,12 @@ fn reveal_focus(
             } else {
                 0.0
             };
+            let next = crate::native::scroll_sand::revealed_offset(panel, delta);
             if delta != 0.0
                 && let Ok(mut scroll) = scrolls.get_mut(panel_entity)
+                && (next - scroll.0.y).abs() > 0.5
             {
-                scroll.0.y = (scroll.0.y + delta * panel.inverse_scale_factor()).max(0.0);
+                scroll.0.y = next;
                 if let Some(wake) = &wake {
                     wake.ring();
                 }

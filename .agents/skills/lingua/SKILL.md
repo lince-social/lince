@@ -8,7 +8,7 @@ description: How to read `.lingua` Records — the owner-authored files under `i
 `.lingua` files under `institute/trails/` contain **Records**, which hold the
 owner's documentation, declarations, and task plan in one format. Lince's
 main Record is `institute/trails/Lince.lingua`, with related Records under
-`institute/trails/lince/`. Instinct ingests selected Records, so they are read
+`institute/trails/`. Instinct ingests selected Records, so they are read
 by people who were not in your conversation.
 
 ## Read them. The owner writes them.
@@ -62,7 +62,7 @@ That is normal, not a defect.
 `crates/lingua/src/grammar.rs` is the syntax authority. The parser, formatter,
 and checker share this typed `rust-sitter` grammar. See the Lingua Record in
 `institute/trails/Lince.lingua` and the examples in
-`institute/trails/lince/simulation/lingua-examples/Guide.md`.
+`institute/trails/habits/lingua-examples/`.
 
 ## Commands
 

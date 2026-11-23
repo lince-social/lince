@@ -129,8 +129,17 @@
           "--prefix" "LD_LIBRARY_PATH" ":" runtime.library_paths
         ];
 
-      installParkSession = ''
-        install -Dm755 institute/packaging/linux/lince-park-session "$out/bin/lince-park-session"
+      parkLauncher = pkgs: pkgs.writeShellScript "lince-park-session" ''
+        set -eu
+        executable="$(dirname "$(readlink -f "$0")")/lince"
+        if [ -n "''${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+          exec "$executable" --park "$@"
+        fi
+        exec ${pkgs.dbus}/bin/dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- "$executable" --park "$@"
+      '';
+
+      installParkSession = pkgs: ''
+        install -Dm755 ${parkLauncher pkgs} "$out/bin/lince-park-session"
         install -Dm644 institute/packaging/linux/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
         substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
           --replace-fail "Exec=lince-park-session" "Exec=$out/bin/lince-park-session"
@@ -163,7 +172,7 @@
             install -Dm644 revision "$out/share/lince/revision"
             install -Dm644 build-info.json "$out/share/lince/build-info.json"
             ${installGraphicsRuntime pkgs libraries}
-            install -Dm755 bin/lince-park-session "$out/bin/lince-park-session"
+            install -Dm755 ${parkLauncher pkgs} "$out/bin/lince-park-session"
             install -Dm644 share/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
             substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
               --replace-fail "Exec=lince-park-session" "Exec=$out/bin/lince-park-session"
@@ -180,17 +189,16 @@
                 "--prefix" "PATH" ":" (pkgs.lib.makeBinPath (parkRuntimeTools pkgs))
               ]
             )}
-            substituteInPlace "$out/bin/lince-park-session" --replace-fail \
-              'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
-            patchShebangs "$out/bin/lince-park-session"
             wrapProgram "$out/bin/lince-park-session" --prefix PATH : "${pkgs.lib.makeBinPath (parkRuntimeTools pkgs)}"
           '';
           doInstallCheck = true;
           installCheckPhase = ''
             runHook preInstallCheck
             timeout 10 "$out/bin/lince" --build-info > actual-build-info.json
-            ${pkgs.bash}/bin/bash ${./institute/packaging/linux/check-build-info.sh} \
-              actual-build-info.json "$out/share/lince/build-info.json"
+            ${pkgs.jq}/bin/jq -L ${./institute/packaging/linux} -es \
+              --slurpfile expected "$out/share/lince/build-info.json" \
+              'include "build-info"; park_release and ($expected | length == 1) and .[0] == $expected[0]' \
+              actual-build-info.json >/dev/null
             grep -Fx "Exec=$out/bin/lince-park-session" "$out/share/wayland-sessions/lince.desktop"
             runHook postInstallCheck
           '';
@@ -982,7 +990,6 @@
                   "LICENSE"
                   "institute"
                   "institute/trails"
-                  "institute/trails/lince"
                   "institute/trails/Lince.lingua"
                 ]
                 || builtins.any (root: rel == root || lib.hasPrefix (root + "/") rel)
@@ -1068,7 +1075,7 @@
                 install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
                 install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"
                 install -Dm644 crates/vendor/smithay/LICENSE.txt "$out/share/licenses/smithay/LICENSE.txt"
-              '' + installParkSession);
+              '' + installParkSession pkgs);
 
               passthru = lib.optionalAttrs withPark { providedSessions = [ "lince" ]; };
 
@@ -1085,15 +1092,12 @@
                   )
                 }
               '' + lib.optionalString withPark ''
-                substituteInPlace "$out/bin/lince-park-session" --replace-fail \
-                  'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
-                patchShebangs "$out/bin/lince-park-session"
                 wrapProgram "$out/bin/lince-park-session" --prefix PATH : "${lib.makeBinPath interfaceLinuxRuntimeTools}"
               '';
 
               postInstallCheck = lib.optionalString withPark ''
                 timeout 10 "$out/bin/lince" --build-info > build-info.json
-                ${pkgs.bash}/bin/bash ${./institute/packaging/linux/check-build-info.sh} build-info.json
+                ${pkgs.jq}/bin/jq -L ${./institute/packaging/linux} -es 'include "build-info"; park_release' build-info.json >/dev/null
                 install -Dm644 ${./LICENSE} "$out/share/licenses/lince/LICENSE"
                 install -Dm644 build-info.json "$out/share/lince/build-info.json"
                 ${pkgs.jq}/bin/jq -r .revision build-info.json > "$out/share/lince/revision"
@@ -1319,7 +1323,7 @@
                   lib.any (package: toString package == toString pkgs.hello) config.environment.systemPackages;
               in
               {
-                park-launch = import ./institute/packaging/linux/launch-checks.nix { inherit pkgs graphicsWrapperArgs installGraphicsRuntime; };
+                park-launch = import ./institute/packaging/linux/launch-checks.nix { inherit pkgs graphicsWrapperArgs installGraphicsRuntime parkLauncher; };
                 park-session = import ./institute/packaging/linux/park-checks.nix { inherit self nixpkgs pkgs system; };
                 park-source-install = pkgs.runCommand "park-source-install-contract" { nativeBuildInputs = [ pkgs.jq ]; } ''
                   mkdir -p "$out/bin"
@@ -1458,7 +1462,7 @@
 
             shellHook = localBuildHook + captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
-              export LINCE_CONTENT="''${LINCE_CONTENT-$lince_build_root/institute/trails/lince}"
+              export LINCE_CONTENT="''${LINCE_CONTENT-$lince_build_root/institute/trails}"
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH="${
@@ -1562,7 +1566,7 @@
 
             shellHook = localBuildHook + captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
-              export LINCE_CONTENT="''${LINCE_CONTENT-$lince_build_root/institute/trails/lince}"
+              export LINCE_CONTENT="''${LINCE_CONTENT-$lince_build_root/institute/trails}"
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LINCE_PARK_ATSPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"

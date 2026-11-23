@@ -3,9 +3,9 @@ name: Android Lince
 on:
   # push:
   #   branches: [main, dev]
-  #   paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
+  #   paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml']
   # pull_request:
-  #   paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
+  #   paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml']
   workflow_dispatch:
     inputs:
       rust_version:
@@ -60,17 +60,13 @@ jobs:
             exit 1
           fi
       - uses: actions/checkout@v4
-      - name: Select Rust update candidate for checks
-        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
-        env:
-          RUST_CANDIDATE: ${{ inputs.rust_version }}
-          BUILD_PACKAGES: ${{ inputs.build_packages }}
-        run: |
-          [[ "$BUILD_PACKAGES" == false ]]
-          python3 -B institute/scripts/update-rust-toolchain.py --candidate "$RUST_CANDIDATE"
-      - name: Read pinned Rust version
+      - name: Restrict candidates to checks
+        if: inputs.rust_version != '' && inputs.build_packages
+        run: exit 1
+      - uses: ./.github/actions/rust-version
         id: toolchain
-        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
+        with:
+          candidate: ${{ inputs.rust_version }}
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.toolchain.outputs.version }}

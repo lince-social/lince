@@ -1,68 +1,73 @@
-// non-lean-yet
-// Scope: mod epub, mod pdf, mod pdf_online, mod resources.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 93, 274.
-// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
-//   framework contracts. Sites 69.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 127, 128,
-//   143, 322, 370.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 75, 76, 82, 83, 84, 87, 90, 92, 93, 249, 254, 264, 265, 268, 271, 273, 274, 342, 352.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   82, 83, 84, 87, 249, 254, 264, 265, 268.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 82, 83, 84, 87, 249, 254, 264, 265, 268.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 17.
-// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 102.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 69, 114, 167, 211, 220, 285, 351, 382, 393.
-// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
-//   adding `#[derive(Debug)]` or a manual implementation. Sites 108.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 10,
-//   11, 12, 13, 14, 17, 19, 20, 24, 25, 26, 27, 31, 35, 39, 50, 51, 52, 53, 57, 58, 59, 63, 64, 65,
-//   66, 69, 108, 110, 114, 167, 211, 220, 285, 351, 382, 393.
+//! Offline and range-backed PDF and EPUB document rendering for Lince.
+//!
+//! [`Reader`] opens local files, in-memory byte buffers, or
+//! [`Resource`](lince_resources::Resource) sources and renders bounded RGBA
+//! [`Tile`] slices and excerpts for display.
 
 mod epub;
+mod geometry;
 mod pdf;
 mod pdf_online;
+mod reader;
 mod resources;
+mod tile;
 
-use std::{fs::File, io::Read, path::Path};
-
-use lince_resources::{Library, Locator, Resource};
 use serde::{Deserialize, Serialize};
 
+pub use reader::Reader;
+pub use tile::Tile;
+
+/// Height of each rendered vertical tile in pixels.
 pub const TILE_HEIGHT: u32 = 512;
+/// Extra pixels rendered below each non-terminal tile to prevent seam artifacts.
 pub const TILE_OVERLAP: u32 = 2;
+/// Maximum supported render width in pixels.
 pub const MAX_WIDTH: u32 = 2048;
+/// Maximum size in bytes for buffered document loading.
 pub const MAX_FILE_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Result type returned by document loading and rendering operations.
 pub type Result<T> = std::result::Result<T, String>;
 
+const MAX_SECTIONS: usize = 100_000;
+
+/// Reading layout mode stored alongside a [`Position`].
+///
+/// The set of modes is closed and persisted, so the enum is deliberately exhaustive.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Mode {
+    /// Continuous vertical scrolling through a section.
     #[default]
     Scroll,
+    /// Discrete page-by-page navigation.
     Pages,
 }
 
+/// Persisted reading position within a document.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Position {
+    /// Zero-based chapter or page index.
     pub section: usize,
+    /// Normalized vertical scroll progress in `0.0..=1.0`.
     pub fraction: f32,
+    /// Active reading presentation mode.
     pub mode: Mode,
 }
 
 impl Position {
+    /// Returns whether the section index and normalized scroll fraction are within valid bounds.
     pub fn valid(&self) -> bool {
-        self.section < 100_000 && self.fraction.is_finite() && (0.0..=1.0).contains(&self.fraction)
+        self.section < MAX_SECTIONS
+            && self.fraction.is_finite()
+            && (0.0..=1.0).contains(&self.fraction)
     }
 
+    /// Converts the normalized scroll fraction to a pixel offset for the given content and viewport heights.
     pub fn offset(&self, height: f32, viewport: f32) -> f32 {
         self.fraction * (height - viewport).max(0.0)
     }
 
+    /// Updates [`Self::fraction`] from a pixel scroll offset for the given content and viewport heights.
     pub fn set_offset(&mut self, offset: f32, height: f32, viewport: f32) {
         let extent = (height - viewport).max(0.0);
         self.fraction = if extent > 0.0 {
@@ -73,363 +78,40 @@ impl Position {
     }
 }
 
+/// Static metadata discovered when opening a document.
 #[derive(Clone, Debug)]
 pub struct Info {
+    /// Display title derived from the resource title or file name.
     pub title: String,
+    /// Ordered chapter hrefs for EPUBs or display labels for PDF pages.
     pub sections: Vec<String>,
-    pub is_pdf: bool,
+    /// The format of the opened document.
+    pub format: Format,
 }
 
+impl Info {
+    /// Returns whether the opened document is a PDF.
+    pub fn is_pdf(&self) -> bool {
+        self.format == Format::Pdf
+    }
+}
+
+/// The format of an opened document.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Format {
+    /// A PDF, whose sections are pages.
+    Pdf,
+    /// An EPUB, whose sections are chapters.
+    Epub,
+}
+
+/// Computed pixel dimensions of a laid-out section at a given render width.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Layout {
+    /// Section width in pixels.
     pub width: u32,
+    /// Section height in pixels.
     pub height: u32,
-}
-
-#[derive(Clone, Debug)]
-pub struct Tile {
-    pub width: u32,
-    pub height: u32,
-    pub rgba: Vec<u8>,
-}
-
-pub fn crop(tile: Tile, region: [f32; 4]) -> Result<Tile> {
-    Locator {
-        region: Some(region),
-        ..Default::default()
-    }
-    .validate()?;
-    let length = (tile.width as usize)
-        .checked_mul(tile.height as usize)
-        .and_then(|length| length.checked_mul(4))
-        .ok_or("Invalid image dimensions")?;
-    if tile.width == 0 || tile.height == 0 || tile.rgba.len() != length {
-        return Err("Invalid image dimensions".into());
-    }
-    let left = ((region[0] * tile.width as f32) as u32).min(tile.width - 1);
-    let top = ((region[1] * tile.height as f32) as u32).min(tile.height - 1);
-    let width = ((region[2] * tile.width as f32).ceil() as u32)
-        .max(1)
-        .min(tile.width - left);
-    let height = ((region[3] * tile.height as f32).ceil() as u32)
-        .max(1)
-        .min(tile.height - top);
-    let mut rgba = Vec::with_capacity(width as usize * height as usize * 4);
-    for row in top..top + height {
-        let offset = ((row * tile.width + left) * 4) as usize;
-        rgba.extend_from_slice(&tile.rgba[offset..offset + width as usize * 4]);
-    }
-    Ok(Tile {
-        width,
-        height,
-        rgba,
-    })
-}
-
-enum Content {
-    Pdf(pdf::Pdf),
-    PdfOnline(pdf_online::Pdf),
-    Epub(Box<epub::Epub>),
-}
-
-pub struct Reader {
-    content: Content,
-    pub info: Info,
-}
-
-impl Reader {
-    pub fn open_resource(library: Library, resource: &Resource) -> Result<Self> {
-        use std::io::{Seek, SeekFrom};
-        let mut source = lince_resources::RangeReader::open(library.clone(), resource)?;
-        let mut magic = [0; 4];
-        source
-            .read_exact(&mut magic)
-            .map_err(|error| error.to_string())?;
-        source
-            .seek(SeekFrom::Start(0))
-            .map_err(|error| error.to_string())?;
-        if magic.starts_with(b"PK") {
-            let epub = epub::Epub::from_reader(source)?;
-            let info = Info {
-                title: resource.title.clone(),
-                sections: epub.sections.clone(),
-                is_pdf: false,
-            };
-            return Ok(Self {
-                content: Content::Epub(Box::new(epub)),
-                info,
-            });
-        }
-        if magic == *b"%PDF"
-            && let Ok(pdf) = pdf_online::Pdf::new(source)
-        {
-            let sections = (1..=pdf.len()).map(|page| format!("Page {page}")).collect();
-            return Ok(Self {
-                content: Content::PdfOnline(pdf),
-                info: Info {
-                    title: resource.title.clone(),
-                    sections,
-                    is_pdf: true,
-                },
-            });
-        }
-        let mut source = lince_resources::RangeReader::open(library, resource)?;
-        if source.len() > MAX_FILE_BYTES {
-            return Err("This renderer requires a document under 256 MiB".into());
-        }
-        let mut bytes = Vec::new();
-        source
-            .read_to_end(&mut bytes)
-            .map_err(|error| error.to_string())?;
-        if resource
-            .hash
-            .as_ref()
-            .is_some_and(|hash| !hash.eq_ignore_ascii_case(&lince_resources::fingerprint(&bytes)))
-        {
-            return Err("The document does not match its content hash".into());
-        }
-        Self::from_bytes(bytes, &resource.title)
-    }
-
-    pub fn locate(&mut self, locator: &Locator, width: u32) -> Result<Position> {
-        locator.validate()?;
-        let section = if self.info.is_pdf {
-            locator.page.unwrap_or(1) - 1
-        } else if locator.href.is_empty() {
-            0
-        } else {
-            self.info
-                .sections
-                .iter()
-                .position(|href| {
-                    href.trim_start_matches('/') == locator.href.trim_start_matches('/')
-                        || href.ends_with(locator.href.trim_start_matches('/'))
-                })
-                .ok_or("The referenced chapter is not present in this edition")?
-        };
-        if self.info.is_pdf
-            && locator
-                .end_page
-                .is_some_and(|end| end > self.info.sections.len())
-        {
-            return Err("The referenced page range is not present in this edition".into());
-        }
-        self.layout(section, width)?;
-        let fraction = match &self.content {
-            Content::Epub(epub) => {
-                if locator.fragment.is_empty() && locator.quote.is_empty() {
-                    0.0
-                } else {
-                    epub.anchor(&locator.fragment, &locator.quote)
-                        .ok_or("The referenced passage is not present in this edition")?
-                }
-            }
-            Content::Pdf(_) | Content::PdfOnline(_) => {
-                locator.region.map_or(0.0, |region| region[1])
-            }
-        };
-        Ok(Position {
-            section,
-            fraction,
-            mode: Mode::Scroll,
-        })
-    }
-
-    pub fn resource_bytes(&self, href: &str) -> Result<Vec<u8>> {
-        match &self.content {
-            Content::Epub(epub) => epub.resource(href),
-            Content::Pdf(_) | Content::PdfOnline(_) => {
-                Err("Choose a page region for a PDF image".into())
-            }
-        }
-    }
-
-    pub fn excerpt(&mut self, locator: &Locator, width: u32) -> Result<Tile> {
-        if !locator.image.is_empty() {
-            let bytes = self.resource_bytes(&locator.image)?;
-            let mut decoder = image::ImageReader::new(std::io::Cursor::new(bytes))
-                .with_guessed_format()
-                .map_err(|error| error.to_string())?;
-            let mut limits = image::Limits::default();
-            limits.max_image_width = Some(8192);
-            limits.max_image_height = Some(8192);
-            limits.max_alloc = Some(128 * 1024 * 1024);
-            decoder.limits(limits);
-            let image = decoder
-                .decode()
-                .map_err(|error| error.to_string())?
-                .thumbnail(width, 1024)
-                .into_rgba8();
-            let tile = Tile {
-                width: image.width(),
-                height: image.height(),
-                rgba: image.into_raw(),
-            };
-            return if let Some(region) = locator.region {
-                crop(tile, region)
-            } else {
-                Ok(tile)
-            };
-        }
-        let position = self.locate(locator, width)?;
-        let layout = self.layout(position.section, width)?;
-        let top = ((position.fraction * layout.height as f32) as u32)
-            .min(layout.height.saturating_sub(1));
-        let height = locator
-            .region
-            .map_or(512, |region| {
-                (region[3] * layout.height as f32).ceil().max(1.0) as u32
-            })
-            .min(2048)
-            .min(layout.height - top);
-        let mut tile = match &mut self.content {
-            Content::Epub(epub) => epub.tile(layout, top, height)?,
-            Content::Pdf(pdf) => pdf.tile(position.section, layout, top, height)?,
-            Content::PdfOnline(pdf) => pdf.tile(position.section, layout, top, height)?,
-        };
-        if let Some(region) = locator.region {
-            let left = ((region[0] * tile.width as f32) as u32).min(tile.width - 1);
-            let width = ((region[2] * tile.width as f32) as u32)
-                .max(1)
-                .min(tile.width - left);
-            let height = ((region[3] * layout.height as f32) as u32)
-                .max(1)
-                .min(tile.height);
-            let mut rgba = Vec::with_capacity(width as usize * height as usize * 4);
-            for row in 0..height {
-                let offset = ((row * tile.width + left) * 4) as usize;
-                rgba.extend_from_slice(&tile.rgba[offset..offset + width as usize * 4]);
-            }
-            tile = Tile {
-                width,
-                height,
-                rgba,
-            };
-        }
-        Ok(tile)
-    }
-
-    pub fn open(path: &Path) -> Result<Self> {
-        let file = File::open(path).map_err(|error| error.to_string())?;
-        let metadata = file.metadata().map_err(|error| error.to_string())?;
-        if !metadata.is_file() {
-            return Err("Choose a PDF or EPUB file".into());
-        }
-        let mut signature = [0u8; 4];
-        let mut probe = file.try_clone().map_err(|error| error.to_string())?;
-        probe
-            .read_exact(&mut signature)
-            .map_err(|error| error.to_string())?;
-        if signature == *b"%PDF"
-            && let Ok(pdf) = pdf_online::Pdf::new(lince_resources::RangeReader::from_file(path)?)
-        {
-            let sections = (1..=pdf.len()).map(|page| format!("Page {page}")).collect();
-            return Ok(Self {
-                content: Content::PdfOnline(pdf),
-                info: Info {
-                    title: path
-                        .file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                        .into_owned(),
-                    sections,
-                    is_pdf: true,
-                },
-            });
-        }
-        if signature.starts_with(b"PK") {
-            let epub =
-                epub::Epub::from_reader(File::open(path).map_err(|error| error.to_string())?)?;
-            let info = Info {
-                title: path
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .into_owned(),
-                sections: epub.sections.clone(),
-                is_pdf: false,
-            };
-            return Ok(Self {
-                content: Content::Epub(Box::new(epub)),
-                info,
-            });
-        }
-        use std::io::{Seek, SeekFrom};
-        probe
-            .seek(SeekFrom::Start(0))
-            .map_err(|error| error.to_string())?;
-        if metadata.len() > MAX_FILE_BYTES {
-            return Err("Documents are limited to 256 MiB".into());
-        }
-        let mut bytes = Vec::new();
-        probe
-            .take(MAX_FILE_BYTES + 1)
-            .read_to_end(&mut bytes)
-            .map_err(|error| error.to_string())?;
-        if bytes.len() as u64 > MAX_FILE_BYTES {
-            return Err("Documents are limited to 256 MiB".into());
-        }
-        Self::from_bytes(
-            bytes,
-            &path.file_name().unwrap_or_default().to_string_lossy(),
-        )
-    }
-
-    pub fn from_bytes(bytes: Vec<u8>, title: &str) -> Result<Self> {
-        if bytes.len() as u64 > MAX_FILE_BYTES {
-            return Err("Documents are limited to 256 MiB".into());
-        }
-        if bytes.starts_with(b"%PDF-") {
-            let pdf = pdf::Pdf::new(bytes)?;
-            let sections = (1..=pdf.len()).map(|page| format!("Page {page}")).collect();
-            Ok(Self {
-                content: Content::Pdf(pdf),
-                info: Info {
-                    title: title.into(),
-                    sections,
-                    is_pdf: true,
-                },
-            })
-        } else if bytes.starts_with(b"PK") {
-            let epub = epub::Epub::new(bytes)?;
-            let info = Info {
-                title: title.into(),
-                sections: epub.sections.clone(),
-                is_pdf: false,
-            };
-            Ok(Self {
-                content: Content::Epub(Box::new(epub)),
-                info,
-            })
-        } else {
-            Err("This file is not a PDF or EPUB".into())
-        }
-    }
-
-    pub fn layout(&mut self, section: usize, width: u32) -> Result<Layout> {
-        if section >= self.info.sections.len() || !(128..=MAX_WIDTH).contains(&width) {
-            return Err("Invalid document section or render width".into());
-        }
-        match &mut self.content {
-            Content::Pdf(pdf) => pdf.layout(section, width),
-            Content::PdfOnline(pdf) => pdf.layout(section, width),
-            Content::Epub(epub) => epub.layout(section, width),
-        }
-    }
-
-    pub fn tile(&mut self, section: usize, width: u32, index: u32) -> Result<Tile> {
-        let layout = self.layout(section, width)?;
-        let top = index
-            .checked_mul(TILE_HEIGHT)
-            .filter(|top| *top < layout.height)
-            .ok_or("Tile is outside the document")?;
-        let height = (TILE_HEIGHT + TILE_OVERLAP).min(layout.height - top);
-        match &mut self.content {
-            Content::Pdf(pdf) => pdf.tile(section, layout, top, height),
-            Content::PdfOnline(pdf) => pdf.tile(section, layout, top, height),
-            Content::Epub(epub) => epub.tile(layout, top, height),
-        }
-    }
 }
 
 #[cfg(test)]

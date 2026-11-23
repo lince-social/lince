@@ -103,7 +103,7 @@ impl Action for Control {
                     lince_resources::address(&document.path).ok().map(|uri| {
                         lince_resources::Resource {
                             uri: uri.to_string(),
-                            media_type: if view.info.as_ref().is_some_and(|info| info.is_pdf) {
+                            media_type: if view.info.as_ref().is_some_and(|info| info.is_pdf()) {
                                 "application/pdf"
                             } else {
                                 "application/epub+zip"

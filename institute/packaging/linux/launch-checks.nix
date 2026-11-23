@@ -1,4 +1,4 @@
-{ pkgs, graphicsWrapperArgs, installGraphicsRuntime }:
+{ pkgs, graphicsWrapperArgs, installGraphicsRuntime, parkLauncher }:
 let
   launcher = pkgs.runCommand "park-launch-fixture" {
     nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -17,11 +17,7 @@ let
     chmod +x "$out/bin/lince"
     wrapProgram "$out/bin/lince" ${pkgs.lib.escapeShellArgs (graphicsWrapperArgs pkgs [ pkgs.stdenv.cc.cc.lib ])}
     ${installGraphicsRuntime pkgs [ pkgs.stdenv.cc.cc.lib ]}
-    cp ${./lince-park-session} "$out/bin/lince-park-session"
-    substituteInPlace "$out/bin/lince-park-session" --replace-fail \
-      'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
-    chmod +x "$out/bin/lince-park-session"
-    patchShebangs "$out/bin/lince-park-session"
+    install -Dm755 ${parkLauncher pkgs} "$out/bin/lince-park-session"
   '';
 in pkgs.runCommand "park-launch-contracts" {
   nativeBuildInputs = [ pkgs.dbus pkgs.coreutils pkgs.python3 ];

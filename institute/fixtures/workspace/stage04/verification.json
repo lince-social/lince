@@ -1,0 +1,787 @@
+{
+  "stage": 4,
+  "base_revision": "3efe835475102069d57e5747a5970d212c865924",
+  "date": "2026-11-22",
+  "store_timing": {
+    "unit": "microseconds",
+    "warmup_pairs": 1,
+    "measured_pairs": 40,
+    "small_command_limit_us": 200000,
+    "commit": {
+      "p50": 29301,
+      "p95": 34085,
+      "p99": 113751,
+      "maximum": 113751
+    },
+    "retry": {
+      "p50": 1077,
+      "p95": 3389,
+      "p99": 3939,
+      "maximum": 3939
+    },
+    "staged_bytes": {
+      "p50": 3897,
+      "p95": 5287,
+      "p99": 7558,
+      "maximum": 7558
+    },
+    "largest_staged_file_bytes": {
+      "p50": 1897,
+      "p95": 3340,
+      "p99": 3562,
+      "maximum": 3562
+    },
+    "encoded_request_bytes": {
+      "p50": 458,
+      "p95": 458,
+      "p99": 458,
+      "maximum": 458
+    },
+    "replayed_write_bytes": 0,
+    "samples": [
+      {
+        "commit_us": 27741,
+        "peak_file_bytes": 601,
+        "request_bytes": 455,
+        "retry_us": 668,
+        "staged_bytes": 2062
+      },
+      {
+        "commit_us": 25017,
+        "peak_file_bytes": 601,
+        "request_bytes": 455,
+        "retry_us": 838,
+        "staged_bytes": 2173
+      },
+      {
+        "commit_us": 22318,
+        "peak_file_bytes": 601,
+        "request_bytes": 455,
+        "retry_us": 1017,
+        "staged_bytes": 2284
+      },
+      {
+        "commit_us": 29602,
+        "peak_file_bytes": 601,
+        "request_bytes": 455,
+        "retry_us": 1622,
+        "staged_bytes": 2395
+      },
+      {
+        "commit_us": 32251,
+        "peak_file_bytes": 676,
+        "request_bytes": 455,
+        "retry_us": 1653,
+        "staged_bytes": 2506
+      },
+      {
+        "commit_us": 28895,
+        "peak_file_bytes": 787,
+        "request_bytes": 455,
+        "retry_us": 801,
+        "staged_bytes": 2617
+      },
+      {
+        "commit_us": 28976,
+        "peak_file_bytes": 898,
+        "request_bytes": 455,
+        "retry_us": 1394,
+        "staged_bytes": 2728
+      },
+      {
+        "commit_us": 31988,
+        "peak_file_bytes": 1009,
+        "request_bytes": 455,
+        "retry_us": 895,
+        "staged_bytes": 2839
+      },
+      {
+        "commit_us": 29968,
+        "peak_file_bytes": 1120,
+        "request_bytes": 458,
+        "retry_us": 751,
+        "staged_bytes": 2956
+      },
+      {
+        "commit_us": 28090,
+        "peak_file_bytes": 1231,
+        "request_bytes": 458,
+        "retry_us": 2440,
+        "staged_bytes": 3067
+      },
+      {
+        "commit_us": 33939,
+        "peak_file_bytes": 1342,
+        "request_bytes": 458,
+        "retry_us": 2208,
+        "staged_bytes": 3178
+      },
+      {
+        "commit_us": 31303,
+        "peak_file_bytes": 1453,
+        "request_bytes": 458,
+        "retry_us": 2156,
+        "staged_bytes": 3289
+      },
+      {
+        "commit_us": 30590,
+        "peak_file_bytes": 1564,
+        "request_bytes": 458,
+        "retry_us": 2828,
+        "staged_bytes": 3400
+      },
+      {
+        "commit_us": 33485,
+        "peak_file_bytes": 1675,
+        "request_bytes": 458,
+        "retry_us": 2362,
+        "staged_bytes": 3511
+      },
+      {
+        "commit_us": 32706,
+        "peak_file_bytes": 1786,
+        "request_bytes": 458,
+        "retry_us": 820,
+        "staged_bytes": 3622
+      },
+      {
+        "commit_us": 25737,
+        "peak_file_bytes": 1897,
+        "request_bytes": 458,
+        "retry_us": 3864,
+        "staged_bytes": 3733
+      },
+      {
+        "commit_us": 29201,
+        "peak_file_bytes": 2008,
+        "request_bytes": 458,
+        "retry_us": 1315,
+        "staged_bytes": 3844
+      },
+      {
+        "commit_us": 34085,
+        "peak_file_bytes": 2119,
+        "request_bytes": 458,
+        "retry_us": 1154,
+        "staged_bytes": 3955
+      },
+      {
+        "commit_us": 28852,
+        "peak_file_bytes": 2230,
+        "request_bytes": 458,
+        "retry_us": 2512,
+        "staged_bytes": 4066
+      },
+      {
+        "commit_us": 28244,
+        "peak_file_bytes": 2341,
+        "request_bytes": 458,
+        "retry_us": 2318,
+        "staged_bytes": 4177
+      },
+      {
+        "commit_us": 28845,
+        "peak_file_bytes": 2452,
+        "request_bytes": 458,
+        "retry_us": 2408,
+        "staged_bytes": 4288
+      },
+      {
+        "commit_us": 33904,
+        "peak_file_bytes": 2563,
+        "request_bytes": 458,
+        "retry_us": 877,
+        "staged_bytes": 4399
+      },
+      {
+        "commit_us": 28931,
+        "peak_file_bytes": 2674,
+        "request_bytes": 458,
+        "retry_us": 872,
+        "staged_bytes": 4510
+      },
+      {
+        "commit_us": 24944,
+        "peak_file_bytes": 2785,
+        "request_bytes": 458,
+        "retry_us": 1447,
+        "staged_bytes": 4621
+      },
+      {
+        "commit_us": 25424,
+        "peak_file_bytes": 2896,
+        "request_bytes": 458,
+        "retry_us": 812,
+        "staged_bytes": 4732
+      },
+      {
+        "commit_us": 29142,
+        "peak_file_bytes": 3007,
+        "request_bytes": 458,
+        "retry_us": 1077,
+        "staged_bytes": 4843
+      },
+      {
+        "commit_us": 32023,
+        "peak_file_bytes": 3118,
+        "request_bytes": 458,
+        "retry_us": 1065,
+        "staged_bytes": 4954
+      },
+      {
+        "commit_us": 32837,
+        "peak_file_bytes": 3229,
+        "request_bytes": 458,
+        "retry_us": 911,
+        "staged_bytes": 5065
+      },
+      {
+        "commit_us": 24392,
+        "peak_file_bytes": 3340,
+        "request_bytes": 458,
+        "retry_us": 3146,
+        "staged_bytes": 5176
+      },
+      {
+        "commit_us": 26450,
+        "peak_file_bytes": 3451,
+        "request_bytes": 458,
+        "retry_us": 3389,
+        "staged_bytes": 5287
+      },
+      {
+        "commit_us": 29301,
+        "peak_file_bytes": 3562,
+        "request_bytes": 458,
+        "retry_us": 3939,
+        "staged_bytes": 5398
+      },
+      {
+        "commit_us": 113751,
+        "peak_file_bytes": 1829,
+        "request_bytes": 458,
+        "retry_us": 1189,
+        "staged_bytes": 7558
+      },
+      {
+        "commit_us": 31912,
+        "peak_file_bytes": 1829,
+        "request_bytes": 458,
+        "retry_us": 1073,
+        "staged_bytes": 3897
+      },
+      {
+        "commit_us": 26105,
+        "peak_file_bytes": 1829,
+        "request_bytes": 458,
+        "retry_us": 1025,
+        "staged_bytes": 4119
+      },
+      {
+        "commit_us": 30500,
+        "peak_file_bytes": 1829,
+        "request_bytes": 458,
+        "retry_us": 950,
+        "staged_bytes": 3897
+      },
+      {
+        "commit_us": 29751,
+        "peak_file_bytes": 1908,
+        "request_bytes": 458,
+        "retry_us": 1075,
+        "staged_bytes": 3865
+      },
+      {
+        "commit_us": 25648,
+        "peak_file_bytes": 1908,
+        "request_bytes": 458,
+        "retry_us": 1551,
+        "staged_bytes": 4087
+      },
+      {
+        "commit_us": 41418,
+        "peak_file_bytes": 1908,
+        "request_bytes": 458,
+        "retry_us": 981,
+        "staged_bytes": 4087
+      },
+      {
+        "commit_us": 32909,
+        "peak_file_bytes": 1908,
+        "request_bytes": 458,
+        "retry_us": 1054,
+        "staged_bytes": 3976
+      },
+      {
+        "commit_us": 32608,
+        "peak_file_bytes": 1908,
+        "request_bytes": 458,
+        "retry_us": 903,
+        "staged_bytes": 3976
+      }
+    ]
+  },
+  "showcase": {
+    "scope": "Three independent native processes with a shared editable workspace and imported asset directory",
+    "scene_commit_us": {
+      "p50": 25586,
+      "p95": 28557,
+      "p99": 28557,
+      "maximum": 28557
+    },
+    "native_activation_to_applied_us": {
+      "p50": 89602,
+      "p95": 116062,
+      "p99": 116062,
+      "maximum": 116062
+    },
+    "local_tool_roundtrip_us": {
+      "p50": 136476,
+      "p95": 180971,
+      "p99": 180971,
+      "maximum": 180971
+    },
+    "canvas_queue_wait_us": {
+      "p50": 105958,
+      "p95": 137742,
+      "p99": 137742,
+      "maximum": 137742
+    },
+    "tool_calls": 9,
+    "observed_max_queued_successors": 0,
+    "scene_control_limit_bytes_per_request": 2048,
+    "shared_canvas_queue_capacity_calls": 32,
+    "observed_queue_request_bytes": {
+      "p50": 378,
+      "p95": 455,
+      "p99": 455,
+      "maximum": 455
+    },
+    "interrupted_native_receipt": {
+      "edit": {
+        "request_id": "request_01M82CCVGD92N8TQ27Y51Y271Z",
+        "document": "doc_01M82CC5309AX8B0JDCA5Q0JZB",
+        "expected": "sha256:f58f517eb1346e71633cef7ee2b6281848ef7e83389b8a14177b6c674fb41ed5",
+        "operation": {
+          "kind": "place-copy",
+          "source": {
+            "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+            "slot": "slot_01M82CC5Y58NSSXX4TB9KQYVYA"
+          }
+        }
+      },
+      "fiote": null,
+      "revision": "sha256:c3352e4deb9a701df867c498a48a9d427908ab0850ea7789bd441e74e418f944",
+      "handle": {
+        "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+        "slot": "slot_01M82CCVGE8Q0V6C2Z1EVABZ5G"
+      },
+      "effect": "created"
+    },
+    "fiote_receipts": {
+      "copy": {
+        "edit": {
+          "request_id": "request_01M82CCZNT8A8RKVRZ869T3FJT",
+          "document": "doc_01M82CC5309AX8B0JDCA5Q0JZB",
+          "expected": "sha256:c2b2ea5c78eef225413808cdb8f671347bb811516e5ebfc84cd12b98073283f3",
+          "operation": {
+            "kind": "place-copy",
+            "source": {
+              "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+              "slot": "slot_01M82CC5GP8K6RBFYH4D6KD72D"
+            }
+          }
+        },
+        "fiote": {
+          "agent": "r_01M82CCG619B1R0TZWSZNW7XSF",
+          "thread": "r_01M82CCG6F8BQ8BT98NP6G4HE6"
+        },
+        "revision": "sha256:4999774b33a06ba7d617e9740e5dfeffb51c52cc0620451631eba2c1272a9fdc",
+        "handle": {
+          "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+          "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+        },
+        "effect": "created"
+      },
+      "move": {
+        "edit": {
+          "request_id": "request_01M82CD01T960BMTAX2G21SV0W",
+          "document": "doc_01M82CC5309AX8B0JDCA5Q0JZB",
+          "expected": "sha256:4999774b33a06ba7d617e9740e5dfeffb51c52cc0620451631eba2c1272a9fdc",
+          "operation": {
+            "kind": "move",
+            "target": {
+              "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+              "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+            },
+            "metres": [
+              {
+                "scale": 0,
+                "value": "3"
+              },
+              {
+                "scale": 0,
+                "value": "4"
+              },
+              {
+                "scale": 0,
+                "value": "0"
+              }
+            ]
+          }
+        },
+        "fiote": {
+          "agent": "r_01M82CCG619B1R0TZWSZNW7XSF",
+          "thread": "r_01M82CCG6F8BQ8BT98NP6G4HE6"
+        },
+        "revision": "sha256:4fdda3df53300cc5ff4454babe4f4c6707e3379ae6e3b35d616c0e57fd4f0739",
+        "handle": {
+          "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+          "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+        },
+        "effect": "moved"
+      },
+      "undo": {
+        "edit": {
+          "request_id": "request_01M82CD0E18QCREMPEFJ75TF31",
+          "document": "doc_01M82CC5309AX8B0JDCA5Q0JZB",
+          "expected": "sha256:4fdda3df53300cc5ff4454babe4f4c6707e3379ae6e3b35d616c0e57fd4f0739",
+          "operation": {
+            "kind": "undo",
+            "request_id": "request_01M82CD01T960BMTAX2G21SV0W"
+          }
+        },
+        "fiote": {
+          "agent": "r_01M82CCG619B1R0TZWSZNW7XSF",
+          "thread": "r_01M82CCG6F8BQ8BT98NP6G4HE6"
+        },
+        "revision": "sha256:e00b60a79be92e1b1e9fda797430e932f83641e6a0a0c279aa76ae2d55f41579",
+        "handle": {
+          "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+          "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+        },
+        "effect": "moved"
+      },
+      "last": {
+        "edit": {
+          "request_id": "request_01M82CD0KG99TAVZ7T3P1WB6R4",
+          "document": "doc_01M82CC5309AX8B0JDCA5Q0JZB",
+          "expected": "sha256:e00b60a79be92e1b1e9fda797430e932f83641e6a0a0c279aa76ae2d55f41579",
+          "operation": {
+            "kind": "move",
+            "target": {
+              "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+              "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+            },
+            "metres": [
+              {
+                "scale": 0,
+                "value": "3"
+              },
+              {
+                "scale": 0,
+                "value": "4"
+              },
+              {
+                "scale": 0,
+                "value": "0"
+              }
+            ]
+          }
+        },
+        "fiote": {
+          "agent": "r_01M82CCG619B1R0TZWSZNW7XSF",
+          "thread": "r_01M82CCG6F8BQ8BT98NP6G4HE6"
+        },
+        "revision": "sha256:98cef3c2101ba832819286daeb3155ee6c37fbc48de657ddcb8b44d7a7b97f2f",
+        "handle": {
+          "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+          "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+        },
+        "effect": "moved"
+      },
+      "denied": {
+        "ok": false,
+        "error": "consequence: lince: consequence: Scene request cancelled or outside the active local workspace."
+      },
+      "stale": {
+        "ok": false,
+        "error": "consequence: lince: consequence: Scene revision conflict. Inspect the accepted revision and retain your draft."
+      }
+    },
+    "operator_undo": {
+      "edit": {
+        "request_id": "request_01M82CD0Y69GYSRES25HT1HMZB",
+        "document": "doc_01M82CC5309AX8B0JDCA5Q0JZB",
+        "expected": "sha256:98cef3c2101ba832819286daeb3155ee6c37fbc48de657ddcb8b44d7a7b97f2f",
+        "operation": {
+          "kind": "undo",
+          "request_id": "request_01M82CD0KG99TAVZ7T3P1WB6R4"
+        }
+      },
+      "fiote": null,
+      "revision": "sha256:22228f9cb17c265f09781068ff4238e15bf23bc7c84ede744ab307bac7777b37",
+      "handle": {
+        "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+        "slot": "slot_01M82CCZS190VSSBJHY5YRHPNA"
+      },
+      "effect": "moved"
+    },
+    "newer_measurement_surviving_late_completion": "Distance from origin: 10.000000 m\nGeneration job_01M82CCY9A9279H3CP3RJDXHKP\nSource sha256:84f9c965e235731299bd3374a810dd59654823696108038f03f17af7da6a10d6",
+    "generation_recovered_after_restart": "Distance from origin: 5.385165 m\nGeneration job_01M82CD1VT99VB6829KH975QWW\nSource sha256:22228f9cb17c265f09781068ff4238e15bf23bc7c84ede744ab307bac7777b37",
+    "reopened_layout": {
+      "viewport": [
+        1680.0,
+        960.0
+      ],
+      "control_min": [
+        17.0,
+        821.0
+      ],
+      "control_max": [
+        393.0,
+        852.0
+      ]
+    },
+    "narrow_recovery_layout": {
+      "viewport": [
+        360.0,
+        700.0
+      ],
+      "control_min": [
+        17.0,
+        59.0
+      ],
+      "control_max": [
+        170.0,
+        107.0
+      ]
+    },
+    "binary_smoke": {
+      "target": "x86_64-unknown-linux-gnu",
+      "launch": "lince --showoff --directory <fresh-profile> --no-tray --port 0 --peer-port 0",
+      "active_workspace": "showoff",
+      "workbench": "Model workbench",
+      "has_accepted_edits_instructions": true,
+      "bracket": "placement_01M82CBNYP8TZ8HRGB5ZJ0VBZQ",
+      "room": "placement_01M82CBNYP8QPR9GF6196NAB8R",
+      "record": "r_01M82CBNYR9TR911ARY7E8ZERS",
+      "initial_local_position": [
+        500.0,
+        0.0,
+        200.0
+      ],
+      "imported_sculpture_bytes": 1644
+    },
+    "drag_and_undo": {
+      "canvas_before": [
+        -240.0,
+        640.0
+      ],
+      "canvas_after": [
+        -116.92306518554688,
+        689.2308349609375
+      ],
+      "room_origin": [
+        -740.0,
+        440.0
+      ],
+      "model_xz_metres": [
+        6.230769348144531,
+        2.492308349609375
+      ]
+    },
+    "observations": [
+      "Native control applied action=\"Accepted edits and measurements\" activation_us=83459",
+      "Scene request resolved commit_us=25693 staged_bytes=2357 peak_file_bytes=819 replayed=false",
+      "Native control applied action=\"Publish a copy and interrupt its reply\" activation_us=106908",
+      "Scene request resolved commit_us=1087 staged_bytes=0 peak_file_bytes=0 replayed=true",
+      "Native control applied action=\"Retry the same request\" activation_us=82824",
+      "Scene request resolved commit_us=21054 staged_bytes=1600 peak_file_bytes=668 replayed=false",
+      "Native control applied action=\"Undo the accepted edit\" activation_us=101572",
+      "Native control applied action=\"Placement slot_01M82CC5Y58NSSXX4TB9KQYVYA\" activation_us=84593",
+      "Native control applied action=\"Hold a distance measurement\" activation_us=89872",
+      "Scene request resolved commit_us=20951 staged_bytes=2390 peak_file_bytes=668 replayed=false",
+      "Native control applied action=\"Publish placement coordinates\" activation_us=102141",
+      "Native control applied action=\"Measure distance from origin\" activation_us=94428",
+      "Native control applied action=\"Finish the held measurement\" activation_us=80349",
+      "Scene request resolved commit_us=25586 staged_bytes=1820 peak_file_bytes=668 replayed=false",
+      "Native control applied action=\"Undo the accepted edit\" activation_us=116062",
+      "Scene request admitted and dequeued request_bytes=64 queue_us=49507 remaining_calls=0",
+      "Local Fiote tool returned tool_us=57634",
+      "Scene request admitted and dequeued request_bytes=378 queue_us=101307 remaining_calls=0",
+      "Scene request resolved commit_us=27381 staged_bytes=2877 peak_file_bytes=819 replayed=false",
+      "Local Fiote tool returned tool_us=139402",
+      "Scene request admitted and dequeued request_bytes=378 queue_us=135552 remaining_calls=0",
+      "Local Fiote tool returned tool_us=136476",
+      "Scene request admitted and dequeued request_bytes=378 queue_us=105958 remaining_calls=0",
+      "Local Fiote tool returned tool_us=107522",
+      "Scene request admitted and dequeued request_bytes=455 queue_us=100162 remaining_calls=0",
+      "Scene request resolved commit_us=28027 staged_bytes=3063 peak_file_bytes=819 replayed=false",
+      "Local Fiote tool returned tool_us=145720",
+      "Scene request admitted and dequeued request_bytes=158 queue_us=128329 remaining_calls=0",
+      "Local Fiote tool returned tool_us=130921",
+      "Scene request admitted and dequeued request_bytes=378 queue_us=97750 remaining_calls=0",
+      "Scene request resolved commit_us=1317 staged_bytes=0 peak_file_bytes=0 replayed=true",
+      "Local Fiote tool returned tool_us=112671",
+      "Scene request admitted and dequeued request_bytes=329 queue_us=136843 remaining_calls=0",
+      "Scene request resolved commit_us=23722 staged_bytes=2229 peak_file_bytes=787 replayed=false",
+      "Local Fiote tool returned tool_us=174711",
+      "Scene request admitted and dequeued request_bytes=455 queue_us=137742 remaining_calls=0",
+      "Scene request resolved commit_us=27865 staged_bytes=2466 peak_file_bytes=898 replayed=false",
+      "Local Fiote tool returned tool_us=180971",
+      "Scene request resolved commit_us=28557 staged_bytes=2375 peak_file_bytes=1009 replayed=false",
+      "Native control applied action=\"Undo the accepted edit\" activation_us=115735",
+      "Native control applied action=\"Placement slot_01M82CC5Y58NSSXX4TB9KQYVYA\" activation_us=87814",
+      "Native control applied action=\"Measure distance from origin\" activation_us=102749",
+      "Native control applied action=\"Accepted edits and measurements\" activation_us=89602",
+      "Native control applied action=\"Recover last accepted receipt\" activation_us=84146",
+      "Native control applied action=\"Find accepted receipt\" activation_us=82991",
+      "Native control applied action=\"Find accepted receipt\" activation_us=84113"
+    ],
+    "cursor_warp": "Wayland declined the OS cursor warp; the replay checked actual native picking, pointer displacement and the resulting Room-local pose."
+  },
+  "legacy_two_placement_regression": {
+    "profile": "Stage 002 original warm verified save/open test after journal support",
+    "unit": "microseconds",
+    "count": 40,
+    "save": {
+      "p50": 19857,
+      "p95": 23774,
+      "p99": 24411,
+      "maximum": 24411
+    },
+    "verified_open": {
+      "p50": 691,
+      "p95": 1132,
+      "p99": 1321,
+      "maximum": 1321
+    }
+  },
+  "checks": {
+    "focused_native": {
+      "passed": 84,
+      "previously_verified_cases_rerun": 82,
+      "edit_panel_geometry": "passed"
+    },
+    "store": {
+      "functional_tests_passed": 9,
+      "warm_benchmarks_run_separately": 2,
+      "faults": [
+        "writer terminated before publication",
+        "writer terminated after publication",
+        "competing edits from one base",
+        "duplicate with a different argument or Actor",
+        "older job completes or cancels after a newer generation"
+      ]
+    },
+    "additional_full_laboratory_fast_suite": {
+      "outcome": "failed",
+      "baseline_comparison": "All three failing cases reproduced on the pre-change November 22 11:42 local native test executable, lince_interface-eb77aafa50407026. The staged run also exceeded the shared 30 s suite deadline while compiling.",
+      "cases": [
+        "native::laboratory::driver::a_button_moved_during_pointer_input_cannot_receive_the_stale_click",
+        "native::laboratory::interface::protein_area_filter_visible_and_selectable",
+        "native::laboratory::interface::workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits"
+      ]
+    },
+    "baseline_fixture_cases": 10,
+    "ordinary_create_save_reopen": "passed",
+    "cumulative_xtask": "passed",
+    "cargo_check_and_desktop_build": "passed",
+    "compiled_model_normal_dependency_graph": "No Bevy, interface, sandbox, transport or Fiote dependency in the model, store or engine graph.",
+    "lingua_files": 310
+  },
+  "measurement_context": {
+    "os": "NixOS Linux 6.18.63",
+    "cpu": "Intel Core i7-1165G7, 4 cores / 8 threads",
+    "gpu": "Intel integrated graphics; private Weston headless GL display, Mesa 26.3.0",
+    "filesystem": "btrfs, local NVMe, benchmark under the repository target directory",
+    "build": "unoptimized Cargo development/test profiles on x86_64, workspace compiler wrapper for Rust 1.99.1",
+    "timing_boundary": "Store commits include validation, durable page and HEAD sync, and receipt publication. Native control measures activation through the action frame. Tool round trip includes the local registered tool, canvas queue, per-frame polling and reply; no model inference.",
+    "scheduling": "Prebuilt processes were run sequentially after compilation, with the user desktop running. Functional checks during compilation are separate.",
+    "store_process_sample": {
+      "elapsed_wall_seconds": 1.58,
+      "concurrent_active_build_tools": [],
+      "background_cpu_percent_one_logical_core": {
+        ".firefox-wrappe": 25.4,
+        "niri": 12.7,
+        "codex": 8.9,
+        "agy": 7.0,
+        "Isolated Web Co": 5.7,
+        ".ghostty-wrappe": 4.4,
+        ".noctalia-wrapp": 4.4,
+        "Isolated Servic": 1.3,
+        "kworker/u32:11-btrfs-endio-meta": 0.6,
+        "kworker/7:2-i915-unordered": 0.6,
+        "kworker/u33:1+i915_flip": 0.6,
+        "kworker/u33:2+i915_flip": 0.6,
+        "systemd-oomd": 0.6,
+        "kworker/u32:12-btrfs-endio-meta": 0.6,
+        "kworker/u32:10-btrfs-endio-meta": 0.6,
+        "kworker/u32:1-i915": 0.6,
+        "WebExtensions": 0.6
+      },
+      "tested_process_exit_code": 0
+    },
+    "legacy_process_sample": {
+      "elapsed_wall_seconds": 0.94,
+      "concurrent_active_build_tools": [],
+      "background_cpu_percent_one_logical_core": {
+        ".firefox-wrappe": 25.5,
+        "niri": 11.7,
+        "codex": 7.4,
+        ".ghostty-wrappe": 5.3,
+        ".noctalia-wrapp": 4.2,
+        "Isolated Web Co": 4.2,
+        "btrfs-transaction": 4.2,
+        "Web Content": 3.2,
+        "agy": 2.1,
+        "kworker/u32:6-btrfs-endio-meta": 1.1,
+        "kworker/u33:1+i915_flip": 1.1,
+        "kworker/u32:10-btrfs-endio-meta": 1.1
+      },
+      "tested_process_exit_code": 0
+    },
+    "showcase_process_sample": {
+      "elapsed_wall_seconds": 57.24,
+      "concurrent_active_build_tools": [],
+      "background_cpu_percent_one_logical_core": {
+        ".firefox-wrappe": 17.4,
+        "niri": 10.4,
+        "codex": 8.8,
+        "Isolated Web Co": 5.1,
+        ".ghostty-wrappe": 3.9,
+        ".noctalia-wrapp": 3.3,
+        "agy": 1.7
+      },
+      "tested_process_exit_code": 0
+    },
+    "store_peak_process_rss_kib": 9460,
+    "showcase_peak_process_rss_kib": 929604
+  },
+  "tested_source_sha256": {
+    "crates/nucleus/src/canvas.rs": "8b2171e17b99024ce7dc1f7f477d0462ec7d6332f83b4eb2748b3b83113413f8",
+    "crates/nucleus/src/canvas/state.rs": "9e2d0ef88270cad85c68d32f8b5c468c60f5f2bdcc264e956782ab7452cc30fc",
+    "crates/nucleus/src/canvas/scene.rs": "f6c07f5ce0774228f6134541a8881711e407d6771d2bb46df824ff49f297c999",
+    "crates/nucleus/src/canvas/scene/operation.rs": "3f53c6df2210acb021483e9f6c75750b6268aafcd6a5b1a3d039d6a55a5ef42f",
+    "crates/nucleus/src/canvas/validation/requests.rs": "9e23c6d39afb5b6bc8327536064dce729f725c242691ce24d327d434c5023721",
+    "crates/store/src/workspace_scene.rs": "59ced9615d16b55684603f2fbf3f4404b8e0f4116d19d6976725a0fd9f793488",
+    "crates/store/src/workspace_scene/acceptance.rs": "59d8857b22e28bc2427100594131913b88f5f62ed7e70ab3928fc830801aa962",
+    "crates/store/src/workspace_scene/measurement.rs": "ef6d61fe738c2746f6cf3f65d35bc0adbb6d09fde720fad0c5f9475b6801043d",
+    "crates/store/src/workspace_scene/tests.rs": "c25411296d1f8371bc20db3c586d3c002ebb024c85ca42a27e6cdcde97917d1d",
+    "crates/engine/src/canvas.rs": "d95afec175ff779ca0ca764215a9a4c0ee1a2043be5d8884f21d22a91c14a8c2",
+    "crates/engine/src/canvas/scene_edits.rs": "8c1b6f3b3aed0a0780c58ee193c86a8a030e961f5f0fa12e141d363f71fb21e6",
+    "crates/interface/src/native/canvas_host.rs": "10c1f7606a03ada5114b72966bddc8825a129f8f8543521971926f4a87372486",
+    "crates/interface/src/native/edit_mode/scene.rs": "4bf643e17312f4231d136d7a71f02eca5c22372decd11e83cf28831e423c4d32",
+    "crates/interface/src/native/edit_mode/scene/accepted.rs": "61cb4b61e3116576ac40443aa8f34d436492fdcd03bb188b1bae091015e71e6c",
+    "crates/interface/src/native/edit_mode/scene/bridge.rs": "a36064193c9b440b6f5bb78cb99c9fde6e67fef709042154389cd2376fe40041",
+    "crates/interface/src/native/edit_mode/scene/tests.rs": "b97fee4639b80e41af49e2333dcda0528125932cf21967edc96718232f372bb4",
+    "crates/interface/src/native/laboratory/showoff.rs": "eddd073a89bd57eee6f45d6dc7efbe8127e89084eb244292928cbca59658b428",
+    "crates/transport/src/native/catalog/guide.rs": "e4ff3637cb3a3d7d3f429b3b6c9f413e35557e8ce0b280f962faa573608c264f",
+    "crates/sandbox/examples/workspace_scene.rs": "ea2b05703899d3bc7f01feef4b061df0d00692972b96348867d4d8dce1b034ba",
+    "crates/sandbox/examples/workspace_scene/receipts.rs": "73b4dbcd542a764deb72030f13f01d0d76e70cb3a5ab93eb85e776ff60ad3410",
+    "crates/sandbox/examples/workspace_scene/bridge.rs": "d6924a98d83d9968da7c46457f667f31ff131ed519b49c6ee03cffb2a1710f51",
+    "crates/sandbox/src/app.rs": "36c6d256a6c4a4424639bfc60de9c44036f47184d51d1ad040d2a8a17cc13e04",
+    "crates/xtask/src/workspace/mod.rs": "d4de7c8e8269f155aa366a1b7531fb35b15c70a740360ff73a9db0e5f8448304"
+  }
+}

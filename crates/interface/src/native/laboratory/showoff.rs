@@ -27,6 +27,37 @@ pub mod screenshot;
 pub const NAME: &str = "showoff";
 pub const MODEL: &[u8] = include_bytes!("../../../fixtures/showoff.glb");
 
+/// Install the editable source document on first use. Subsequent visits use the operator's
+/// saved copy, including any changed publication permissions or definition revisions.
+pub(crate) fn parts_library(path: &std::path::Path) -> std::io::Result<()> {
+    use nucleus::canvas::scene::{DocumentId, Part, RootId, Scene, Slot};
+    #[derive(serde::Deserialize)]
+    struct Sample {
+        document: DocumentId,
+        root: RootId,
+        parts: Vec<Part>,
+        slots: Vec<Slot>,
+    }
+    if path.try_exists()? {
+        return Ok(());
+    }
+    let sample: Sample = serde_json::from_slice(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/fixtures/showoff-parts.json"
+    )))?;
+    let scene = Scene {
+        document: sample.document,
+        root: sample.root,
+        canvas: None,
+        parts: sample.parts.into(),
+        slots: sample.slots.into(),
+    };
+    match store::workspace_scene::save(path, &scene, None) {
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
+        result => result.map(|_| ()),
+    }
+}
+
 #[derive(Resource)]
 pub struct Launch;
 
@@ -248,11 +279,17 @@ fn model_workbench(world: &mut World, root: Entity, workspace: u64) {
     let bracket_id = nucleus::new_uid("placement");
     let origin = DVec2::new(-740.0, 440.0);
     let offset = DVec2::new(500.0, 200.0);
-    let frame = sand(world, root, workspace, SandKind::Text,
+    let frame = sand(
+        world,
+        root,
+        workspace,
+        SandKind::Text,
         "Model workbench
 Edit → Workspaces → Scene document
-Choose Try the bracket example. Drag the Bracket, undo, save and reopen.",
-        origin.to_array(), [375.0, 248.0]);
+Try the bracket example. Drag, undo and save. Open Accepted edits and measurements, or browse the example in Definition library.",
+        origin.to_array(),
+        [375.0, 248.0],
+    );
     world.entity_mut(frame).insert((
         Identity(room_id.clone()),
         Room(room::Room {

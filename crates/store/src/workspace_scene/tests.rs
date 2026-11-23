@@ -225,3 +225,269 @@ fn measure_small_scene_commits_and_verified_opens() {
         serde_json::to_string(&durations).unwrap()
     );
 }
+
+#[test]
+fn request_receipt_is_atomic_across_crash_retry_stale_base_and_actor() {
+    use nucleus::{
+        canvas::scene::operation::{Edit, Operation},
+        component::composition::Origin,
+    };
+    const CHILD: &str = "LINCE_SCENE_RECEIPT_CRASH";
+    if let Some(dir) = std::env::var_os(CHILD) {
+        let dir = PathBuf::from(dir);
+        let edit: Edit = read(&dir.join("request.json")).unwrap();
+        let phase = std::env::var("LINCE_SCENE_RECEIPT_BOUNDARY").unwrap();
+        let accepted = acceptance::accept(&dir, &edit, None, |_| {
+            if phase == "before" {
+                std::process::exit(73);
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert!(!accepted.replayed);
+        std::process::exit(74); // published, before delivering any reply to the parent
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let dir = temp.path();
+    let scene = screw();
+    let expected = save(dir, &scene, None).unwrap();
+    let edit = Edit {
+        request_id: nucleus::new_uid("request"),
+        document: scene.document.clone(),
+        expected: expected.clone(),
+        operation: Operation::PlaceCopy {
+            source: scene.handle(&scene.slots[0]),
+        },
+    };
+    fs::write(
+        dir.join("request.json"),
+        canonical_json_bytes(&edit).unwrap(),
+    )
+    .unwrap();
+    let crash = |phase, code| {
+        let result = Command::new(std::env::current_exe().unwrap()).args(["--exact", "workspace_scene::tests::request_receipt_is_atomic_across_crash_retry_stale_base_and_actor"])
+            .env(CHILD, dir).env("LINCE_SCENE_RECEIPT_BOUNDARY", phase).status().unwrap();
+        assert_eq!(result.code(), Some(code));
+    };
+    crash("before", 73);
+    assert_eq!(open(dir).unwrap().revision, expected);
+    assert_eq!(
+        acceptance::receipt(dir, &scene.document, Some(&edit.request_id))
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::NotFound
+    );
+    crash("after", 74);
+    let receipt = acceptance::receipt(dir, &scene.document, None).unwrap();
+    let replay = acceptance::accept(dir, &edit, None, |_| Ok(())).unwrap();
+    assert_eq!(receipt, replay.receipt);
+    assert_eq!(replay.current.scene.slots.len(), 3);
+    assert_eq!(replay.current.revision, receipt.revision);
+    assert!(replay.replayed);
+    assert_eq!(replay.writes.staged_bytes, 0);
+    let fiote = Origin {
+        agent: nucleus::new_uid("r"),
+        thread: nucleus::new_uid("r"),
+    };
+    assert!(acceptance::accept(dir, &edit, Some(&fiote), |_| Ok(())).is_err());
+    let conflict = Edit {
+        request_id: nucleus::new_uid("request"),
+        ..edit.clone()
+    };
+    assert_eq!(
+        acceptance::accept(dir, &conflict, None, |_| Ok(()))
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::AlreadyExists
+    );
+    let undo = Edit {
+        request_id: nucleus::new_uid("request"),
+        expected: receipt.revision.clone(),
+        operation: Operation::Undo {
+            request_id: edit.request_id.clone(),
+        },
+        ..edit.clone()
+    };
+    assert!(
+        acceptance::accept(dir, &undo, None, |_| Err(io::Error::other(
+            "revoked at publication"
+        )))
+        .is_err()
+    );
+    assert_eq!(open(dir).unwrap().revision, receipt.revision);
+    assert!(acceptance::receipt(dir, &scene.document, Some(&undo.request_id)).is_err());
+    assert!(
+        acceptance::accept(
+            dir,
+            &Edit {
+                request_id: edit.request_id.clone(),
+                ..undo.clone()
+            },
+            None,
+            |_| Ok(())
+        )
+        .is_err()
+    );
+    let restored = acceptance::accept(dir, &undo, None, |_| Ok(())).unwrap();
+    assert_eq!(restored.current.scene, scene);
+    let late = acceptance::accept(dir, &edit, None, |_| Ok(())).unwrap();
+    assert_eq!(late.receipt, receipt);
+    assert_eq!(late.current.revision, restored.current.revision);
+    assert_eq!(late.current.scene, scene);
+    let mut draft = scene.clone();
+    draft.add_part("Later native draft").unwrap();
+    save(dir, &draft, Some(&restored.current.revision)).unwrap();
+    assert_eq!(
+        acceptance::receipt(dir, &scene.document, Some(&edit.request_id)).unwrap(),
+        receipt
+    );
+    assert_eq!(
+        acceptance::receipt(dir, &scene.document, None).unwrap(),
+        restored.receipt
+    );
+}
+
+#[test]
+fn two_accepted_edits_from_one_base_publish_one_receipt() {
+    use nucleus::canvas::scene::operation::{Edit, Operation};
+    let dir = tempfile::tempdir().unwrap();
+    let scene = screw();
+    let base = save(dir.path(), &scene, None).unwrap();
+    let barrier = std::sync::Barrier::new(2);
+    let results = std::thread::scope(|s| {
+        let writers = [1, 2].map(|x| {
+            let edit = Edit {
+                request_id: nucleus::new_uid("request"),
+                document: scene.document.clone(),
+                expected: base.clone(),
+                operation: Operation::Move {
+                    target: scene.handle(&scene.slots[0]),
+                    metres: [DecimalValue::from_integer(x); 3],
+                },
+            };
+            let (gate, path) = (&barrier, dir.path());
+            s.spawn(move || {
+                gate.wait();
+                let result = acceptance::accept(path, &edit, None, |_| Ok(()));
+                (edit, result)
+            })
+        });
+        writers.map(|w| w.join().unwrap())
+    });
+    assert_eq!(results.iter().filter(|(_, r)| r.is_ok()).count(), 1);
+    for (edit, result) in results {
+        let stored = acceptance::receipt(dir.path(), &edit.document, Some(&edit.request_id));
+        assert_eq!(stored.is_ok(), result.is_ok());
+    }
+}
+
+#[test]
+fn receipt_index_splits_without_losing_a_request() {
+    use nucleus::canvas::scene::operation::{Edit, Operation};
+    let directory = tempfile::tempdir().unwrap();
+    let dir = directory.path();
+    let scene = screw();
+    let mut expected = save(dir, &scene, None).unwrap();
+    let mut receipts = Vec::new();
+    for i in 1..=48 {
+        // All IDs share their last two digits; the radix split must descend several levels.
+        let edit = Edit {
+            request_id: format!("request_{}", nucleus::id::ulid_from(1, (i as u128) << 10)),
+            document: scene.document.clone(),
+            expected,
+            operation: Operation::Move {
+                target: scene.handle(&scene.slots[1]),
+                metres: [DecimalValue::from_integer(i); 3],
+            },
+        };
+        let result = acceptance::accept(dir, &edit, None, |_| Ok(())).unwrap();
+        expected = result.receipt.revision.clone();
+        receipts.push(result.receipt);
+    }
+    for original in receipts {
+        assert_eq!(
+            acceptance::receipt(dir, &scene.document, Some(&original.edit.request_id)).unwrap(),
+            original
+        );
+    }
+}
+
+#[test]
+#[ignore = "prebuild and run alone to measure accepted edits and durable retries"]
+fn measure_accepted_edits_and_retries() {
+    use nucleus::canvas::scene::operation::{Edit, Operation};
+    let directory = tempfile::tempdir().unwrap();
+    let dir = directory.path();
+    let scene = screw();
+    let mut expected = save(dir, &scene, None).unwrap();
+    let mut samples = Vec::new();
+    for i in 1..=41 {
+        let edit = Edit {
+            request_id: nucleus::new_uid("request"),
+            document: scene.document.clone(),
+            expected,
+            operation: Operation::Move {
+                target: scene.handle(&scene.slots[0]),
+                metres: [DecimalValue::from_integer(i); 3],
+            },
+        };
+        let accepted = acceptance::accept(dir, &edit, None, |_| Ok(())).unwrap();
+        let replay = acceptance::accept(dir, &edit, None, |_| Ok(())).unwrap();
+        assert_eq!(replay.receipt, accepted.receipt);
+        assert_eq!(replay.writes.staged_bytes, 0);
+        if i > 1 {
+            samples.push(serde_json::json!({"commit_us":accepted.processing.as_micros(),"retry_us":replay.processing.as_micros(),"staged_bytes":accepted.writes.staged_bytes,"peak_file_bytes":accepted.writes.largest_staged_file_bytes,
+                "request_bytes":nucleus::json::encoded_len(&nucleus::canvas::Request::Scene { workspace: 1, query: nucleus::canvas::scene::operation::Request::Submit { edit: edit.clone() } }).unwrap()}));
+        }
+        expected = accepted.receipt.revision;
+    }
+    eprintln!(
+        "stage004_measurements {}",
+        serde_json::to_string(&samples).unwrap()
+    );
+    assert!(
+        samples
+            .iter()
+            .all(|s| s["commit_us"].as_u64().unwrap() <= 200_000)
+    );
+}
+
+#[test]
+fn measurement_reopens_and_a_late_generation_cannot_replace_or_cancel_it() {
+    let directory = tempfile::tempdir().unwrap();
+    let dir = directory.path();
+    let mut scene = screw();
+    let handle = scene.handle(&scene.slots[0]);
+    scene
+        .edit(&handle, [6, 0, 8].map(DecimalValue::from_integer), None)
+        .unwrap();
+    let head = save(dir, &scene, None).unwrap();
+    let start = || measurement::begin(dir, &scene.document, &head, &handle).unwrap();
+    let old = start();
+    let current = start();
+    assert_ne!(old.generation, current.generation);
+    assert_eq!(measurement::finish(dir, &current, true).unwrap(), Some(10.));
+    assert_eq!(measurement::finish(dir, &old, true).unwrap(), None);
+    measurement::cancel(dir, &old.generation).unwrap();
+    let reopened = open(dir).unwrap();
+    let (job, result) =
+        measurement::recover(dir, &reopened.scene.document, &reopened.revision, &handle)
+            .unwrap()
+            .unwrap();
+    assert_eq!(job.generation, current.generation);
+    assert_eq!(result, 10.);
+    let cancelled = start();
+    measurement::cancel(dir, &cancelled.generation).unwrap();
+    assert_eq!(measurement::finish(dir, &cancelled, true).unwrap(), None);
+    let late = start();
+    scene
+        .edit(&handle, [DecimalValue::from_integer(1); 3], None)
+        .unwrap();
+    let next = save(dir, &scene, Some(&head)).unwrap();
+    assert_eq!(measurement::finish(dir, &late, true).unwrap(), None);
+    assert!(
+        measurement::recover(dir, &scene.document, &next, &handle)
+            .unwrap()
+            .is_none()
+    );
+}

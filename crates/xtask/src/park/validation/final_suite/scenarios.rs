@@ -1131,7 +1131,7 @@ mod tests {
             "crates/park/src/server.rs",
             "crates/store/migrations/0001.sql",
             "institute/assets/scene.glb",
-            "institute/packaging/linux/lince-park-session",
+            "institute/packaging/linux/wayland-sessions/lince.desktop",
         ] {
             assert!(source_input(path), "{path}");
         }

@@ -457,6 +457,12 @@ fn scrollbar_key(
     });
 }
 
+/// The target's screen coordinates include the scroll applied by the last layout. Multiple
+/// focus observers can request its reveal before Bevy lays out the next frame.
+pub(super) fn revealed_offset(panel: &ComputedNode, physical_delta: f32) -> f32 {
+    ((panel.scroll_position.y + physical_delta) * panel.inverse_scale_factor()).max(0.0)
+}
+
 pub(crate) fn reveal(
     world: &mut World,
     viewport: Entity,
@@ -501,9 +507,9 @@ pub(crate) fn reveal(
         0.0
     };
     let max = (panel.content_size.y - panel.size.y + panel.scrollbar_size.y).max(0.0) * scale;
+    let next = revealed_offset(panel, delta).min(max);
     let mut scroll = world.get_mut::<ScrollPosition>(viewport)?;
-    let next = (scroll.0.y + delta * scale).clamp(0.0, max);
-    let changed = (next - scroll.0.y).abs() > 0.5;
+    let changed = delta != 0.0 && (next - scroll.0.y).abs() > 0.5;
     if changed {
         scroll.0.y = next;
         if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
@@ -641,6 +647,8 @@ mod tests {
             ))
             .id();
         assert_eq!(reveal(&mut world, viewport, target, 8.0), Some(true));
+        // Another observer sees the same geometry before layout has applied the request.
+        assert_eq!(reveal(&mut world, viewport, target, 8.0), Some(false));
         assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 78.0);
         world
             .entity_mut(target)

@@ -49,36 +49,34 @@ fn curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories()
         .unwrap();
     let trails = institute.join("trails");
     assert!(!trails.join("ergon/connected-systems").exists());
-    let directories: BTreeSet<_> = fs::read_dir(&trails)
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| path.is_dir())
-        .map(|path| path.file_name().unwrap().to_str().unwrap().to_owned())
-        .collect();
-    assert_eq!(
-        directories,
-        ["ascholia", "scholazein", "lince", "ergon"]
-            .into_iter()
-            .map(str::to_owned)
-            .collect()
-    );
     let root = "r_7A4AY51TXG87NVHR9J1XNZTJQ9";
-    let entry = trails.join("Trails.lingua");
+    let entry = trails.join("Lince.lingua");
     let guidance = project(&entry);
-    assert_eq!(guidance.records.len(), 1);
-    assert!(guidance.records[0].body.contains("breadth first"));
+    let main_record = |slug: &str| {
+        guidance
+            .records
+            .iter()
+            .find(|record| record.slug.as_deref() == Some(slug))
+            .unwrap()
+    };
+    for (child, parent) in [
+        ("tool", "philosophy"),
+        ("institute", "philosophy"),
+        ("instinct-handbook", "tool"),
+        ("trails", "trail"),
+    ] {
+        assert!(main_record(child).assertions.iter().any(|assertion| {
+            assertion.predicate == "part-of" && assertion.object_slug.as_deref() == Some(parent)
+        }));
+    }
+    assert!(main_record("institute").assertions.iter().any(|assertion| {
+        assertion.predicate == "contains" && assertion.object_slug.as_deref() == Some("trail")
+    }));
+    assert!(main_record("trails").body.contains("breadth first"));
     let temporary = tempfile::tempdir().unwrap();
     let library = Library::new(temporary.path().join("library"));
     let navigation = Publication::load(&library, entry.to_str().unwrap(), &[], false).unwrap();
     assert_eq!(navigation.documents.len(), 1);
-    assert_eq!(
-        navigation.documents[0].project.records[0]
-            .assertions
-            .iter()
-            .filter(|assertion| assertion.predicate == "contains" && assertion.object_uri.is_some())
-            .count(),
-        4
-    );
     let mut pending = vec![(entry, root.to_owned())];
     let mut records = BTreeMap::new();
     let mut edges = BTreeMap::new();
@@ -113,10 +111,16 @@ fn curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories()
     let mut done = BTreeSet::new();
     visit(root, &edges, &mut BTreeSet::new(), &mut done);
     assert_eq!(done.len(), records.len());
-    assert!(edges[root].contains("r_YJQ36ETAKE8J7F8Y65DG7V43MB"));
     assert_eq!(
-        records["r_YJQ36ETAKE8J7F8Y65DG7V43MB"].slug.as_deref(),
-        Some("tool")
+        edges[root],
+        [
+            "r_FE78A5A2D2A3261F711703DCC1",
+            "r_E8E2D1B2D2994E0AD5F5D002D6",
+            "r_C13F57992B4DED1C03FB1AF28D"
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect()
     );
     assert_eq!(edges["r_00000000000000000000002001"].len(), 6);
     assert!(edges["r_0BDE857C410434BA79D017008C"].contains("r_3TKT81FRMZKC1D63FV1RHY8DCJ"));

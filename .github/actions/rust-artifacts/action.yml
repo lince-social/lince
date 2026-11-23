@@ -29,23 +29,133 @@ runs:
       env:
         CACHE_SCOPE: ${{ inputs.scope }}
         CACHE_TARGET: ${{ inputs.target }}
-      run: python3 -B institute/scripts/ci-cache-identity.py >> "$GITHUB_OUTPUT"
-    - name: Identify compatible fallback compiler inputs
-      id: fallback
-      if: inputs.fallback-scope != ''
-      shell: bash
-      env:
-        CACHE_SCOPE: ${{ inputs.fallback-scope }}
-        CACHE_TARGET: ${{ inputs.target }}
-      run: python3 -B institute/scripts/ci-cache-identity.py >> "$GITHUB_OUTPUT"
+        CACHE_FALLBACK: ${{ inputs.fallback-scope }}
+      run: |
+        python3 -B - <<'PYTHON'
+
+        import hashlib
+        import json
+        import os
+        from pathlib import Path
+        import subprocess
+
+
+        def snapshot(root):
+            paths = subprocess.check_output(
+                [
+                    "git", "ls-files", "-z", "--", "Cargo.toml", "Cargo.lock",
+                    "rust-toolchain.toml", "LICENSE", ".cargo", "crates",
+                    "institute/assets", "institute/packaging",
+                ],
+                cwd=root,
+            ).split(b"\0")
+            entries = {}
+            directories = {}
+            for raw in paths:
+                if not raw:
+                    continue
+                name = os.fsdecode(raw)
+                path = root / name
+                if path.is_symlink() or not path.is_file():
+                    continue
+                if path.resolve() != path:
+                    continue
+                stat = path.stat()
+                identity = [hashlib.sha256(path.read_bytes()).hexdigest(), stat.st_mode]
+                entries[name] = {"identity": identity, "mtime": stat.st_mtime_ns}
+                for parent in path.relative_to(root).parents:
+                    if parent != Path("."):
+                        directories.setdefault(str(parent), []).append([name, identity])
+            for name, contents in directories.items():
+                identity = hashlib.sha256(json.dumps(sorted(contents)).encode()).hexdigest()
+                entries[name] = {
+                    "identity": [identity, (root / name).stat().st_mode],
+                    "mtime": (root / name).stat().st_mtime_ns,
+                }
+            return entries
+
+
+        def emit(name, lines):
+            delimiter = f"RUST_CACHE_{name.upper().replace('-', '_')}"
+            print(f"{name}<<{delimiter}", *lines, delimiter, sep="\n", file=output)
+
+
+        scope, fallback, target = (os.environ[name] for name in ("CACHE_SCOPE", "CACHE_FALLBACK", "CACHE_TARGET"))
+        root = Path.cwd()
+        native = Path(os.environ["RUNNER_TEMP"]) / "lince-native-inputs"
+        sources = snapshot(root)
+        profile_flags = (
+            "RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_INCREMENTAL",
+            "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "CC", "CXX",
+            "CFLAGS", "CXXFLAGS", "LINCE_CI_LINKER",
+        )
+        files = [
+            ".cargo/config.toml", "rust-toolchain.toml",
+            ".github/actions/rust-artifacts/action.yml",
+            ("crates/mobile/android/app/build.gradle" if scope.startswith("android-")
+             else ".github/actions/linux-build/action.yml"),
+        ]
+        configuration = {
+            "compiler": subprocess.check_output(["rustc", "-vV"]).decode(),
+            "flags": {key: os.environ.get(key) for key in profile_flags}
+                     | {key: value for key, value in os.environ.items() if key.startswith("CARGO_PROFILE_")},
+            "native": hashlib.sha256(native.read_bytes()).hexdigest(),
+            "files": {name: hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in files},
+        }
+        compatible = hashlib.sha256(json.dumps(configuration, sort_keys=True).encode()).hexdigest()
+        lock = hashlib.sha256(Path("Cargo.lock").read_bytes()).hexdigest()
+        identities = {name: entry["identity"] for name, entry in sources.items()}
+        revision = hashlib.sha256(json.dumps(identities, sort_keys=True).encode()).hexdigest()
+        prefix = f'rust-inputs-v3-{os.environ["RUNNER_OS"]}-{os.environ["RUNNER_ARCH"]}'
+
+
+        def cache_keys(mode):
+            base = f"{prefix}-{mode}-{target}-{compatible}-"
+            return [f"{base}{lock}-{revision}", f"{base}{lock}-", base]
+
+
+        paths = ["~/.cargo/registry/cache", "~/.cargo/registry/index", "~/.cargo/git/db", "target/debug/ci-source-cache.json"]
+        for profile in ("target/debug", "target/release", f"target/{target}/debug", f"target/{target}/release"):
+            paths.extend((f"{profile}/.fingerprint", f"{profile}/build"))
+            paths.extend(f"{profile}/deps/*.{extension}" for extension in ("rlib", "rmeta", "so", "a", "o", "d"))
+
+        pending = native.with_name("lince-source-snapshot.json")
+        pending.write_text(json.dumps(sources), encoding="utf-8")
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+            keys = cache_keys(scope)
+            print(f"key={keys[0]}", file=output)
+            emit("restore-keys", keys + (cache_keys(fallback) if fallback else []))
+            emit("paths", paths)
+        PYTHON
     - uses: actions/cache/restore@v4
       id: restore
       with:
         path: ${{ steps.identity.outputs.paths }}
         key: ${{ steps.identity.outputs.key }}
-        restore-keys: |
-          ${{ steps.identity.outputs.restore-keys }}
-          ${{ steps.fallback.outputs.restore-keys }}
+        restore-keys: ${{ steps.identity.outputs.restore-keys }}
     - name: Restore timestamps only for unchanged sources
       shell: bash
-      run: python3 -B institute/scripts/ci-source-cache.py
+      run: |
+        python3 -B - <<'PYTHON'
+        import json
+        import os
+        from pathlib import Path
+
+        source = Path(os.environ["RUNNER_TEMP"]) / "lince-source-snapshot.json"
+        state = Path("target/debug/ci-source-cache.json")
+        current = json.loads(source.read_text())
+        previous = json.loads(state.read_text()) if state.exists() else {}
+        restored = 0
+        for name, entry in current.items():
+            path = Path(name)
+            old = previous.get(name)
+            if old and old["identity"] == entry["identity"]:
+                os.utime(path, ns=(path.stat().st_atime_ns, old["mtime"]))
+                restored += 1
+            else:
+                os.utime(path, None)
+            entry["mtime"] = path.stat().st_mtime_ns
+        state.parent.mkdir(parents=True, exist_ok=True)
+        state.write_text(json.dumps(current, sort_keys=True))
+        print(f"Restored timestamps for {restored}/{len(current)} unchanged build inputs")
+        PYTHON

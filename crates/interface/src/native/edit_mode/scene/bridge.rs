@@ -199,8 +199,33 @@ pub(super) fn project(
     workspace: u64,
     scene: &Scene,
 ) -> Result<(), String> {
-    let Some(b) = &scene.canvas else {
+    let Some((t, local, point)) = projection(world, root, workspace, scene)? else {
         return Ok(());
+    };
+    world.get_mut::<Member>(t.item).unwrap().0.local = local;
+    topology::set_position(world, t.item, DVec3::from_array(point.position));
+    crate::native::record_presentation::save(world, t.item);
+    crate::native::workspace::request_save(world);
+    Ok(())
+}
+
+pub(super) fn check_projection(
+    world: &World,
+    root: Entity,
+    workspace: u64,
+    scene: &Scene,
+) -> Result<(), String> {
+    projection(world, root, workspace, scene).map(|_| ())
+}
+
+fn projection(
+    world: &World,
+    root: Entity,
+    workspace: u64,
+    scene: &Scene,
+) -> Result<Option<(Target, Pose, Pose)>, String> {
+    let Some(b) = &scene.canvas else {
+        return Ok(None);
     };
     let t = target(world, root, workspace, scene)?;
     let mut local = world.get::<Member>(t.item).unwrap().0.local.clone();
@@ -212,11 +237,7 @@ pub(super) fn project(
     if !room::valid_pose(&point) {
         return Err("The model position exceeds the canvas range.".into());
     }
-    world.get_mut::<Member>(t.item).unwrap().0.local = local;
-    topology::set_position(world, t.item, DVec3::from_array(point.position));
-    crate::native::record_presentation::save(world, t.item);
-    crate::native::workspace::request_save(world);
-    Ok(())
+    Ok(Some((t, local, point)))
 }
 
 fn session(world: &World, root: Entity) -> Option<(u64, &Session)> {
@@ -224,7 +245,7 @@ fn session(world: &World, root: Entity) -> Option<(u64, &Session)> {
     Some((workspace, world.get::<Documents>(root)?.0.get(&workspace)?))
 }
 
-fn refresh(world: &mut World, root: Entity, workspace: u64) {
+pub(super) fn refresh(world: &mut World, root: Entity, workspace: u64) {
     let section = world
         .query::<&Form>()
         .iter(world)
@@ -250,13 +271,10 @@ pub(crate) fn selected(world: &mut World, root: Entity, item: Entity) {
         return;
     }
     let handle = b.handle.clone();
-    world
-        .get_mut::<Documents>(root)
-        .unwrap()
-        .0
-        .get_mut(&workspace)
-        .unwrap()
-        .selected = Some(handle);
+    let mut documents = world.get_mut::<Documents>(root).unwrap();
+    let session = documents.0.get_mut(&workspace).unwrap();
+    session.accepted.invalidate();
+    session.selected = Some(handle);
     refresh(world, root, workspace);
 }
 

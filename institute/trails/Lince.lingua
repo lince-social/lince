@@ -1,4 +1,4 @@
-Ailuros - Interfaceless (@ailuros: 0, #instinct) {
+Ailuros - Interfaceless (@ailuros: 0, #instinct, #part-of @tool) {
 ![](/assets/photos/ailouros.png)
 
 What is more embarrassing, to dream or not to dream something like this? That is the question. The answer is that fiction is only an unfollowed plan, a jumping to conclusions, a prediction of a world under an inexistent system; shouldn't be wasted time upon. If the process of ordering the steps of the plan, building and documenting the work is done in the open, there is no such thing as too much ambition.
@@ -32,13 +32,15 @@ Starting from zero knowledge, one needs to play with ideas and the real world le
 - [ ] Form: smallest fragments possible (if useful), connectable to other parts of it physically.
 }
 
-Lince, the philosophy (@philosophy: 1, is #chapter, #instinct: 1, #done) {
+Lince, the philosophy (@philosophy: 1, is #chapter, #instinct: 1, #done) { r_0DAKH4X8QJ9YY10HT787TJ7FGS
 Gere bellum contra dolorem viventium.
 
 It is possible to find many different philosophies to divide life. The Lince tool separates it into Needs and Contributions to Needs. The Lince philosophy is to meet your Needs and Contribute to the Needs of those you care about; using the Lince tool or not. The maximum point of the Lince philosophy is all Needs deemed fair being met, and in the void of unmet Needs... We don't know yet.
-}
 
-Lince, the Institute (@institute: -1) {
+Continue with [Lince, the tool](Lince.lingua#r_YJQ36ETAKE8J7F8Y65DG7V43MB) and [Lince, the Institute](Lince.lingua#r_1A5CDYZBF8DSXHMFNQWEY0F2HA).
+} r_0DAKH4X8QJ9YY10HT787TJ7FGS
+
+Lince, the Institute (@institute: -1, #part-of @philosophy, #contains @trail) { r_1A5CDYZBF8DSXHMFNQWEY0F2HA
 What will carry such philosophy forward? Actors, they could be supported by those that agree with such philosophy, or not.
 
 The Contribution of organization of the support is a task of the Lince Institute. That is the first task.
@@ -52,9 +54,11 @@ Currently, agentic development is the way the Contribution of the Lince tool is 
 - [x] Performance and optimizations.
 - [x] Lines of code (LOC) shrinkage without regressions.
 - [x] Rethinking groups of features to turn into lower amount of shared primitives.
-}
 
-Lince, the tool (@tool: -1, is #chapter, #instinct: 2, #done, #contains "lince/instinct/Handbook.lingua#r_0SMVW3VGREZ6TYYQ5PQVKD268A", #contains "lince/shared/Development-example.lingua#r_00000000000000000000004001", #contains "lince/shared/Checklist-example.lingua#r_00000000000000000000005001", #contains "lince/shared/Assessment-example.lingua#r_00000000000000000000006001") { r_YJQ36ETAKE8J7F8Y65DG7V43MB
+The [Trail](Lince.lingua#r_Q46Z5FZHZFACPNSNPJP2GEDC1D) is where the Institute organizes and shares this knowledge.
+} r_1A5CDYZBF8DSXHMFNQWEY0F2HA
+
+Lince, the tool (@tool: -1, is #chapter, #instinct: 2, #done, #part-of @philosophy, #contains "workspace/Workspace.lingua#r_GNVCVJB3R7NY0ZXW6QHSZTYFSQ", #contains "shared/Development-example.lingua#r_00000000000000000000004001", #contains "shared/Checklist-example.lingua#r_00000000000000000000005001", #contains "shared/Assessment-example.lingua#r_00000000000000000000006001", #learning-lince @installation, #learning-lince @record) { r_YJQ36ETAKE8J7F8Y65DG7V43MB
 > **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
 
 Lince models everything with a Record, it has title and description as text columns and a quantity, the quantity is thought to be the most changed field, representing state that can be affected by math in automations and Transfers. Lince thinks by default that when a quantity of a record is negative, it means an Actor Needs that much of the Record in question, so '-1 Apple' is the Need of 1 apple, if it is positive it's a possible Contribution, to oneself or others, if it's zero, its neither a resource we can use nor a Need.
@@ -111,14 +115,12 @@ We want to minimize the time spent managing the meeting of Needs and Contributio
 
 **Learning and using Lince.**
 
-Lince documentation, Instinct material, habits, simulations, shared examples, and the trail-authoring guidance live here. Their Records can be reused by any subject through ordinary links.
+Lince documentation, Instinct material, habits with simulation examples, and shared examples live here. Their Records can be reused by any subject through ordinary links.
 
-**Trail context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-
-Continue through [Instinct](lince/instinct/Instinct.lingua), the [Supply example](lince/habits/simple/Supply.lingua), [circular tool sharing](lince/habits/simple/Circular Tool Sharing.lingua), [grocery shopping](lince/habits/simple/Grocery Shopping.lingua), [reservations and tickets](lince/habits/simple/Reservations and Tickets.lingua), [ride sharing](lince/habits/simple/Ride Sharing.lingua), the [Karma toggle](lince/simulation/lingua-examples/karma-toggle.lingua), and the [Lingua examples](lince/simulation/lingua-examples/Guide.md). Shared [development](lince/shared/Development-example.lingua), [checklist](lince/shared/Checklist-example.lingua) and [assessment](lince/shared/Assessment-example.lingua) examples remain ordinary reusable Records.
+Continue through [Instinct](Lince.lingua#r_0SMVW3VGREZ6TYYQ5PQVKD268A), [Workspace](workspace/Workspace.lingua#r_GNVCVJB3R7NY0ZXW6QHSZTYFSQ), [Park](Park.md), the [daily routine](habits/simple/Daily-routine.lingua), the [Supply example](habits/simple/Supply.lingua), [circular tool sharing](habits/simple/Circular Tool Sharing.lingua), [grocery shopping](habits/simple/Grocery Shopping.lingua), [reservations and tickets](habits/simple/Reservations and Tickets.lingua), [ride sharing](habits/simple/Ride Sharing.lingua), and the [Karma toggle](habits/automation/karma-toggle.lingua). Shared [development](shared/Development-example.lingua), [checklist](shared/Checklist-example.lingua) and [assessment](shared/Assessment-example.lingua) examples remain ordinary reusable Records.
 } r_YJQ36ETAKE8J7F8Y65DG7V43MB
 
-Installation (@installation: 0, #instinct, #part-of @tool) {
+Installation (@installation: 0, #instinct, #part-of @tool) { r_24NHB5PRJN2SQ2CVTW0H048547
 
 Run a downloaded binary with `./lince`, or `lince` if it is on your path. From the repository, run `cargo run -p lince`. The normal desktop run needs no `.env` file or environment variables. Lince keeps its data in your user config directory by default. Use `--directory /path/to/data` to choose another place.
 
@@ -195,9 +197,9 @@ sudo ufw allow 80
 sudo ufw allow 443
 sudo systemctl enable --now caddy
 ```
-}
+} r_24NHB5PRJN2SQ2CVTW0H048547
 
-Record (@record: 1, #instinct, #part-of @tool) {
+Record (@record: 1, #instinct, #part-of @tool) { r_AD80NXA1KWKH233GJBBWQH43RZ
 
 ### Every Need is one Record
 
@@ -269,9 +271,9 @@ A Record as mentioned so far is plain, basic. There are workflows that are not j
 A record's quantity can name its **unit** — kilograms, hours, a currency — by pointing at a Concept, so "3" is never ambiguous. A Record can name a **place**, so it shows up on a map or in whatever is near you.
 
 It remembers which **Organ** it came from, which is how you know whether something arrived from a group you are in or you wrote it yourself. And it keeps **when it was created and last changed**.
-}
+} r_AD80NXA1KWKH233GJBBWQH43RZ
 
-Assertion (@assertion: 0, #instinct, #part-of @ontology) {
+Assertion (@assertion: 0, #instinct, #part-of @ontology) { r_Z1QS17KBHMK9YEQA030GMVJCJA
 Records can be given ideas they represent:
 
 Subject --> Predicate
@@ -287,7 +289,7 @@ Hand        #part-of      Arm
 An assertion can have the place of the Identity of a Record, being the concept that represents that apple most. When you want to understand what something is that has a bunch of assertions, you look for the main one, the Identity:
 
 Apple is #apple
-}
+} r_Z1QS17KBHMK9YEQA030GMVJCJA
 
 Organ (@organ: 0, #instinct, #part-of @ontology, #done) { r_VAX3HA21RXF9AENHMCJTSEF1AT
 Every Record so far lived alone on one machine. This is about what happens when
@@ -358,7 +360,7 @@ This is why the frontend keeps **areas** (in the workspace menu) separate from e
 Other Organs can be saved as contacts, with unknown, known and blocked states, and a numeric Proximity property that you can use to indicate the value of your bond with them. In Transfers, you may use it to offer to people you have only a certain level of Proximity with, perhaps increasing the range of which you may donate something over time by increasing needed proximity to see such donation if closer contacts dont immediatelly want it.
 } r_VAX3HA21RXF9AENHMCJTSEF1AT
 
-Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
+Karma (@karma: 0, is #chapter, #instinct, #done, #part-of @tool) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 Karma means 'action' in Sanskrit. In Lince it is the sum of all automations and intelligence. Without Karma in Lince, all the data is like still water if not touched by the user. Karma is the scheduler, the automatic action taker, it changes quantites, fires computer commands, receives requests from other systems and saves the result to be used in the Rules. All of it is optional, it can be set to take every Fact as an evidence that a certain Karma Rule should happen in such and such way. A pattern can be understood and have a growth function, so that after 3 months of buying apples every week you create an automation around posting a need for apples and a transfer proposal for such, all with hands-on control or complete automation.
 
 Rules are meant to be math equations that pull valus from your data and other systems to compute Conditions. These Conditions are checked to see if they pass a Threshold, if they do they enact a Consequence.
@@ -502,14 +504,15 @@ For most of the month the Frequency is `0`, so the whole equation is `0`, so the
 With #fruit, a rule keeps catching Records asserted after it was written — you don't revisit the rule. Renaming a concept is free: rules keep working and show the new name at once. #fruta and #Frucht write the same rule — each person reads it in their own name for it, and naming two aliases of one concept twice in one rule is refused as the duplicate it is. Writing a rule with a name that means two concepts is refused there and then, so you say which. (And: reusing a deleted @slug points old rules at the new Record.)
 }
 
-Fiote (@fiote: 1) {
+Fiote (@fiote: 1, #part-of @tool) { r_YPYQXKW9Q2JZNY70YA1V409SY5
 Fiote is the Lince agent harness, you can connect to existing models and subscriptions.
-}
+} r_YPYQXKW9Q2JZNY70YA1V409SY5
 
-Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
+Transfer (@transfer: 0, is #chapter, #instinct, #done, #part-of @tool) { r_00ECACY50NWQQ3S0YH37V8KMK6
 A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+} r_00ECACY50NWQQ3S0YH37V8KMK6
 
-
+Transfers: remaining implementation and validation (@transfer-development: 0, #part-of @transfer) {
 # Transfers: remaining implementation and validation
 
 Work on the current branch. Play Store publication and Play bundles are outside this work. Use debug APKs only (`signed_release=false`, `play_bundle=false`), preserve the installed release/smoketest apps and their data, and use at most the four disposable participants already prepared.
@@ -624,11 +627,11 @@ Do not report ADB timings as physical touch latency. Keep coordinates, private a
 - [ ] Restore the intended profile selection and preserve existing apps/data; retain protected debug-profile backups until restoration is verified.
 - [ ] Reconcile the redacted report with final source/APK identities, test results, phone outcomes, resource timelines, screenshots and any precise remaining failures.
 - [ ] Remove completed checkboxes; if no deliverables remain, delete this plan.
-} r_00ECACY50NWQQ3S0YH37V8KMK6
-
-Sync (@sync: 0, #instinct, #part-of @ontology) {
-Sync connects a selected Protein to a local Lingua or Markdown directory. Inspect status and conflicts, and stop it when you no longer want incoming and outgoing edits. One-time import is separate.
 }
+
+Sync (@sync: 0, #instinct, #part-of @ontology) { r_YNNGQD039CX8CZETQ83YHSKG7Z
+Sync connects a selected Protein to a local Lingua or Markdown directory. Inspect status and conflicts, and stop it when you no longer want incoming and outgoing edits. One-time import is separate.
+} r_YNNGQD039CX8CZETQ83YHSKG7Z
 
 Lingua (@lingua: 0, #instinct, #part-of @ontology) {
 For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectional sync with the database. Vocabulary is a way to understand the meaning of an #assertion, like a dictionary, or a wiki, with textual description, photos, and links to other Records. One default Vocabulary comes with Lince, and you can have multiple vocabularies.
@@ -647,7 +650,7 @@ A script can select a Lince directory with `dir = "..."`; `--directory` takes pr
 
 `print` can show values, Record quantities and properties, Protein query results, and existing declarations. For example, `print("Quantity is: " + str(quantity(@my-record) + 2))` prints `Quantity is: 12` when that Record's quantity is 10. Printing a definition does not run its conditions or actions. Running a script leaves its source and database data unchanged. Checking and formatting work without a database, and importing or syncing a document never executes script statements.
 
-Scripts support `if` / `else if` / `else` and `for item in array` with brace blocks. Each block has its own local names; assignments can update a variable declared outside it. Use `result = push(result, value)` to collect values, then `print(result)`. Examples of declarations, expressions, conditions, loops, printing, and database reads are in `institute/trails/lince/simulation/lingua-examples/`.
+Scripts support `if` / `else if` / `else` and `for item in array` with brace blocks. Each block has its own local names; assignments can update a variable declared outside it. Use `result = push(result, value)` to collect values, then `print(result)`. Examples of declarations, expressions, conditions, loops, printing, and database reads are in `institute/trails/habits/lingua-examples/`.
 }
 
 Blood (@blood: 0, #instinct, #part-of @ontology) {
@@ -663,8 +666,7 @@ Deffered for now:
   - [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start. LoRa remains a deferred implementation task. It needs its own transport adapter designed around radio’s limited bandwidth, small messages, and intermittent connections. This would provide another way for Cells to communicate where ordinary internet access is unavailable.
 }
 
-
-Command (@command: 1) {
+Command (@command: 1, #part-of @tool) {
   One can run shell commands in Lince. When running as part of a Condition, the output is saved into a Signal, a holder of a value. Such Signal can be changed by an HTTP call with authentication. This can be useful for integrating with microcontrollers. Some device creates a public/private key pair, uploads the public to Lince, and can then alter a Signal from the outside (dangerous, use at your own discretion).
 
 Lince keeps the access settings: enabled or disabled, the allowed Signal, minimum time between readings, accepted value range, and an expiry. Changes take effect on the next request. A device sends signed readings over HTTPS. The private key stays on the device; Lince stores only its public key. There is no permanent bearer token to copy or renew.
@@ -706,7 +708,7 @@ A new reading may be at most 120 seconds old or 30 seconds ahead of the server c
 Success returns device, key_epoch, sequence, fact, and received_at (Unix milliseconds). Confirm that these identify the pending request before advancing. HTTP 429 means cooldown or an ingress limit: back off and retry, refreshing an expired unaccepted reading with a higher sequence. HTTP 403 means access was refused; stop sending and inspect access in Lince. HTTP 409 means a used sequence; recover the pending sequence through the trusted setup process rather than guessing. HTTP 400 means a malformed, expired, or out-of-range reading. Lost responses and temporary server errors use bounded exponential backoff with jitter. Lince also limits concurrent reading requests and total request attempts before signature verification.
 }
 
-Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
+Interface (@interface: 1, is #chapter, #instinct, #done, #part-of @tool) { r_99NWECF19VKV94HQQ3G3ASMC4M
 Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
 
 Choices can be done quickly. Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Full control is always available.
@@ -730,7 +732,7 @@ These and many more behaviors add logic and customization to your experience on 
 
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 
-Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
+Trail (@trail: 0, is #chapter, #instinct, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
 Alexandria was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful for those meeting Needs.
 
 In Lince, the Alexandria intention is to share knowledge of what things are, how they work, and how to understand, make, maintain, and improve them. Trail is our authoring name for the plans, directories, ordinary data, and referenced content that support this work. Readers follow learning and doing through normal Lince features.
@@ -742,6 +744,8 @@ Store a directed assertion once. Protein can select both endpoints, and a Record
 Use normal Sync and source workflows to retrieve, review, exchange, and publish data. Ordinary Record and resource views open referenced Records, paths, documents, and media. Keep source identities and Concept meanings when sharing across Organs. Looking at data does not enact its Karma or Transfers; their normal actions remain available when wanted.
 
 Build an open university style body of knowledge: primary sources, explanations, examples, evidence, and practical processes from basic materials to advanced production. Keep it useful, correct it, and deepen it as knowledge changes. The content can be easy to enter and demanding to master without requiring readers to learn an extra abstraction.
+
+Open [Trails — Knowledge to learn and use](Lince.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9) for the Institute’s curriculum branches.
 
 Here are the subjects wanted to create Trails for, from fields of knowledge to simple daily workflows, fabrication of items...:
 
@@ -777,59 +781,72 @@ Here are the subjects wanted to create Trails for, from fields of knowledge to s
       - [ ] Software Engineering
 } r_Q46Z5FZHZFACPNSNPJP2GEDC1D
 
-Instinct handbook (@instinct-handbook: 0, is #chapter, #instinct) { r_0SMVW3VGREZ6TYYQ5PQVKD268A
+Workspace (@workspace: 0) {
+- [ ] The way tiling is made should change, i want every window/castle/sand to have the bounds of it, the space it takes individually if let be in space without other things constraining it be noted. Then when in tiling mode the size of the tile is the maximum space that canvas item is allowed to take, this should be tied to resize. There are three things that set a mode of interaction and camera in canvas, 3d, tiling and focus that need to be thought of well in this refactor:
+    - 2d focused tiling
+    - 2d focused untiled
+    - 2d unfocused tiling
+    - 2d unfocused untiled
+    - 3d focused tiling
+    - 3d focused untiled
+    - 3d unfocused tiling
+    - 3d unfocused untiled
+    - 3d unfocused should make 3d mode have mouse movement control camera.
+}
+
+Instinct handbook (@instinct-handbook: 0, is #chapter, #instinct, #learning-lince @instinct-areas, #learning-lince @instinct-automation, #learning-lince @instinct-creative, #learning-lince @instinct-disk, #learning-lince @instinct-files, #learning-lince @instinct-interface, #learning-lince @instinct-maintaining, #learning-lince @instinct-protein, #learning-lince @instinct-records, #learning-lince @instinct-sharing, #learning-lince @instinct-transfers, #learning-lince @instinct-welcome, #learning-lince @instinct-work, #part-of @tool) { r_0SMVW3VGREZ6TYYQ5PQVKD268A
 Begin with Welcome, Interface and Areas, then Records and Protein. Later chapters are optional. Every page is accessible directly. Suggested earlier ideas are links, never locks. Practice is disposable, and reading needs no database import.
 } r_0SMVW3VGREZ6TYYQ5PQVKD268A
 
-Welcome and finding help (@instinct-welcome: 0, is #chapter, #instinct, #part-of @instinct-handbook: 1) { r_4P5JGN3V4Q62SA2HNSPGSFA2CB
+Welcome and finding help (@instinct-welcome: 0, is #chapter, #instinct, #part-of @instinct-handbook: 1, #learning-lince @instinct, #learning-lince @learn-installation, #learning-lince @learn-philosophy) { r_4P5JGN3V4Q62SA2HNSPGSFA2CB
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_4P5JGN3V4Q62SA2HNSPGSFA2CB
 
-Interface foundations (@instinct-interface: 0, is #chapter, #instinct, #part-of @instinct-handbook: 2) { r_72X2M0SK4WZBA0HHB864DYSEWY
+Interface foundations (@instinct-interface: 0, is #chapter, #instinct, #part-of @instinct-handbook: 2, #learning-lince @appearance, #learning-lince @canvas, #learning-lince @castles, #learning-lince @edit-mode, #learning-lince @sands, #learning-lince @shortcuts, #learning-lince @text-sands, #learning-lince @workspaces) { r_72X2M0SK4WZBA0HHB864DYSEWY
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_72X2M0SK4WZBA0HHB864DYSEWY
 
-Areas without Protein (@instinct-areas: 0, is #chapter, #instinct, #part-of @instinct-handbook: 3) { r_4BCGSHXT8F8VAANGGBEJ0FKK3W
+Areas without Protein (@instinct-areas: 0, is #chapter, #instinct, #part-of @instinct-handbook: 3, #learning-lince @area-effects, #learning-lince @area-forces, #learning-lince @area-inspection) { r_4BCGSHXT8F8VAANGGBEJ0FKK3W
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_4BCGSHXT8F8VAANGGBEJ0FKK3W
 
-Records and meaning (@instinct-records: 0, is #chapter, #instinct, #part-of @instinct-handbook: 4) { r_6D4P7ZZWGMNT73YFHVC05CPNRJ
+Records and meaning (@instinct-records: 0, is #chapter, #instinct, #part-of @instinct-handbook: 4, #learning-lince @facts, #learning-lince @learn-assertion, #learning-lince @learn-ontology, #learning-lince @learn-record, #learning-lince @record-castles) { r_6D4P7ZZWGMNT73YFHVC05CPNRJ
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_6D4P7ZZWGMNT73YFHVC05CPNRJ
 
-Protein and data-backed Areas (@instinct-protein: 0, is #chapter, #instinct, #part-of @instinct-handbook: 5) { r_5EK8CXM9Z0NTHD7YF1TZ8CN4NM
+Protein and data-backed Areas (@instinct-protein: 0, is #chapter, #instinct, #part-of @instinct-handbook: 5, #learning-lince @area-record-actions, #learning-lince @protein, #learning-lince @protein-arrangement, #learning-lince @protein-presentation) { r_5EK8CXM9Z0NTHD7YF1TZ8CN4NM
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_5EK8CXM9Z0NTHD7YF1TZ8CN4NM
 
-Getting work done (@instinct-work: 0, is #chapter, #instinct, #part-of @instinct-handbook: 6) { r_2GAFCNWRETWMM3Z99DX60MHW5H
+Getting work done (@instinct-work: 0, is #chapter, #instinct, #part-of @instinct-handbook: 6, #learning-lince @calendar, #learning-lince @kanban, #learning-lince @notifications, #learning-lince @operation, #learning-lince @time, #learning-lince @todo) { r_2GAFCNWRETWMM3Z99DX60MHW5H
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_2GAFCNWRETWMM3Z99DX60MHW5H
 
-Automation and trying outcomes (@instinct-automation: 0, is #chapter, #instinct, #part-of @instinct-handbook: 7) { r_4M69ES59RP6B1TB6BYW7ZX29WZ
+Automation and trying outcomes (@instinct-automation: 0, is #chapter, #instinct, #part-of @instinct-handbook: 7, #learning-lince @commands, #learning-lince @frequency, #learning-lince @habits, #learning-lince @learn-fiote, #learning-lince @learn-karma, #learning-lince @simulation) { r_4M69ES59RP6B1TB6BYW7ZX29WZ
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_4M69ES59RP6B1TB6BYW7ZX29WZ
 
-Cells, Organs and sharing (@instinct-sharing: 0, is #chapter, #instinct, #part-of @instinct-handbook: 8) { r_18YTT89APP1661QFCH29E3WSQ6
+Cells, Organs and sharing (@instinct-sharing: 0, is #chapter, #instinct, #part-of @instinct-handbook: 8, #learning-lince @access-control, #learning-lince @calls, #learning-lince @contacts, #learning-lince @conversations, #learning-lince @devices, #learning-lince @discovery, #learning-lince @learn-organ, #learning-lince @mail, #learning-lince @organ-sync) { r_18YTT89APP1661QFCH29E3WSQ6
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_18YTT89APP1661QFCH29E3WSQ6
 
-Transfers (@instinct-transfers: 0, is #chapter, #instinct, #part-of @instinct-handbook: 9) { r_1X5VKHSHM63H5S0ZDTQSVTFSF1
+Transfers (@instinct-transfers: 0, is #chapter, #instinct, #part-of @instinct-handbook: 9, #learning-lince @learn-transfer, #learning-lince @transfer-automation) { r_1X5VKHSHM63H5S0ZDTQSVTFSF1
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_1X5VKHSHM63H5S0ZDTQSVTFSF1
 
-Trails and data on disk (@instinct-disk: 0, is #chapter, #instinct, #part-of @instinct-handbook: 10) { r_5P75GZJECWWTVXHT8SWXE5BDGJ
+Trails and data on disk (@instinct-disk: 0, is #chapter, #instinct, #part-of @instinct-handbook: 10, #learning-lince @backup, #learning-lince @blob-sync, #learning-lince @instinct-import, #learning-lince @learn-sync) { r_5P75GZJECWWTVXHT8SWXE5BDGJ
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_5P75GZJECWWTVXHT8SWXE5BDGJ
 
-Local files and developer tools (@instinct-files: 0, is #chapter, #instinct, #part-of @instinct-handbook: 11) { r_12YTD2TNS4J92G5EBFZRX8ANP2
+Local files and developer tools (@instinct-files: 0, is #chapter, #instinct, #part-of @instinct-handbook: 11, #learning-lince @documents, #learning-lince @external-files, #learning-lince @ide, #learning-lince @language-tools, #learning-lince @terminal) { r_12YTD2TNS4J92G5EBFZRX8ANP2
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_12YTD2TNS4J92G5EBFZRX8ANP2
 
-Audio, spatial and reusable tools (@instinct-creative: 0, is #chapter, #instinct, #part-of @instinct-handbook: 12) { r_4XGM5ZB8BZ7JWZVX77KXBDW6Y7
+Audio, spatial and reusable tools (@instinct-creative: 0, is #chapter, #instinct, #part-of @instinct-handbook: 12, #learning-lince @area-sound, #learning-lince @custom-castles, #learning-lince @freedoom, #learning-lince @recorder, #learning-lince @shaders, #learning-lince @topology) { r_4XGM5ZB8BZ7JWZVX77KXBDW6Y7
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_4XGM5ZB8BZ7JWZVX77KXBDW6Y7
 
-Inspecting and maintaining Lince (@instinct-maintaining: 0, is #chapter, #instinct, #part-of @instinct-handbook: 13) { r_63R30TFVCB8SP8X5QM289JHY34
+Inspecting and maintaining Lince (@instinct-maintaining: 0, is #chapter, #instinct, #part-of @instinct-handbook: 13, #learning-lince @information, #learning-lince @inspection, #learning-lince @laboratory) { r_63R30TFVCB8SP8X5QM289JHY34
 Choose a subject below. Read, practice freely or use assistance, and leave whenever you need. Earlier ideas are suggestions.
 } r_63R30TFVCB8SP8X5QM289JHY34
 
@@ -845,37 +862,36 @@ Using Instinct (@instinct: 0, #instinct, #part-of @instinct-welcome: 3) { r_2BT1
 Find a subject through the chapter list or search. Free keeps ordinary interaction available; Assisted guides the sample action. Next performs the displayed action and waits for its result. Skip advances without it. Close or Ctrl+Shift+Escape immediately releases guidance. Start anywhere, change mode anytime and import the handbook only if you want ordinary Records of it.
 } r_2BT1WGJENZ6TC4QA00MEDZ0TRC
 
-Workspaces (@workspaces: 0, #instinct, #part-of @instinct-interface: 1) { r_46HV3R4APT0A447VRM6A78KT8V
+Workspaces (@workspaces: 0, #instinct, #part-of @instinct-interface: 1, #learning-lince @step-workspaces-create) { r_46HV3R4APT0A447VRM6A78KT8V
 A workspace holds an arrangement of Sands, Castles and Areas. Select a practice workspace and switch back. A workspace changes the view, not the Organ whose data you use. An Area is a shape within a workspace.
 } r_46HV3R4APT0A447VRM6A78KT8V
 
-Canvas navigation (@canvas: 0, #instinct, #part-of @instinct-interface: 2) { r_1XE0VM96KFSZBXTBXN903TNA02
+Canvas navigation (@canvas: 0, #instinct, #part-of @instinct-interface: 2, #learning-lince @step-canvas-frame) { r_1XE0VM96KFSZBXTBXN903TNA02
 Pan to look elsewhere, zoom to see more or less, and use Home or Fit to recover the sample view. Selection identifies your pieces. Bring Sands here moves presentations into view without changing the meaning of their Records.
 } r_1XE0VM96KFSZBXTBXN903TNA02
 
-Edit mode and the store (@edit-mode: 0, #instinct, #part-of @instinct-interface: 3) { r_5FH4XFDNTBBBYKZNZG3GP2M7VM
+Edit mode and the store (@edit-mode: 0, // |> [edit-panel-geometry] The edit panel starts flush against the left edge of the usable viewport and fills the available height from its top to just above the bottom-left workspace controls, keeping those controls visible and usable. Its standard width should be a little wider than the current panel, with all controls reachable on narrow viewports.
+    #instinct, #part-of @instinct-interface: 3, #learning-lince @step-edit-mode-open) { r_5FH4XFDNTBBBYKZNZG3GP2M7VM
 Open Edit mode to add or arrange pieces. Open the store, find an item, then return to normal interaction. The store offers small Sands and composed Castles. Reveal controls when you need them.
-
-|> [edit-panel-geometry] The edit panel starts flush against the left edge of the usable viewport and fills the available height from its top to just above the bottom-left workspace controls, keeping those controls visible and usable. Its standard width should be a little wider than the current panel, with all controls reachable on narrow viewports.
 } r_5FH4XFDNTBBBYKZNZG3GP2M7VM
 
-Sands and placement (@sands: 0, #instinct, #part-of @instinct-interface: 4) { r_0J3KYFP5MJS7GZV063D7RW0BW6
+Sands and placement (@sands: 0, #instinct, #part-of @instinct-interface: 4, #learning-lince @step-interface-move-sand, #learning-lince @step-interface-open-edit, #learning-lince @step-interface-place-sand) { r_0J3KYFP5MJS7GZV063D7RW0BW6
 A Sand is a piece of the interface. Add an empty Square and a plain text Sand, then move, resize and pin a sample. Selection and removal act on presentations. Removing a presentation does not delete its Record. Ordinary Sands need no Protein.
 } r_0J3KYFP5MJS7GZV063D7RW0BW6
 
-Plain and editable text (@text-sands: 0, #instinct, #part-of @instinct-interface: 5) { r_0VE5CQHRC6E2F1YZNREBX3KTW6
+Plain and editable text (@text-sands: 0, #instinct, #part-of @instinct-interface: 5, #learning-lince @step-text-sands-edit) { r_0VE5CQHRC6E2F1YZNREBX3KTW6
 Plain text makes labels; editable text makes notes. Change a sample label and write a short note. Text size, overflow and scrolling help fit content to its place.
 } r_0VE5CQHRC6E2F1YZNREBX3KTW6
 
-Castle composition (@castles: 0, #instinct, #part-of @instinct-interface: 6) { r_29A1SG36T8YDBHCTA82B9TDJJG
+Castle composition (@castles: 0, #instinct, #part-of @instinct-interface: 6, #learning-lince @step-interface-compose-castle, #learning-lince @step-interface-ungroup-castle) { r_29A1SG36T8YDBHCTA82B9TDJJG
 A Castle combines pieces into a useful view. Compose two sample Sands, group and ungroup them, then try an enclosing row or column layout. Fit follows content; Fill uses available space. Clipping or scrolling handles overflow. No Protein properties are needed.
 } r_29A1SG36T8YDBHCTA82B9TDJJG
 
-Appearance (@appearance: 0, #instinct, #part-of @instinct-interface: 7) { r_6NVDCF41YXTX5BGRC4RF3QBXSM
+Appearance (@appearance: 0, #instinct, #part-of @instinct-interface: 7, #learning-lince @step-appearance-change, #learning-lince @step-appearance-reset) { r_6NVDCF41YXTX5BGRC4RF3QBXSM
 Change one practice sample appearance and reset it. Themes set shared choices; per-kind and workspace overrides make narrower changes. Background and pattern belong to the canvas. Theme export saves appearance choices, not Records.
 } r_6NVDCF41YXTX5BGRC4RF3QBXSM
 
-Keyboard and accessible navigation (@shortcuts: 0, #instinct, #part-of @instinct-interface: 8) { r_3NK96774SKC021JFF8529GR174
+Keyboard and accessible navigation (@shortcuts: 0, #instinct, #part-of @instinct-interface: 8, #learning-lince @step-shortcuts-inspect) { r_3NK96774SKC021JFF8529GR174
 Open Shortcuts to inspect remapping. Tab through sample controls and activate a focused button. A text editor has its own input scope. Ctrl+Shift+Escape remains the tutorial recovery shortcut even when ordinary bindings change.
 } r_3NK96774SKC021JFF8529GR174
 
@@ -887,49 +903,51 @@ Attraction and repulsion (@area-forces: 0, #instinct, #part-of @instinct-areas: 
 Enable practice workspace physics. Set the sample Area to attract and observe movement toward its target, then repel and observe movement away. Strength, target and simple or Newtonian choices refine the effect; start with the visible result.
 } r_5XZBWGPKMHZ791G9JQA59X3EXP
 
-Area presentation effects (@area-effects: 0, #instinct, #part-of @instinct-areas: 3) { r_0KQFVPZK8MW2KSVT4ZWEYZ7MCS
+Area presentation effects (@area-effects: 0, #instinct, #part-of @instinct-areas: 3, #learning-lince @step-area-effects-disable, #learning-lince @step-area-effects-scale) { r_0KQFVPZK8MW2KSVT4ZWEYZ7MCS
 Try one size or immunity effect on ordinary sample Sands, then disable it. Sorting and boundaries help arrange pieces. Immunity can exclude a Sand. Data-driven order belongs to Protein and comes later.
 } r_0KQFVPZK8MW2KSVT4ZWEYZ7MCS
 
-Understanding an Area effect (@area-inspection: 0, #instinct, #part-of @instinct-areas: 4) { r_0TF0ER7ZHPTFWDJK9WPHHV081X
+Understanding an Area effect (@area-inspection: 0, #instinct, #part-of @instinct-areas: 4, #learning-lince @step-area-inspection-inspect) { r_0TF0ER7ZHPTFWDJK9WPHHV081X
 Inspect one cause of inclusion or exclusion: enabled state, reach, workspace physics or immunity. Use the sample to explain why a Sand responds. You do not need to open every diagnostic control.
 } r_0TF0ER7ZHPTFWDJK9WPHHV081X
 
-A Record (@learn-record: 0, #instinct, #part-of @instinct-records: 1, #reference @record) { r_0T0TRGGAJCNQBGX00FB2HDY2DC
+A Record (@learn-record: 0, #instinct, #part-of @instinct-records: 1, #reference @record, #learning-lince @step-learn-record-sample) { r_0T0TRGGAJCNQBGX00FB2HDY2DC
 A Record has title, description and quantity. Edit the prepared sample and give it a slug. Negative quantity expresses a Need, positive a Contribution and zero neither. A unit says what you count. Description links connect related Records.
 } r_0T0TRGGAJCNQBGX00FB2HDY2DC
 
-Assertions and identity (@learn-assertion: 0, #instinct, #part-of @instinct-records: 2, #reference @assertion) { r_42X48BJ3ANRH16NNB30STMSC25
+Assertions and identity (@learn-assertion: 0, #instinct, #part-of @instinct-records: 2, #reference @assertion, #learning-lince @step-learn-assertion-sample) { r_42X48BJ3ANRH16NNB30STMSC25
 Apply one concept and one relation to a prepared sample. A plain tag has no object; a relation names another Record. Main identity says what the Record is. Concepts come from a Vocabulary, so matching names can have different meanings.
 } r_42X48BJ3ANRH16NNB30STMSC25
 
-Vocabulary and Ontology (@learn-ontology: 0, #instinct, #part-of @instinct-records: 3, #reference @ontology) { r_44TBMRPDGFRHGS1VC1XAT6EG1K
+Vocabulary and Ontology (@learn-ontology: 0, #instinct, #part-of @instinct-records: 3, #reference @ontology, #learning-lince @step-learn-ontology-inspect) { r_44TBMRPDGFRHGS1VC1XAT6EG1K
 Look up a sample concept meaning and source Vocabulary, then inspect its parent and an alias. When a name is ambiguous, choose the intended source. Creating a complete Vocabulary is optional.
 } r_44TBMRPDGFRHGS1VC1XAT6EG1K
 
-Record, Assertions and Relations views (@record-castles: 0, #instinct, #part-of @instinct-records: 4) { r_2AE13GNGXQ36QWQE7C0RAEK1J7
+Record, Assertions and Relations views (@record-castles: 0, #instinct, #part-of @instinct-records: 4, #learning-lince @step-record-castles-open) { r_2AE13GNGXQ36QWQE7C0RAEK1J7
 Open the same sample in Record, Assertions and Relations views and follow one relation. Each presents the same saved data with a different focus.
 } r_2AE13GNGXQ36QWQE7C0RAEK1J7
 
-Facts and work metadata (@facts: 0, #instinct, #part-of @instinct-records: 5) { r_6KDD83XJXD0ZHZWRT5D9HE276E
+Facts and work metadata (@facts: 0, #instinct, #part-of @instinct-records: 5, #learning-lince @step-facts-inspect) { r_6KDD83XJXD0ZHZWRT5D9HE276E
 A Fact records a confirmed change. Inspect one sample change and its current quantity. Dates, assignees, estimate and work log describe the work. A click is not proof of a saved change; wait for confirmation.
 } r_6KDD83XJXD0ZHZWRT5D9HE276E
 
 Protein (
     @protein: 0, // |> [protein-laboratory] The common fast native interface suite must exercise Protein interactions in Laboratory. Its first mandatory case opens a Protein Area's Add filter dropdown and verifies visible choice text and successful selection on every suite run.
     #instinct,
-    #part-of @instinct-protein: 1
+    // |> [protein-readable-text] Protein labels, current selections, filter choices and result text must render readable glyphs wherever they are presented. Opening Add filter in a Protein Area must show readable, selectable filter choices rather than an empty box.
+    #part-of @instinct-protein: 1,
+    #learning-lince @step-protein-create-spawn-area,
+    #learning-lince @step-protein-filter-preview,
+    #learning-lince @step-protein-present-properties
 ) { r_04PESBG43ASBNW30QDN8KQPARV
 A Protein selects live data you are allowed to see. Choose a prepared source, apply one filter and inspect results before spawning. The filter chooses data; the row template chooses presentation. Protein does not grant access to hidden data.
-
-|> [protein-readable-text] Protein labels, current selections, filter choices and result text must render readable glyphs wherever they are presented. Opening Add filter in a Protein Area must show readable, selectable filter choices rather than an empty box.
 } r_04PESBG43ASBNW30QDN8KQPARV
 
 Protein Castle and presentation (@protein-presentation: 0, #instinct, #part-of @instinct-protein: 2) { r_3A4R2K8WF4PGC5CRM52W0EKWKV
 Run and save a small query. Choose Title and Quantity for its sample row template. Presentation changes do not redefine the Record. Sorting, grouping, count or sum, selected fields and optional Facts are further choices.
 } r_3A4R2K8WF4PGC5CRM52W0EKWKV
 
-Areas that change Records (@area-record-actions: 0, #instinct, #part-of @instinct-protein: 3) { r_56EMY33439N288RGJE49XVQPPF
+Areas that change Records (@area-record-actions: 0, #instinct, #part-of @instinct-protein: 3, #learning-lince @step-area-change-on-entry, #learning-lince @step-area-change-on-exit, #learning-lince @step-area-match-record) { r_56EMY33439N288RGJE49XVQPPF
 Match only the prepared Record. Set entry Quantity 1 and exit Quantity 0, then move its Sand inside and outside and wait for each saved change. Quantity, Assertions and identity are possible properties. Inspect failure status and disable changes when needed.
 } r_56EMY33439N288RGJE49XVQPPF
 
@@ -937,91 +955,93 @@ Protein arrangement and motion (@protein-arrangement: 0, #instinct, #part-of @in
 Inspect one sorted or grouped presentation and a destination or motion choice. These control where matching data appears. Ordinary placement and Area forces keep their meanings. Arrangement grants no additional data access.
 } r_1XS84ZBS646X60T37BJ9YKTM9Z
 
-Todo (@todo: 0, #instinct, #part-of @instinct-work: 1) { r_6FQT1908XCGAJ5BQMTX4T2XQJ8
+Todo (@todo: 0, #instinct, #part-of @instinct-work: 1, #learning-lince @step-todo-complete, #learning-lince @step-todo-undo) { r_6FQT1908XCGAJ5BQMTX4T2XQJ8
 Complete the prepared task and undo it. Todo presents a live queue selected by a Protein. Selected-task details show its Record, quantity and history.
 } r_6FQT1908XCGAJ5BQMTX4T2XQJ8
 
-Kanban (@kanban: 0, #instinct, #part-of @instinct-work: 2) { r_52Y0229RD50HVKHH8QTT39CT2H
+Kanban (@kanban: 0, #instinct, #part-of @instinct-work: 2, #learning-lince @step-kanban-move) { r_52Y0229RD50HVKHH8QTT39CT2H
 Move a sample task between two columns and wait for its saved state. Columns are Areas that change task state. Counts summarise columns; assignees and dates describe the work.
 } r_52Y0229RD50HVKHH8QTT39CT2H
 
-Time Castle (@time: 0, #instinct, #part-of @instinct-work: 3) { r_5NEE2FHN3TMQTZE4XFRZPMAC7G
+Time Castle (@time: 0, #instinct, #part-of @instinct-work: 3, #learning-lince @step-time-start, #learning-lince @step-time-stop) { r_5NEE2FHN3TMQTZE4XFRZPMAC7G
 Start and stop a sample timer, then inspect its work log. A standalone stopwatch measures time without a Record. A bound timer records work for its chosen Record. Decide where measured time belongs.
 } r_5NEE2FHN3TMQTZE4XFRZPMAC7G
 
-Calendar (@calendar: 0, #instinct, #part-of @instinct-work: 4) { r_27ZXE21N3JCZ0PXW9R7N7PV06T
+Calendar (@calendar: 0, #instinct, #part-of @instinct-work: 4, #learning-lince @step-calendar-open) { r_27ZXE21N3JCZ0PXW9R7N7PV06T
 Find a dated practice sample and open it. Scheduled or projected changes show expected work and its source; they are not yet confirmed Facts. Frequency and Karma explain recurring work.
 } r_27ZXE21N3JCZ0PXW9R7N7PV06T
 
-Operation Sand (@operation: 0, #instinct, #part-of @instinct-work: 5) { r_0JBH408SPEMJ29565H69R643J0
+Operation Sand (@operation: 0, #instinct, #part-of @instinct-work: 5, #learning-lince @step-operation-activate) { r_0JBH408SPEMJ29565H69R643J0
 Configure a sample button to set its prepared Record quantity to zero, activate it and wait for confirmation. Commands are covered later. A button has the same permissions as its ordinary action.
 } r_0JBH408SPEMJ29565H69R643J0
 
-Notifications (@notifications: 0, #instinct, #part-of @instinct-work: 6) { r_0PYJDFWVZCTV4SEHBTCQF89JTN
+Notifications (@notifications: 0, #instinct, #part-of @instinct-work: 6, #learning-lince @step-notifications-dismiss, #learning-lince @step-notifications-open) { r_0PYJDFWVZCTV4SEHBTCQF89JTN
 Inspect and dismiss a prepared status message. Waiting means the result is unconfirmed; success and failure explain the outcome. Dismissing feedback does not undo an action. System notification permissions are optional.
 } r_0PYJDFWVZCTV4SEHBTCQF89JTN
 
-Frequency and Cadence (@frequency: 0, #instinct, #part-of @instinct-automation: 1) { r_5G0TYRBP3BJ34DARTYT4H17FMW
+Frequency and Cadence (@frequency: 0, #instinct, #part-of @instinct-automation: 1, #learning-lince @step-frequency-create) { r_5G0TYRBP3BJ34DARTYT4H17FMW
 Define one sample recurring time and inspect its next occurrence. Frequency and Cadence supply the clock used by habits, Karma and Calendar. Check the timezone when a wall-clock time matters.
 } r_5G0TYRBP3BJ34DARTYT4H17FMW
 
-Karma and Rule Castle (@learn-karma: 0, #instinct, #part-of @instinct-automation: 2, #reference @karma) { r_2W87FRQA5QP7VZ8DEC8C4MS1XW
+Karma and Rule Castle (@learn-karma: 0, #instinct, #part-of @instinct-automation: 2, #reference @karma, #learning-lince @step-karma-pause, #learning-lince @step-karma-preview, #learning-lince @step-karma-run) { r_2W87FRQA5QP7VZ8DEC8C4MS1XW
 Karma connects condition, threshold and consequence. Preview the prepared rule before enabling it in isolated practice. Inspect its resulting Fact, pause it and review history. Consequences follow ordinary permissions.
 } r_2W87FRQA5QP7VZ8DEC8C4MS1XW
 
-Daily habit helper (@habits: 0, #instinct, #part-of @instinct-automation: 3) { r_6AQ5GAVCDTN1R91ZBK2Z6BVMS2
+Daily habit helper (@habits: 0, #instinct, #part-of @instinct-automation: 3, #learning-lince @step-habits-complete, #learning-lince @step-habits-import, #learning-lince @step-habits-preview) { r_6AQ5GAVCDTN1R91ZBK2Z6BVMS2
 Preview the Record, Frequency and Rule made by the daily habit helper before importing the sample. Meet its Need once. Resolve conflicts and find Pause. Refer to Frequency and Karma for their shared ideas.
 } r_6AQ5GAVCDTN1R91ZBK2Z6BVMS2
 
-Commands and Signals (@commands: 0, #instinct, #part-of @instinct-automation: 4) { r_5JDVBTS2F7XCVW3CEG2T2GD18V
+Commands and Signals (@commands: 0, #instinct, #part-of @instinct-automation: 4, #learning-lince @step-commands-run, #learning-lince @step-commands-save) { r_5JDVBTS2F7XCVW3CEG2T2GD18V
 A saved Command describes a local program and working directory. Run the bundled harmless practice example and inspect output and history. A Signal can carry its result to a rule. A Command Castle is reusable; Terminal is an interactive shell.
 } r_5JDVBTS2F7XCVW3CEG2T2GD18V
 
-Simulation Castle (@simulation: 0, #instinct, #part-of @instinct-automation: 5) { r_21EB0V3PHR7RSVSSVHSRH8WVGE
+Simulation Castle (@simulation: 0, #instinct, #part-of @instinct-automation: 5, #learning-lince @step-simulation-event, #learning-lince @step-simulation-stop) { r_21EB0V3PHR7RSVSSVHSRH8WVGE
 Open a built-in scenario, step one event and inspect its timeline. Pause, Stop, replay, comparisons and checks help explore outcomes. This example does not simulate or version personal data.
+
+The [daily routine simulation](habits/daily-routine.json) uses the [same habit Records, Frequencies and Rules](habits/simple/Daily-routine.lingua) that can be imported as habit examples. It completes Sleep, Eat an apple and Exercise once each, then checks that their next occurrences become due again. From the repository, run it with `lince --simulation institute/trails/habits`.
 } r_21EB0V3PHR7RSVSSVHSRH8WVGE
 
-Fiote (@learn-fiote: 0, #instinct, #part-of @instinct-automation: 6, #reference @fiote) { r_5DD8GTDQ47958MYYBQCW69J88G
+Fiote (@learn-fiote: 0, #instinct, #part-of @instinct-automation: 6, #reference @fiote, #learning-lince @step-fiote-inspect) { r_5DD8GTDQ47958MYYBQCW69J88G
 Inspect provider and model settings and a prepared assistant thread containing a proposed action or question. Find Stop and authority controls. Proposals are not confirmed changes. Credentials, provider calls and activating rules are optional live use.
 } r_5DD8GTDQ47958MYYBQCW69J88G
 
-Cell and Organ (@learn-organ: 0, #instinct, #part-of @instinct-sharing: 1, #reference @organ) { r_7JC5ZH3CJSEXNCGCQQ73HQP8X4
+Cell and Organ (@learn-organ: 0, #instinct, #part-of @instinct-sharing: 1, #reference @organ, #learning-lince @step-organ-context, #learning-lince @step-organ-identity) { r_7JC5ZH3CJSEXNCGCQQ73HQP8X4
 A Cell is one running Lince. An Organ is a context for shared data and people, including your own devices. Compare prepared personal and shared contexts. They stay separate. A Protein selects an Organ; a workspace arranges views.
 } r_7JC5ZH3CJSEXNCGCQQ73HQP8X4
 
-Contacts and pairing (@contacts: 0, #instinct, #part-of @instinct-sharing: 2) { r_64HZR90VXZFPWWBDQT4KKQ5N48
+Contacts and pairing (@contacts: 0, #instinct, #part-of @instinct-sharing: 2, #learning-lince @step-contacts-pair) { r_64HZR90VXZFPWWBDQT4KKQ5N48
 Inspect a sample peer and pairing code or QR. Known, unknown and blocked describe trust choices. Proximity concerns nearby discovery. Tutorial pairing uses a prepared local peer; a real second device is optional.
 } r_64HZR90VXZFPWWBDQT4KKQ5N48
 
-Users, Roles and Access Control (@access-control: 0, #instinct, #part-of @instinct-sharing: 3) { r_64MDTKTWWVDW7EF0REBXSV51JW
+Users, Roles and Access Control (@access-control: 0, #instinct, #part-of @instinct-sharing: 3, #learning-lince @step-access-control-inspect) { r_64MDTKTWWVDW7EF0REBXSV51JW
 Inspect a prepared user Roles and one allowed and one refused operation. Authorisation also limits visible data. Protein selects within those limits; changing a view or starting a tutorial bypasses none of them.
 } r_64MDTKTWWVDW7EF0REBXSV51JW
 
-Sharing and synchronization (@organ-sync: 0, #instinct, #part-of @instinct-sharing: 4) { r_4AB7NGB9Z1XJR33J4TX7RAV0MF
+Sharing and synchronization (@organ-sync: 0, #instinct, #part-of @instinct-sharing: 4, #learning-lince @step-organ-sync-share) { r_4AB7NGB9Z1XJR33J4TX7RAV0MF
 Compare a prepared shared selection with its arrival on a prepared peer. Inspect visibility, permissions and sync status. Hiding, refusal, revocation and Stop change the relationship. Practice needs no real recipient.
 } r_4AB7NGB9Z1XJR33J4TX7RAV0MF
 
-My devices and Karma authority (@devices: 0, #instinct, #part-of @instinct-sharing: 5) { r_0G3W8QZCFSE98H8ZZ0PHP22G9H
+My devices and Karma authority (@devices: 0, #instinct, #part-of @instinct-sharing: 5, #learning-lince @step-devices-inspect) { r_0G3W8QZCFSE98H8ZZ0PHP22G9H
 Inspect a prepared device roster and owner or execution controls. Synchronised rule definitions and permission to execute them are separate. Practice does not rotate real keys or change your devices authority.
 } r_0G3W8QZCFSE98H8ZZ0PHP22G9H
 
-Mail and delivery (@mail: 0, #instinct, #part-of @instinct-sharing: 6) { r_32W85E6XR31FW8WP2QH6DMBE5P
+Mail and delivery (@mail: 0, #instinct, #part-of @instinct-sharing: 6, #learning-lince @step-mail-inspect) { r_32W85E6XR31FW8WP2QH6DMBE5P
 Inspect a prepared outgoing item and its delivery status. Mailbox storage differs from recipient receipt. Held and expired items need attention; Retry and Cancel manage delivery. Reading requires no live relay.
 } r_32W85E6XR31FW8WP2QH6DMBE5P
 
-Public Needs and Contributions (@discovery: 0, #instinct, #part-of @instinct-sharing: 7) { r_33PDKT37A1AV7KEJ31MDCTTS31
+Public Needs and Contributions (@discovery: 0, #instinct, #part-of @instinct-sharing: 7, #learning-lince @step-discovery-draft, #learning-lince @step-discovery-request, #learning-lince @step-discovery-search) { r_33PDKT37A1AV7KEJ31MDCTTS31
 Search prepared announcements, inspect a profile and prepare a post or request. Publication and withdrawal control announcements. Subscriptions, services, block, report and moderation are further choices. A request is not a Transfer agreement.
 } r_33PDKT37A1AV7KEJ31MDCTTS31
 
-Conversations and Messages (@conversations: 0, #instinct, #part-of @instinct-sharing: 8) { r_3AE57C7E20EB1Z6514SYT8TX2X
+Conversations and Messages (@conversations: 0, #instinct, #part-of @instinct-sharing: 8, #learning-lince @step-conversations-send) { r_3AE57C7E20EB1Z6514SYT8TX2X
 Open a prepared conversation, send a sample Message and inspect delivery. Thread tabs, mentions, replies, attachments and requests organise communication. Practice uses prepared peers rather than real recipients.
 } r_3AE57C7E20EB1Z6514SYT8TX2X
 
-Calls and screen sharing (@calls: 0, #instinct, #part-of @instinct-sharing: 9) { r_199ADF8E0BQB0QM90CAYGMQBVE
+Calls and screen sharing (@calls: 0, #instinct, #part-of @instinct-sharing: 9, #learning-lince @step-calls-inspect) { r_199ADF8E0BQB0QM90CAYGMQBVE
 Locate Call, Mute, Video or Share and Leave in the prepared conversation. Reading and highlights suffice when capture devices are unavailable. Microphone, camera and screen capture are optional; Leave remains available.
 } r_199ADF8E0BQB0QM90CAYGMQBVE
 
-Transfer Castle (@learn-transfer: 0, #instinct, #part-of @instinct-transfers: 1, #reference @transfer) { r_3A9KSK04M1686PD6A0XJBXS1B4
+Transfer Castle (@learn-transfer: 0, #instinct, #part-of @instinct-transfers: 1, #reference @transfer, #learning-lince @step-transfer-activate, #learning-lince @step-transfer-agree, #learning-lince @step-transfer-check) { r_3A9KSK04M1686PD6A0XJBXS1B4
 Inspect a simple prepared proposal, agreement and confirmed action for an exchange or donation. Promised quantities describe agreement; Facts describe changes that occurred. Prepared parties keep practice separate from real commitments.
 } r_3A9KSK04M1686PD6A0XJBXS1B4
 
@@ -1029,59 +1049,59 @@ Transfers with Karma (@transfer-automation: 0, #instinct, #part-of @instinct-tra
 Inspect the prepared rule that proposes a Transfer at a threshold. Locate approvals and Pause. A proposal still needs agreement. Use the Transfer view to compare promises with confirmed changes.
 } r_5V6MN80TQEJJT49KP9NXXWJKZF
 
-Trail and handbook import (@instinct-import: 0, #instinct, #part-of @instinct-disk: 1) { r_5G9QW9XX5EXBM5R79741W40N1Z
+Trail and handbook import (@instinct-import: 0, #instinct, #part-of @instinct-disk: 1, #learning-lince @step-import-cancel, #learning-lince @step-import-clean, #learning-lince @step-import-commit, #learning-lince @step-import-conflict) { r_5G9QW9XX5EXBM5R79741W40N1Z
 Preview exact handbook titles, slugs, UIDs, quantities, identities and Assertions. Conflicting identity or meaning stops import; Cancel changes nothing. Identical imports can be reused. Reading needs no import. Imported text never starts a tutorial, enables rules or runs commands.
 } r_5G9QW9XX5EXBM5R79741W40N1Z
 
-Sync and Lingua files (@learn-sync: 0, #instinct, #part-of @instinct-disk: 2, #reference @sync) { r_7ZX4WZH37VH4FP6S9VEA2V6WBF
+Sync and Lingua files (@learn-sync: 0, #instinct, #part-of @instinct-disk: 2, #reference @sync, #learning-lince @step-sync-export, #learning-lince @step-sync-incoming, #learning-lince @step-sync-stop) { r_7ZX4WZH37VH4FP6S9VEA2V6WBF
 Connect a small Protein to a temporary practice folder. Inspect a Lingua or Markdown export and supported incoming edit. Continuous sync differs from one-time import and editing unrelated files. Inspect status and conflicts, then Stop.
 } r_7ZX4WZH37VH4FP6S9VEA2V6WBF
 
-File and blob transfers (@blob-sync: 0, #instinct, #part-of @instinct-disk: 3) { r_214GWJFC8WFFEAWN2BG2YAB32Y
+File and blob transfers (@blob-sync: 0, #instinct, #part-of @instinct-disk: 3, #learning-lince @step-blob-accept, #learning-lince @step-blob-send) { r_214GWJFC8WFFEAWN2BG2YAB32Y
 Inspect a bundled file transfer between prepared Cells. Accept, Cancel and the file list manage it. Bytes travel separately from Record text; a visible description does not prove its attachment arrived.
 } r_214GWJFC8WFFEAWN2BG2YAB32Y
 
-Storage and owner backup (@backup: 0, #instinct, #part-of @instinct-disk: 4) { r_4PTBPFZ5532HG1Q7WEDZKV7CWR
+Storage and owner backup (@backup: 0, #instinct, #part-of @instinct-disk: 4, #learning-lince @step-backup-inspect) { r_4PTBPFZ5532HG1Q7WEDZKV7CWR
 Inspect storage and the encrypted owner-backup form. Read what it includes and excludes. Layouts, attachments and custom Castle files need separate care. History and retention are separate choices. Reading requires no shutdown, restore, replacement or deletion.
 } r_4PTBPFZ5532HG1Q7WEDZKV7CWR
 
-File Explorer and IDE (@ide: 0, #instinct, #part-of @instinct-files: 1) { r_1Y7YWDKC4AAY8YXVRKYF80Q532
+File Explorer and IDE (@ide: 0, #instinct, #part-of @instinct-files: 1, #learning-lince @step-ide-open, #learning-lince @step-ide-save) { r_1Y7YWDKC4AAY8YXVRKYF80Q532
 Open the prepared local project file, edit it and explicitly Save. Tabs, search, autosave, recovery and disk conflicts help editing. Opening a folder creates no database copies or File Records.
 } r_1Y7YWDKC4AAY8YXVRKYF80Q532
 
-IDE language tools (@language-tools: 0, #instinct, #part-of @instinct-files: 2) { r_6P0TTVZWMFTCA8KZ79CZ8DAERZ
+IDE language tools (@language-tools: 0, #instinct, #part-of @instinct-files: 2, #learning-lince @step-language-tools-inspect) { r_6P0TTVZWMFTCA8KZ79CZ8DAERZ
 Inspect server, formatter and linter settings and Connect or Disconnect. When installed, try one diagnostic or undoable format on the prepared file. Missing programs do not prevent reading or progression.
 } r_6P0TTVZWMFTCA8KZ79CZ8DAERZ
 
-Document Viewer (@documents: 0, #instinct, #part-of @instinct-files: 3) { r_0SXTWM4JHPHHJCMX0W1G296H13
+Document Viewer (@documents: 0, #instinct, #part-of @instinct-files: 3, #learning-lince @step-document-next) { r_0SXTWM4JHPHHJCMX0W1G296H13
 Open the bundled PDF or EPUB sample and move to another page or location. Find its basic reading controls. Reading a document requires no database import.
 } r_0SXTWM4JHPHHJCMX0W1G296H13
 
-Terminal (@terminal: 0, #instinct, #part-of @instinct-files: 4) { r_5V2N4Y6C9RZQ024HHE2DH6QD7D
+Terminal (@terminal: 0, #instinct, #part-of @instinct-files: 4, #learning-lince @step-terminal-inspect) { r_5V2N4Y6C9RZQ024HHE2DH6QD7D
 Inspect local shell input and output, or run the harmless practice example. Optional live shell use follows ordinary permissions. Saved Commands are reusable actions; Terminal input belongs to the current session.
 } r_5V2N4Y6C9RZQ024HHE2DH6QD7D
 
-Dropping and pasting files (@external-files: 0, #instinct, #part-of @instinct-files: 5) { r_1Z6GJTWH0BS5KAMDYSGX0XAWB9
+Dropping and pasting files (@external-files: 0, #instinct, #part-of @instinct-files: 5, #learning-lince @step-file-cancel, #learning-lince @step-file-choices) { r_1Z6GJTWH0BS5KAMDYSGX0XAWB9
 Use a bundled local sample to inspect file, image and link opening choices and Cancel. Images and links can become Sands; documents and editable files have viewers. Remote downloads are optional.
 } r_1Z6GJTWH0BS5KAMDYSGX0XAWB9
 
-Recorder Castle (@recorder: 0, #instinct, #part-of @instinct-creative: 1) { r_3A9DZ8143J7HC908N94WPR8VNS
+Recorder Castle (@recorder: 0, #instinct, #part-of @instinct-creative: 1, #learning-lince @step-recorder-preview, #learning-lince @step-recorder-stop) { r_3A9DZ8143J7HC908N94WPR8VNS
 Play the bundled sample and inspect recordings and track effects. Find Record, Stop, Save and Refresh. Microphone recording is optional; a prepared playback sample needs no capture permission.
 } r_3A9DZ8143J7HC908N94WPR8VNS
 
-Sound on Area crossing (@area-sound: 0, #instinct, #part-of @instinct-creative: 2) { r_0JV05HZ991RY3QYJAFNT7361G6
+Sound on Area crossing (@area-sound: 0, #instinct, #part-of @instinct-creative: 2, #learning-lince @step-area-sound-assign, #learning-lince @step-area-sound-enable, #learning-lince @step-area-sound-preview) { r_0JV05HZ991RY3QYJAFNT7361G6
 Assign a bundled sound to the sample Area and preview it. Entry and exit use the same boundary crossings as property changes. Saved effects can be reused. Audio hardware does not determine progression.
 } r_0JV05HZ991RY3QYJAFNT7361G6
 
-Shader Castle (@shaders: 0, #instinct, #part-of @instinct-creative: 3) { r_00PST668FGREB730ZVV1W5G31S
+Shader Castle (@shaders: 0, #instinct, #part-of @instinct-creative: 3, #learning-lince @step-shader-example) { r_00PST668FGREB730ZVV1W5G31S
 Inspect the prepared shader effect, such as the glowing ball, and open its Record. The effect is presentation; its authoring text lives with the Record. A shader-language course is optional.
 } r_00PST668FGREB730ZVV1W5G31S
 
-Spatial view and Topology (@topology: 0, #instinct, #part-of @instinct-creative: 4) { r_6AQDWY9ACDZQQTF7K9XPZ88HBE
+Spatial view and Topology (@topology: 0, #instinct, #part-of @instinct-creative: 4, #learning-lince @step-topology-flat, #learning-lince @step-topology-spatial) { r_6AQDWY9ACDZQQTF7K9XPZ88HBE
 Switch the prepared workspace between 2D and 3D and frame a sample. Depth, rotation and world pinning refine placement. Imported models and splats are optional. Navigation, placement and Areas retain their shared roles.
 } r_6AQDWY9ACDZQQTF7K9XPZ88HBE
 
-Custom Castles and the library (@custom-castles: 0, #instinct, #part-of @instinct-creative: 5) { r_7NVY6CKSSTYTH2Z8RR01P4PWJJ
+Custom Castles and the library (@custom-castles: 0, #instinct, #part-of @instinct-creative: 5, #learning-lince @step-custom-add, #learning-lince @step-custom-save) { r_7NVY6CKSSTYTH2Z8RR01P4PWJJ
 Save a small practice composition and add another instance. Inspect its local file or Organ library entry. Rename, replace, delete and pushing selected composition are further choices. Sharing is optional.
 } r_7NVY6CKSSTYTH2Z8RR01P4PWJJ
 
@@ -1089,15 +1109,15 @@ Freedoom (@freedoom: 0, #instinct, #part-of @instinct-creative: 6) { r_194S1YJ1N
 Find Start, focus the keyboard controls and locate the way to leave. Reading is enough; playing or completing the game is optional. Sand credits identify bundled software and assets.
 } r_194S1YJ1N9WT0FSZHP4VN8AFY6
 
-Inspection (@inspection: 0, #instinct, #part-of @instinct-maintaining: 1) { r_0TJQ9C8GQS6M1EDYH1F3FFG4JQ
+Inspection (@inspection: 0, #instinct, #part-of @instinct-maintaining: 1, #learning-lince @step-inspection-control) { r_0TJQ9C8GQS6M1EDYH1F3FFG4JQ
 Inspect one sample control action, connection or group. Click, hover, events and hidden views offer different perspectives. Inspection helps explain behavior; ordinary work needs no implementation tour.
 } r_0TJQ9C8GQS6M1EDYH1F3FFG4JQ
 
-Information, updates and credits (@information: 0, #instinct, #part-of @instinct-maintaining: 2) { r_46VDD6HQG1ERQ6FH8T110F8TYH
+Information, updates and credits (@information: 0, #instinct, #part-of @instinct-maintaining: 2, #learning-lince @step-information-credits, #learning-lince @step-information-inspect) { r_46VDD6HQG1ERQ6FH8T110F8TYH
 Find version, directory and update status, then a Sand license and credits. Read the available update and restart controls. Neither an update nor a restart is required.
 } r_46VDD6HQG1ERQ6FH8T110F8TYH
 
-Laboratory (@laboratory: 0, #instinct, #part-of @instinct-maintaining: 3) { r_4W8FGVW9F1FNADEQS73JDHNHNZ
+Laboratory (@laboratory: 0, #instinct, #part-of @instinct-maintaining: 3, #learning-lince @step-laboratory-resources) { r_4W8FGVW9F1FNADEQS73JDHNHNZ
 Laboratory runs checks with temporary data and normal workspaces suspended. Open it, inspect a prepared behavior or resource result and Close. Stop ends a run. Performance and stress work are optional maintenance tools.
 } r_4W8FGVW9F1FNADEQS73JDHNHNZ
 
@@ -1495,18 +1515,18 @@ Enable an Area's sound (@step-area-sound-enable: 0, is #idea, #instinct, #part-o
 In the prepared Area, press Enable sound area. Next uses the same control. This enables choosing separate sounds for entering and leaving; it does not assign a sound until you choose its recording path.
 } r_01M4660000000000000000074R
 
-Ontology (@ontology: 0, #instinct) {
+Ontology (@ontology: 0, #instinct, #learning-lince @assertion, #learning-lince @organ, #learning-lince @sync, #part-of @tool) { r_9GNH72H4NQ8KZB5TC20D5ZY2Q9
 Concepts give Records meaning. Their source Vocabulary helps distinguish matching names with different meanings. Inspect a concept's meaning, source, parent and aliases before choosing it for an assertion. The Vocabulary and Ontology practice page introduces those controls.
-}
+} r_9GNH72H4NQ8KZB5TC20D5ZY2Q9
 
-Areas of influence (@areas-of-influence: 0, #instinct) {
+Areas of influence (@areas-of-influence: 0, #instinct, #learning-lince @step-area-attract, #learning-lince @step-area-place, #learning-lince @step-area-repel, #part-of @tool) { r_58MGG72AKA55GF684ZHHSGV6JF
 An Area applies enabled effects within its reach. Its drawn shape and effect reach can differ. Place an Area around an ordinary Sand, enable workspace physics to observe attraction or repulsion, and inspect inclusion, exclusion and immunity when an effect does not apply. Record filters and Protein-backed Areas are introduced separately.
-}
+} r_58MGG72AKA55GF684ZHHSGV6JF
 
-Trails — Knowledge to learn and use (@trails: 0, is #chapter, #contains "ergon/Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1", #contains "scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6", #contains "ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D", #contains "Lince.lingua#r_YJQ36ETAKE8J7F8Y65DG7V43MB") { r_7A4AY51TXG87NVHR9J1XNZTJQ9
+Trails — Knowledge to learn and use (@trails: 0, is #chapter, #part-of @trail, #contains "ergon/Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1", #contains "scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6", #contains "ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D") { r_7A4AY51TXG87NVHR9J1XNZTJQ9
 Develop connected knowledge for understanding, investigation, making, maintenance and preservation. The subject entrances below are the curriculum itself; there is no separate numbered inventory.
 
-**Structure.** Keep only `ascholia/`, `scholazein/`, `lince/` and `ergon/` directly under `institute/trails/`. Keep one descriptively named entrance Record per subject inside its branch. Put its scope in that Record and connect it to its broader branch with `contains` assertions. An entrance may begin with only its description; `outline` means its formation is unfinished. Reuse an existing entrance and its identity instead of maintaining a second planning Record. Shared knowledge may serve several branches. Put proposals spanning subjects into the relevant subject entrance, using ordinary links to the other subjects; do not create parallel planning branches.
+**Structure.** The curriculum branches are `ascholia/`, `scholazein/`, and `ergon/` under `institute/trails/`. Keep one descriptively named entrance Record per subject inside its branch. Put its scope in that Record and connect it to its broader branch with `contains` assertions. An entrance may begin with only its description; `outline` means its formation is unfinished. Reuse an existing entrance and its identity instead of maintaining a second planning Record. Shared knowledge may serve several branches. Put proposals spanning subjects into the relevant subject entrance, using ordinary links to the other subjects; do not create parallel planning branches.
 
 **Order.** Develop breadth first: shared area foundations across the tree, then major branches across those areas, then specializations. Hephaestus has mathematics, physics, chemistry, computing, engineering and scientific inquiry. Astronomy belongs within physics; productive infrastructure belongs within engineering; clean manufacturing belongs within production engineering. Pure theory retains its scope alongside practical applications. Deep existing material can supply a bounded prerequisite without becoming a compulsory detour.
 
@@ -1527,8 +1547,6 @@ Develop connected knowledge for understanding, investigation, making, maintenanc
 - [Scholazein — pursuits of a well-spent life](scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6)
 - [Ascholia — bureaucracy and administration](ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D)
 
-- [Lince — the tool](Lince.lingua#r_YJQ36ETAKE8J7F8Y65DG7V43MB)
-
 **Current development.** The curriculum now lives in the connected subject entrances. An outline is an unfinished entrance, not a completed course. Continue development breadth first using the guidance above.
 
 The earlier skeleton migration mapped 261 former scope entries into 242 new entrances and 19 existing entrances, adding Art for its previously stated scope. Its 225 specialist scope descriptions and learning routes were preserved. Hephaestus discovers 3,752 documents; its common selection remains 644 Records. Full Hephaestus export/relocation remains unverified for this skeleton.
@@ -1540,7 +1558,7 @@ The directory correction integrated route proposals and checkpoint evidence into
 
 **Optional orientation.**
 
-Introduce Philosophy's own study branch and the four main branches. Follow the same object, question, or work through several of them, distinguishing a map, a source, shared preparation, and a route. Let the reader identify a goal and relevant prior knowledge, then find a useful first step and return to its context. Include an example where questioning the chosen boundary changes the investigation.
+Introduce Philosophy's own study branch and the three curriculum branches. Follow the same object, question, or work through several of them, distinguishing a map, a source, shared preparation, and a route. Let the reader identify a goal and relevant prior knowledge, then find a useful first step and return to its context. Include an example where questioning the chosen boundary changes the investigation.
 
 **Development scope — From scattered sources to a joined Ergon library.**
 
@@ -1551,4 +1569,1061 @@ Extension @trails "lince.vocabulary" {
     definitions {
         outline "An unfinished subject entrance whose body may initially contain only its scope."
     }
+}
+
+Extension @instinct-handbook "lince.vocabulary" {
+    definitions {
+        learning-lince "A connection through explanations and practice for using Lince."
+    }
+}
+
+Extension @instinct-handbook "lince.practice" {
+    starts {
+        learn-areas-of-influence { lesson "areas-of-influence" step 0 }
+        areas-of-influence { lesson "areas-of-influence" step 0 }
+        area-forces { lesson "areas-of-influence" step 1 }
+        protein-presentation { lesson "protein" step 2 }
+    }
+    foundations {
+        access-control ["learn-organ"]
+        appearance ["sands"]
+        area-effects ["learn-areas-of-influence"]
+        area-forces ["learn-areas-of-influence"]
+        area-inspection ["learn-areas-of-influence"]
+        area-record-actions ["protein" "learn-areas-of-influence"]
+        area-sound ["learn-areas-of-influence" "recorder"]
+        backup ["learn-sync" "blob-sync"]
+        blob-sync ["organ-sync" "learn-sync"]
+        calendar ["facts" "protein"]
+        calls ["conversations"]
+        canvas ["workspaces"]
+        castles ["sands"]
+        commands ["learn-karma"]
+        contacts ["learn-organ"]
+        conversations ["mail" "discovery"]
+        custom-castles ["castles" "protein-presentation" "organ-sync"]
+        devices ["organ-sync" "learn-karma"]
+        discovery ["learn-assertion" "contacts" "mail"]
+        documents ["ide"]
+        edit-mode ["workspaces"]
+        external-files ["ide" "documents"]
+        facts ["learn-record"]
+        freedoom ["sands" "shortcuts"]
+        frequency ["calendar"]
+        habits ["todo" "frequency" "learn-karma"]
+        ide ["text-sands" "learn-sync"]
+        information ["learn-installation" "sands"]
+        inspection ["area-inspection" "facts"]
+        instinct []
+        instinct-import ["learn-record" "learn-ontology"]
+        kanban ["todo" "area-record-actions"]
+        laboratory ["simulation" "inspection"]
+        language-tools ["ide"]
+        learn-areas-of-influence ["sands" "canvas"]
+        learn-assertion ["learn-record"]
+        learn-fiote ["record-castles" "learn-karma"]
+        learn-installation []
+        learn-karma ["frequency" "facts"]
+        learn-ontology ["learn-assertion"]
+        learn-organ ["learn-record" "protein"]
+        learn-philosophy []
+        learn-record []
+        learn-sync ["protein" "instinct-import"]
+        learn-transfer ["learn-record" "facts" "organ-sync"]
+        mail ["organ-sync" "devices"]
+        notifications ["facts"]
+        operation ["protein" "facts"]
+        organ-sync ["contacts" "access-control"]
+        protein ["learn-record" "learn-assertion" "learn-areas-of-influence"]
+        protein-arrangement ["protein" "castles"]
+        protein-presentation ["protein" "castles"]
+        record-castles ["learn-assertion" "learn-ontology"]
+        recorder ["sands" "facts"]
+        sands ["edit-mode" "canvas"]
+        shaders ["record-castles"]
+        shortcuts ["sands"]
+        simulation ["learn-karma" "facts"]
+        terminal ["ide"]
+        text-sands ["sands"]
+        time ["facts"]
+        todo ["protein" "facts"]
+        topology ["canvas" "sands" "learn-areas-of-influence"]
+        transfer-automation ["learn-karma" "learn-transfer"]
+        workspaces []
+    }
+    lessons [{
+            prerequisites ["interface"]
+            steps [{
+                    operation "OpenEdit"
+                    slug "step-interface-open-edit"
+                    subject "sands"
+                } {
+                    operation "PlaceSand"
+                    slug "step-interface-place-sand"
+                    subject "sands"
+                } {
+                    operation "MoveSand"
+                    slug "step-interface-move-sand"
+                    subject "sands"
+                } {
+                    operation "ComposeCastle"
+                    slug "step-interface-compose-castle"
+                    subject "castles"
+                }]
+            subject "sands"
+        } {
+            prerequisites ["sands"]
+            steps [{
+                    operation "PlaceArea"
+                    slug "step-area-place"
+                    subject "areas-of-influence"
+                } {
+                    operation "Attract"
+                    slug "step-area-attract"
+                    subject "areas-of-influence"
+                } {
+                    operation "Repel"
+                    slug "step-area-repel"
+                    subject "areas-of-influence"
+                }]
+            subject "areas-of-influence"
+        } {
+            prerequisites ["record" "assertion" "areas-of-influence"]
+            steps [{
+                    operation "CreateProteinArea"
+                    slug "step-protein-create-spawn-area"
+                    subject "protein"
+                } {
+                    operation "PreviewProtein"
+                    slug "step-protein-filter-preview"
+                    subject "protein"
+                } {
+                    operation "PresentProperties"
+                    slug "step-protein-present-properties"
+                    subject "protein"
+                }]
+            subject "protein"
+        } {
+            prerequisites ["protein" "assertion" "areas-of-influence"]
+            steps [{
+                    operation "MatchRecord"
+                    slug "step-area-match-record"
+                    subject "area-record-actions"
+                } {
+                    operation "EnterArea"
+                    slug "step-area-change-on-entry"
+                    subject "area-record-actions"
+                } {
+                    operation "LeaveArea"
+                    slug "step-area-change-on-exit"
+                    subject "area-record-actions"
+                }]
+            subject "area-record-actions"
+        }]
+    pages [{
+            chapter "instinct-welcome"
+            reference "philosophy"
+            slug "learn-philosophy"
+        } {
+            chapter "instinct-welcome"
+            reference "installation"
+            slug "learn-installation"
+        } {
+            chapter "instinct-welcome"
+            reference null
+            slug "instinct"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "workspaces"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "canvas"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "edit-mode"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "sands"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "text-sands"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "castles"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "appearance"
+        } {
+            chapter "instinct-interface"
+            reference null
+            slug "shortcuts"
+        } {
+            chapter "instinct-areas"
+            reference "areas-of-influence"
+            slug "learn-areas-of-influence"
+        } {
+            chapter "instinct-areas"
+            reference null
+            slug "area-forces"
+        } {
+            chapter "instinct-areas"
+            reference null
+            slug "area-effects"
+        } {
+            chapter "instinct-areas"
+            reference null
+            slug "area-inspection"
+        } {
+            chapter "instinct-records"
+            reference "record"
+            slug "learn-record"
+        } {
+            chapter "instinct-records"
+            reference "assertion"
+            slug "learn-assertion"
+        } {
+            chapter "instinct-records"
+            reference "ontology"
+            slug "learn-ontology"
+        } {
+            chapter "instinct-records"
+            reference null
+            slug "record-castles"
+        } {
+            chapter "instinct-records"
+            reference null
+            slug "facts"
+        } {
+            chapter "instinct-protein"
+            reference null
+            slug "protein"
+        } {
+            chapter "instinct-protein"
+            reference null
+            slug "protein-presentation"
+        } {
+            chapter "instinct-protein"
+            reference null
+            slug "area-record-actions"
+        } {
+            chapter "instinct-protein"
+            reference null
+            slug "protein-arrangement"
+        } {
+            chapter "instinct-work"
+            reference null
+            slug "todo"
+        } {
+            chapter "instinct-work"
+            reference null
+            slug "kanban"
+        } {
+            chapter "instinct-work"
+            reference null
+            slug "time"
+        } {
+            chapter "instinct-work"
+            reference null
+            slug "calendar"
+        } {
+            chapter "instinct-work"
+            reference null
+            slug "operation"
+        } {
+            chapter "instinct-work"
+            reference null
+            slug "notifications"
+        } {
+            chapter "instinct-automation"
+            reference null
+            slug "frequency"
+        } {
+            chapter "instinct-automation"
+            reference "karma"
+            slug "learn-karma"
+        } {
+            chapter "instinct-automation"
+            reference null
+            slug "habits"
+        } {
+            chapter "instinct-automation"
+            reference null
+            slug "commands"
+        } {
+            chapter "instinct-automation"
+            reference null
+            slug "simulation"
+        } {
+            chapter "instinct-automation"
+            reference "fiote"
+            slug "learn-fiote"
+        } {
+            chapter "instinct-sharing"
+            reference "organ"
+            slug "learn-organ"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "contacts"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "access-control"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "organ-sync"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "devices"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "mail"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "discovery"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "conversations"
+        } {
+            chapter "instinct-sharing"
+            reference null
+            slug "calls"
+        } {
+            chapter "instinct-transfers"
+            reference "transfer"
+            slug "learn-transfer"
+        } {
+            chapter "instinct-transfers"
+            reference null
+            slug "transfer-automation"
+        } {
+            chapter "instinct-disk"
+            reference null
+            slug "instinct-import"
+        } {
+            chapter "instinct-disk"
+            reference "sync"
+            slug "learn-sync"
+        } {
+            chapter "instinct-disk"
+            reference null
+            slug "blob-sync"
+        } {
+            chapter "instinct-disk"
+            reference null
+            slug "backup"
+        } {
+            chapter "instinct-files"
+            reference null
+            slug "ide"
+        } {
+            chapter "instinct-files"
+            reference null
+            slug "language-tools"
+        } {
+            chapter "instinct-files"
+            reference null
+            slug "documents"
+        } {
+            chapter "instinct-files"
+            reference null
+            slug "terminal"
+        } {
+            chapter "instinct-files"
+            reference null
+            slug "external-files"
+        } {
+            chapter "instinct-creative"
+            reference null
+            slug "recorder"
+        } {
+            chapter "instinct-creative"
+            reference null
+            slug "area-sound"
+        } {
+            chapter "instinct-creative"
+            reference null
+            slug "shaders"
+        } {
+            chapter "instinct-creative"
+            reference null
+            slug "topology"
+        } {
+            chapter "instinct-creative"
+            reference null
+            slug "custom-castles"
+        } {
+            chapter "instinct-creative"
+            reference null
+            slug "freedoom"
+        } {
+            chapter "instinct-maintaining"
+            reference null
+            slug "inspection"
+        } {
+            chapter "instinct-maintaining"
+            reference null
+            slug "information"
+        } {
+            chapter "instinct-maintaining"
+            reference null
+            slug "laboratory"
+        }]
+    reading [{
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "learn-philosophy"
+                    subject "learn-philosophy"
+                }]
+            subject "learn-philosophy"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "learn-installation"
+                    subject "learn-installation"
+                }]
+            subject "learn-installation"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "instinct"
+                    subject "instinct"
+                }]
+            subject "instinct"
+        } {
+            prerequisites []
+            steps [{
+                    operation "CreateWorkspace"
+                    slug "step-workspaces-create"
+                    subject "workspaces"
+                }]
+            subject "workspaces"
+        } {
+            prerequisites []
+            steps [{
+                    operation "FrameCanvas"
+                    slug "step-canvas-frame"
+                    subject "canvas"
+                }]
+            subject "canvas"
+        } {
+            prerequisites []
+            steps [{
+                    operation "OpenEdit"
+                    slug "step-edit-mode-open"
+                    subject "edit-mode"
+                }]
+            subject "edit-mode"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "sands"
+                    subject "sands"
+                }]
+            subject "sands"
+        } {
+            prerequisites []
+            steps [{
+                    operation "EditText"
+                    slug "step-text-sands-edit"
+                    subject "text-sands"
+                }]
+            subject "text-sands"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ComposeCastle"
+                    slug "step-interface-compose-castle"
+                    subject "castles"
+                } {
+                    operation "UngroupCastle"
+                    slug "step-interface-ungroup-castle"
+                    subject "castles"
+                }]
+            subject "castles"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SetAppearance"
+                    slug "step-appearance-change"
+                    subject "appearance"
+                } {
+                    operation "ResetAppearance"
+                    slug "step-appearance-reset"
+                    subject "appearance"
+                }]
+            subject "appearance"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectShortcuts"
+                    slug "step-shortcuts-inspect"
+                    subject "shortcuts"
+                }]
+            subject "shortcuts"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "learn-areas-of-influence"
+                    subject "learn-areas-of-influence"
+                }]
+            subject "learn-areas-of-influence"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "area-forces"
+                    subject "area-forces"
+                }]
+            subject "area-forces"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ScaleArea"
+                    slug "step-area-effects-scale"
+                    subject "area-effects"
+                } {
+                    operation "DisableAreaEffect"
+                    slug "step-area-effects-disable"
+                    subject "area-effects"
+                }]
+            subject "area-effects"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectArea"
+                    slug "step-area-inspection-inspect"
+                    subject "area-inspection"
+                }]
+            subject "area-inspection"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ReadRecord"
+                    slug "step-learn-record-sample"
+                    subject "learn-record"
+                }]
+            subject "learn-record"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ApplyAssertion"
+                    slug "step-learn-assertion-sample"
+                    subject "learn-assertion"
+                }]
+            subject "learn-assertion"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ReadVocabulary"
+                    slug "step-learn-ontology-inspect"
+                    subject "learn-ontology"
+                }]
+            subject "learn-ontology"
+        } {
+            prerequisites []
+            steps [{
+                    operation "OpenRecordViews"
+                    slug "step-record-castles-open"
+                    subject "record-castles"
+                }]
+            subject "record-castles"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ReadFacts"
+                    slug "step-facts-inspect"
+                    subject "facts"
+                }]
+            subject "facts"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "protein"
+                    subject "protein"
+                }]
+            subject "protein"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "protein-presentation"
+                    subject "protein-presentation"
+                }]
+            subject "protein-presentation"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "area-record-actions"
+                    subject "area-record-actions"
+                }]
+            subject "area-record-actions"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ArrangeProtein"
+                    slug "step-protein-arrangement-arrange"
+                    subject "protein-arrangement"
+                }]
+            subject "protein-arrangement"
+        } {
+            prerequisites []
+            steps [{
+                    operation "CompleteTask"
+                    slug "step-todo-complete"
+                    subject "todo"
+                } {
+                    operation "UndoTask"
+                    slug "step-todo-undo"
+                    subject "todo"
+                }]
+            subject "todo"
+        } {
+            prerequisites []
+            steps [{
+                    operation "MoveTask"
+                    slug "step-kanban-move"
+                    subject "kanban"
+                }]
+            subject "kanban"
+        } {
+            prerequisites []
+            steps [{
+                    operation "StartTimer"
+                    slug "step-time-start"
+                    subject "time"
+                } {
+                    operation "StopTimer"
+                    slug "step-time-stop"
+                    subject "time"
+                }]
+            subject "time"
+        } {
+            prerequisites []
+            steps [{
+                    operation "OpenDatedRecord"
+                    slug "step-calendar-open"
+                    subject "calendar"
+                }]
+            subject "calendar"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SetOperation"
+                    slug "step-operation-activate"
+                    subject "operation"
+                }]
+            subject "operation"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ShowNotice"
+                    slug "step-notifications-open"
+                    subject "notifications"
+                } {
+                    operation "DismissNotice"
+                    slug "step-notifications-dismiss"
+                    subject "notifications"
+                }]
+            subject "notifications"
+        } {
+            prerequisites []
+            steps [{
+                    operation "CreateFrequency"
+                    slug "step-frequency-create"
+                    subject "frequency"
+                }]
+            subject "frequency"
+        } {
+            prerequisites []
+            steps [{
+                    operation "PreviewRule"
+                    slug "step-karma-preview"
+                    subject "learn-karma"
+                } {
+                    operation "RunRule"
+                    slug "step-karma-run"
+                    subject "learn-karma"
+                } {
+                    operation "PauseRule"
+                    slug "step-karma-pause"
+                    subject "learn-karma"
+                }]
+            subject "learn-karma"
+        } {
+            prerequisites []
+            steps [{
+                    operation "PreviewHabit"
+                    slug "step-habits-preview"
+                    subject "habits"
+                } {
+                    operation "ImportHabit"
+                    slug "step-habits-import"
+                    subject "habits"
+                } {
+                    operation "CompleteHabit"
+                    slug "step-habits-complete"
+                    subject "habits"
+                }]
+            subject "habits"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SaveCommand"
+                    slug "step-commands-save"
+                    subject "commands"
+                } {
+                    operation "RunCommand"
+                    slug "step-commands-run"
+                    subject "commands"
+                }]
+            subject "commands"
+        } {
+            prerequisites []
+            steps [{
+                    operation "StepSimulation"
+                    slug "step-simulation-event"
+                    subject "simulation"
+                } {
+                    operation "StopSimulation"
+                    slug "step-simulation-stop"
+                    subject "simulation"
+                }]
+            subject "simulation"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectFiote"
+                    slug "step-fiote-inspect"
+                    subject "learn-fiote"
+                }]
+            subject "learn-fiote"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectOrgan"
+                    slug "step-organ-identity"
+                    subject "learn-organ"
+                } {
+                    operation "SwitchOrgan"
+                    slug "step-organ-context"
+                    subject "learn-organ"
+                }]
+            subject "learn-organ"
+        } {
+            prerequisites []
+            steps [{
+                    operation "PairContact"
+                    slug "step-contacts-pair"
+                    subject "contacts"
+                }]
+            subject "contacts"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectAccess"
+                    slug "step-access-control-inspect"
+                    subject "access-control"
+                }]
+            subject "access-control"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ShareRecords"
+                    slug "step-organ-sync-share"
+                    subject "organ-sync"
+                }]
+            subject "organ-sync"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectDevices"
+                    slug "step-devices-inspect"
+                    subject "devices"
+                }]
+            subject "devices"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectMail"
+                    slug "step-mail-inspect"
+                    subject "mail"
+                }]
+            subject "mail"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SearchDiscovery"
+                    slug "step-discovery-search"
+                    subject "discovery"
+                } {
+                    operation "PrepareAnnouncement"
+                    slug "step-discovery-draft"
+                    subject "discovery"
+                } {
+                    operation "OpenDiscoveryRequest"
+                    slug "step-discovery-request"
+                    subject "discovery"
+                }]
+            subject "discovery"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SendPracticeMessage"
+                    slug "step-conversations-send"
+                    subject "conversations"
+                }]
+            subject "conversations"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectCalls"
+                    slug "step-calls-inspect"
+                    subject "calls"
+                }]
+            subject "calls"
+        } {
+            prerequisites []
+            steps [{
+                    operation "CheckTransfer"
+                    slug "step-transfer-check"
+                    subject "learn-transfer"
+                } {
+                    operation "AgreeTransfer"
+                    slug "step-transfer-agree"
+                    subject "learn-transfer"
+                } {
+                    operation "ActivateTransfer"
+                    slug "step-transfer-activate"
+                    subject "learn-transfer"
+                }]
+            subject "learn-transfer"
+        } {
+            prerequisites []
+            steps [{
+                    operation "PauseTransferRule"
+                    slug "step-transfer-automation-pause"
+                    subject "transfer-automation"
+                }]
+            subject "transfer-automation"
+        } {
+            prerequisites []
+            steps [{
+                    operation "PreviewImportConflict"
+                    slug "step-import-conflict"
+                    subject "instinct-import"
+                } {
+                    operation "CancelImportPreview"
+                    slug "step-import-cancel"
+                    subject "instinct-import"
+                } {
+                    operation "PreviewCleanImport"
+                    slug "step-import-clean"
+                    subject "instinct-import"
+                } {
+                    operation "ImportPreparedRecords"
+                    slug "step-import-commit"
+                    subject "instinct-import"
+                }]
+            subject "instinct-import"
+        } {
+            prerequisites []
+            steps [{
+                    operation "ExportPracticeFiles"
+                    slug "step-sync-export"
+                    subject "learn-sync"
+                } {
+                    operation "EditPracticeFile"
+                    slug "step-sync-incoming"
+                    subject "learn-sync"
+                } {
+                    operation "StopPracticeSync"
+                    slug "step-sync-stop"
+                    subject "learn-sync"
+                }]
+            subject "learn-sync"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SendPracticeCopy"
+                    slug "step-blob-send"
+                    subject "blob-sync"
+                } {
+                    operation "AcceptPracticeCopy"
+                    slug "step-blob-accept"
+                    subject "blob-sync"
+                }]
+            subject "blob-sync"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectBackup"
+                    slug "step-backup-inspect"
+                    subject "backup"
+                }]
+            subject "backup"
+        } {
+            prerequisites []
+            steps [{
+                    operation "OpenPracticeFile"
+                    slug "step-ide-open"
+                    subject "ide"
+                } {
+                    operation "EditSavePracticeFile"
+                    slug "step-ide-save"
+                    subject "ide"
+                }]
+            subject "ide"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectLanguageTools"
+                    slug "step-language-tools-inspect"
+                    subject "language-tools"
+                }]
+            subject "language-tools"
+        } {
+            prerequisites []
+            steps [{
+                    operation "NextDocumentPage"
+                    slug "step-document-next"
+                    subject "documents"
+                }]
+            subject "documents"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectTerminal"
+                    slug "step-terminal-inspect"
+                    subject "terminal"
+                }]
+            subject "terminal"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectFileChoices"
+                    slug "step-file-choices"
+                    subject "external-files"
+                } {
+                    operation "CancelFileChoices"
+                    slug "step-file-cancel"
+                    subject "external-files"
+                }]
+            subject "external-files"
+        } {
+            prerequisites []
+            steps [{
+                    operation "PreviewRecording"
+                    slug "step-recorder-preview"
+                    subject "recorder"
+                } {
+                    operation "StopRecordingPlayback"
+                    slug "step-recorder-stop"
+                    subject "recorder"
+                }]
+            subject "recorder"
+        } {
+            prerequisites []
+            steps [{
+                    operation "EnableAreaSound"
+                    slug "step-area-sound-enable"
+                    subject "area-sound"
+                } {
+                    operation "AssignAreaSound"
+                    slug "step-area-sound-assign"
+                    subject "area-sound"
+                } {
+                    operation "PreviewAreaSound"
+                    slug "step-area-sound-preview"
+                    subject "area-sound"
+                }]
+            subject "area-sound"
+        } {
+            prerequisites []
+            steps [{
+                    operation "AddShaderExample"
+                    slug "step-shader-example"
+                    subject "shaders"
+                }]
+            subject "shaders"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SwitchSpatialView"
+                    slug "step-topology-spatial"
+                    subject "topology"
+                } {
+                    operation "ReturnFlatView"
+                    slug "step-topology-flat"
+                    subject "topology"
+                }]
+            subject "topology"
+        } {
+            prerequisites []
+            steps [{
+                    operation "SaveCustomCastle"
+                    slug "step-custom-save"
+                    subject "custom-castles"
+                } {
+                    operation "AddCustomCastle"
+                    slug "step-custom-add"
+                    subject "custom-castles"
+                }]
+            subject "custom-castles"
+        } {
+            prerequisites []
+            steps [{
+                    operation null
+                    slug "freedoom"
+                    subject "freedoom"
+                }]
+            subject "freedoom"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectControl"
+                    slug "step-inspection-control"
+                    subject "inspection"
+                }]
+            subject "inspection"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectInformation"
+                    slug "step-information-inspect"
+                    subject "information"
+                } {
+                    operation "InspectSandCredits"
+                    slug "step-information-credits"
+                    subject "information"
+                }]
+            subject "information"
+        } {
+            prerequisites []
+            steps [{
+                    operation "InspectLaboratory"
+                    slug "step-laboratory-resources"
+                    subject "laboratory"
+                }]
+            subject "laboratory"
+        }]
 }

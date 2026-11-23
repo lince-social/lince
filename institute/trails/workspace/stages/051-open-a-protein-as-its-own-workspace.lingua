@@ -1,0 +1,25 @@
+Stage 051 — Open a protein as its own workspace (@ws-stage-051: 0, is #chapter, #part-of @workspace-stages: 51) { r_60KF4QJFTAQFDX442PVEFGTKBR
+**Status** Pending verification.
+
+## Capability
+
+Present a bounded PDBx structure with sequence-to-residue selection, missing or alternate sites and source-linked annotations. The specimen can open as an independent root.
+
+## Completion checks
+
+- [ ] Select a residue from the sequence and the 3D view, annotate it and reopen offline. Reorder input atoms and retain identity or a visible repair case.
+
+For a Protein Area, retain the required fast Laboratory replay that opens Add filter, reads the choices and selects one. Verify readable text in the actual native UI. [Protein Area requirements](../../Lince.lingua)
+
+## Implementation references
+
+[Structural molecules crystals and proteins](../features/Molecules.lingua) · [12.T03](../features/Molecules.lingua#task-12t03) · [12.T04](../features/Molecules.lingua#task-12t04)
+
+Use the applicable fixture, tolerances and recovery cases in [12 · Molecular structure](../contracts/Molecular-structure-contracts.lingua#concrete-acceptance-replay).
+
+- [ ] Once every contributing stage has passed, replay the composed workflows and attach evidence to the contract. [12 · Molecular structure](../contracts/Molecular-structure-contracts.lingua).
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 050](050-edit-a-periodic-crystal-cell.lingua) · [Next · 052](052-publish-an-object-with-editable-controls.lingua)
+} r_60KF4QJFTAQFDX442PVEFGTKBR

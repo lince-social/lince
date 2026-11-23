@@ -1,0 +1,71 @@
+Baseline and isolated resumption (@ws-baseline: 0, is #chapter, #part-of @workspace-development, #done) { r_1XVD7J300DVRQT7MWK2WHF3NPP
+**Status** Done on 2026-11-22. [November replay, findings and reproduction steps](../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md)
+
+[Stage 001 · Current replay, commands and completion checks](../stages/001-re-establish-the-desktop-baseline.lingua) · [Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: No development predecessor; this is the resumption gate.
+
+Dependency reason: Historical Stage 01 evidence exists, but intervening changes and the recorded contention require isolated revalidation before dependent implementation.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Current verified native baseline, fixture rights/counts, measured device budgets, known defects and first-consumer contract decisions. Both the October and November observations are retained.
+
+## Ownership and possible overlap
+
+Exclusive timed benchmark and native acceptance sessions; no other build/development workload during baseline sampling.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+- [x] Revalidate the historical baseline under the isolated-resumption procedure before publishing a current handoff. Do not stop or modify other agents to obtain exclusivity.
+
+### Task 01.T01
+
+- [x] **01.T01.** Current units, canvas/Area/physics, persistence, accepted revisions, authority and isolation audited; [source reuse](../../../fixtures/workspace/stage01/source-audit.json) and native/test evidence retained.
+
+### Task 01.T02
+
+- [x] **01.T02.** Public/synthetic B25–B28/B38 data, coarse context, budgets and actual device selected; [sources](../../../fixtures/workspace/stage01/sources.json), profile and machine record retained.
+
+### Task 01.T03
+
+- [x] **01.T03.** C/K/I/E first-consumer contracts, minimum directory/ID/scalar/frame encoding and native/Agent/edit/import/save/shared-view/linked-work cases specified in contracts.json.
+
+### Task 01.T04
+
+- [x] **01.T04.** H1–H10/B33–B36 staged host/editor/guest/source/revoke/restart/cost/fairness cases and deferred B37 specified in hosting.json.
+
+### Task 01.T05
+
+- [x] **01.T05.** B38 independent room, unrelated sparse extent and rename/unit/outer-frame metamorphic cases supplied alongside B25 without geographic engine assumptions.
+
+### Task 01.T06
+
+- [x] **01.T06.** Original character source audited; selected starter skin/clip samples preserved and counted; phased B41 and later anatomical selection recorded without loading a complete atlas.
+
+## Required contracts and proof
+
+[Baseline-evidence](../contracts/Baseline-evidence.lingua)
+
+01.W01–01.W03 and the root isolated-resumption gate, with each historical finding classified and actual counters retained.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+**01.W01** The native desktop replays pointer hit and drag, the queued physics toggle, Area attraction and independent gravity. The Sand stopped 0.277 canvas units from its target. Both bodies slept and the foreign workspace kept its position after reopening. Catch-up physics now evaluates spatial Area forces at each fixed step. Three separate wall-clock runs provide frame, input, idle CPU, memory and graphics observations. [November replay, findings and reproduction steps](../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md)
+
+**01.W02** The fixture checker reopened ten cases and five roots. All 19 asset sizes, hashes and rights declarations were checked. Independent GLB vertex bounds and node scales gave the expected 40 mm ball and 7 mm feature. [Input review](../../../fixtures/workspace/stage01/resumption-2026-11-22/input-review.json) · [Fixture check](../../../fixtures/workspace/stage01/resumption-2026-11-22/fixture.json)
+
+**01.W03** The 49 first-consumer decisions and B33–B36 hosting specifications retain their original phase and authority owners. B37 remains deferred. [Proof scope and test results](../../../fixtures/workspace/stage01/resumption-2026-11-22/README.md)
+
+The next consumer is [Stage 002 · Save and reopen a tiny scene](../stages/002-save-and-reopen-a-tiny-scene.lingua).
+} r_1XVD7J300DVRQT7MWK2WHF3NPP

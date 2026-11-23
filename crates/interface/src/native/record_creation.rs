@@ -28,9 +28,19 @@ pub struct CreateRecord {
     pub entity: Entity,
 }
 
+/// What the find-or-create form searches and creates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Mode {
+    /// Any Record, created from a full Record draft.
+    Record,
+    /// Command Records only, created as a Command with a title, slug and shell script.
+    Command,
+}
+
 #[derive(Component)]
 struct Form {
     area: Entity,
+    mode: Mode,
     original: Option<crate::native::protein_area::Config>,
     draft: Draft,
     fields: Vec<(&'static str, Entity)>,
@@ -140,7 +150,8 @@ fn column(world: &mut World, parent: Entity) -> Entity {
 }
 
 fn input(world: &mut World, parent: Entity, title: &str, value: &str, multiline: bool) -> Entity {
-    crate::native::edit_mode::label(world, parent, title, 14.0);
+    let caption = crate::native::edit_mode::label(world, parent, title, 14.0);
+    wrap(world, caption);
     let bundle = crate::native::sand::text_editor(
         value,
         world.resource::<crate::native::theme::Typography>(),
@@ -163,6 +174,18 @@ fn input(world: &mut World, parent: Entity, title: &str, value: &str, multiline:
     entity
 }
 
+/// Lets a label shrink with its container and wrap long words instead of overflowing it.
+pub(crate) fn wrap(world: &mut World, label: Entity) {
+    if let Some(mut node) = world.get_mut::<Node>(label) {
+        node.flex_shrink = 1.0;
+        node.min_width = px(0);
+        node.max_width = percent(100);
+    }
+    world
+        .entity_mut(label)
+        .insert(TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter));
+}
+
 fn button(world: &mut World, parent: Entity, owner: Entity, title: &str, action: impl Action) {
     let entity = world
         .spawn((
@@ -181,6 +204,18 @@ fn button(world: &mut World, parent: Entity, owner: Entity, title: &str, action:
 }
 
 pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
+    open_mode(world, target, Mode::Record)
+}
+
+/// Opens the find-or-create form for Commands. `target` is either the canvas root, which
+/// places a new Command Castle, or an existing Command Castle's Area, which retargets it.
+/// Nothing is created until Create is pressed, so placing a Command Castle can reuse a saved
+/// Command instead of adding another one.
+pub fn open_command(world: &mut World, target: Entity) -> Option<Entity> {
+    open_mode(world, target, Mode::Command)
+}
+
+fn open_mode(world: &mut World, target: Entity, mode: Mode) -> Option<Entity> {
     if crate::native::laboratory::blocked(world, target)
         || !world.contains_resource::<crate::native::theme::Typography>()
     {
@@ -198,6 +233,13 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     } else {
         crate::native::full_record::open(world, root, "pending", Source::Local)?
     };
+    if original.is_none() && mode == Mode::Command {
+        let mut influence = world.get_mut::<crate::native::area::InfluenceArea>(area)?;
+        influence.name = "Command Castle".into();
+        let config = influence.protein.as_mut()?;
+        config.command = Some(Default::default());
+        config.width = 820.0;
+    }
     if let Some(entity) = world
         .query::<(Entity, &Form)>()
         .iter(world)
@@ -227,7 +269,10 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
         .spawn((
             crate::native::canvas::CanvasItem {
                 position,
-                size: Vec2::new(520.0, 640.0),
+                size: Vec2::new(
+                    if mode == Mode::Command { 620.0 } else { 520.0 },
+                    640.0,
+                ),
             },
             crate::native::workspace::WorkspaceMember(workspace),
             placement,
@@ -252,7 +297,16 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     world.entity_mut(area).insert(group);
     world.entity_mut(form).insert(group);
     crate::native::topology::groups::attach(world, &[area, form]);
-    crate::native::edit_mode::label(world, form, "Find or create a Record", 20.0);
+    let heading = crate::native::edit_mode::label(
+        world,
+        form,
+        match mode {
+            Mode::Record => "Find or create a Record",
+            Mode::Command => "Find or create a Command",
+        },
+        20.0,
+    );
+    wrap(world, heading);
     let content = column(world, form);
     world.get_mut::<Node>(content).unwrap().flex_shrink = 1.0;
     world.get_mut::<Node>(content).unwrap().min_height = px(0);
@@ -269,12 +323,22 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     let assertions = column(world, content);
     let body = column(world, content);
     let properties = column(world, content);
-    for field in protein::record_schema::FIELDS.iter().filter(|field| {
-        matches!(
-            field.key,
-            "head" | "body" | "slug" | "quantity" | "start_date" | "due_date" | "estimate_min"
-        )
-    }) {
+    let keys: &[&str] = match mode {
+        Mode::Record => &[
+            "head",
+            "body",
+            "slug",
+            "quantity",
+            "start_date",
+            "due_date",
+            "estimate_min",
+        ],
+        Mode::Command => &["head", "slug", "body"],
+    };
+    for field in protein::record_schema::FIELDS
+        .iter()
+        .filter(|field| keys.contains(&field.key))
+    {
         let parent = if matches!(field.key, "slug" | "quantity") {
             let parent = column(world, identity);
             let mut node = world.get_mut::<Node>(parent).unwrap();
@@ -289,38 +353,62 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
                 _ => properties,
             }
         };
-        let entity = input(world, parent, field.title, "", field.key == "body");
+        let caption = match (mode, field.key) {
+            (Mode::Command, "head") => "Title",
+            (Mode::Command, "body") => "Shell script",
+            _ => field.title,
+        };
+        let entity = input(world, parent, caption, "", field.key == "body");
         if matches!(field.key, "start_date" | "due_date") {
             crate::native::schedule_editor::attach(world, parent, entity);
         }
+        if mode == Mode::Command && field.key == "body" {
+            let font = crate::native::terminal::code_font(world);
+            world.entity_mut(entity).insert(font);
+            world.get_mut::<Node>(entity).unwrap().min_height = px(140);
+        }
         fields.push((field.key, entity));
     }
-    crate::native::assertion_editor::spawn(
-        world,
-        assertions,
-        crate::native::protein_area::RecordBinding {
-            area,
-            uid: String::new(),
-            source: Source::Local,
-        },
-        &json!({}),
-        true,
-    );
+    if mode == Mode::Record {
+        crate::native::assertion_editor::spawn(
+            world,
+            assertions,
+            crate::native::protein_area::RecordBinding {
+                area,
+                uid: String::new(),
+                source: Source::Local,
+            },
+            &json!({}),
+            true,
+        );
+    }
     let additions = column(world, content);
-    button(world, content, form, "Add assignee", AddAssignee);
-    button(world, content, form, "Add work log", AddLog);
+    if mode == Mode::Record {
+        button(world, content, form, "Add assignee", AddAssignee);
+        button(world, content, form, "Add work log", AddLog);
+    }
     let status = crate::native::edit_mode::label(
         world,
         form,
-        "Fill any fields to filter. Enter opens the first match. Create saves a new Record.",
+        match mode {
+            Mode::Record => {
+                "Fill any fields to filter. Enter opens the first match. Create saves a new Record."
+            }
+            Mode::Command => {
+                "Type a title or slug to find a saved Command. Enter opens the selected match. Create saves a new Command."
+            }
+        },
         13.0,
     );
+    wrap(world, status);
     let controls = column(world, form);
     world.get_mut::<Node>(controls).unwrap().flex_direction = FlexDirection::Row;
+    world.get_mut::<Node>(controls).unwrap().column_gap = px(8);
     button(world, controls, form, "Create", Submit);
     button(world, controls, form, "Cancel", Cancel);
     world.entity_mut(form).insert(Form {
         area,
+        mode,
         original,
         draft: Draft::default(),
         fields,
@@ -331,7 +419,7 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
         status,
         pending: None,
     });
-    search::start(world, form, root);
+    search::start(world, form, root, mode);
     Some(form)
 }
 
@@ -448,6 +536,31 @@ impl Action for Submit {
         if form.pending.is_some() {
             return;
         }
+        if form.mode == Mode::Command {
+            let result = command_action(world, form).and_then(|action| {
+                let id = format!("create-command-{}", form.draft.uid);
+                let bridge = world
+                    .get_non_send::<crate::native::cell_bridge::CellBridge>()
+                    .ok_or("The local Organ is not connected. Your draft is kept.")?;
+                bridge
+                    .outgoing
+                    .try_send(cell::ClientMessage::Act {
+                        id: id.clone(),
+                        action,
+                    })
+                    .map_err(|_| "The local Organ is busy or disconnected. Try again.")?;
+                Ok(id)
+            });
+            match result {
+                Ok(id) => {
+                    world.get_mut::<Form>(entity).unwrap().pending = Some(id);
+                    freeze(world, entity, true);
+                    status(world, entity, "Creating…");
+                }
+                Err(error) => status(world, entity, &error),
+            }
+            return;
+        }
         let result = collect(world, form).and_then(|mut draft| {
             crate::native::area::creation::apply(world, entity, &mut draft)?;
             let id = format!("create-record-{}", draft.uid);
@@ -472,6 +585,37 @@ impl Action for Submit {
             Err(error) => status(world, entity, &error),
         }
     }
+}
+
+/// Builds the Command creation from the form's title, slug and shell script.
+fn command_action(world: &World, form: &Form) -> Result<engine::actions::Action, String> {
+    if form.fields.iter().any(|(_, entity)| {
+        world.get::<EditableText>(*entity).is_some_and(|text| {
+            text.is_composing() || text.pending_paste.is_some() || !text.pending_edits.is_empty()
+        })
+    }) {
+        return Err("Finish editing before creating the Command".into());
+    }
+    let field = |key: &str| {
+        form.fields
+            .iter()
+            .find(|(property, _)| *property == key)
+            .map(|(_, entity)| value(world, *entity))
+            .unwrap_or_default()
+    };
+    let head = field("head").trim().to_owned();
+    let slug = field("slug").trim().trim_start_matches('@').to_owned();
+    Ok(engine::actions::Action::CreateRecord {
+        slug: (!slug.is_empty()).then_some(slug),
+        kind: nucleus::RecordKind::Command,
+        head: if head.is_empty() {
+            "Command".into()
+        } else {
+            head
+        },
+        body: field("body"),
+        quantity: 0.0,
+    })
 }
 
 #[derive(Clone)]

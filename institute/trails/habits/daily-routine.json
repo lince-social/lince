@@ -1,0 +1,248 @@
+{
+  "version": "lince.simulation.v1",
+  "name": "daily-routine",
+  "seed": 42,
+  "start_ms": 1893542400000,
+  "end_ms": 1893708001000,
+  "limits": {
+    "steps": 100,
+    "rule_evaluations": 100,
+    "evidence_bytes": 8388608,
+    "pending_messages": 16
+  },
+  "cells": [
+    {
+      "name": "routine",
+      "lingua": [
+        {
+          "name": "simple/Daily-routine.lingua",
+          "file": "simple/Daily-routine.lingua",
+          "hash": "sha256:d6f1fadf4b93fde460564d0022a82293f711865193eabd1416dcec6464c2503a"
+        }
+      ],
+      "seed": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "complete-eat-an-apple",
+      "at_ms": 1893585600000,
+      "cell": "routine",
+      "event": {
+        "kind": "action",
+        "invocation": {
+          "id": "complete-eat-an-apple",
+          "actor": null,
+          "action": {
+            "action": "set-quantity-exact",
+            "target": "eat-an-apple",
+            "amount": "0"
+          }
+        }
+      }
+    },
+    {
+      "id": "complete-exercise",
+      "at_ms": 1893605400000,
+      "cell": "routine",
+      "event": {
+        "kind": "action",
+        "invocation": {
+          "id": "complete-exercise",
+          "actor": null,
+          "action": {
+            "action": "set-quantity-exact",
+            "target": "exercise",
+            "amount": "0"
+          }
+        }
+      }
+    },
+    {
+      "id": "complete-sleep",
+      "at_ms": 1893654000000,
+      "cell": "routine",
+      "event": {
+        "kind": "action",
+        "invocation": {
+          "id": "complete-sleep",
+          "actor": null,
+          "action": {
+            "action": "set-quantity-exact",
+            "target": "sleep",
+            "amount": "0"
+          }
+        }
+      }
+    }
+  ],
+  "checks": [
+    {
+      "id": "only-apple-due-in-the-morning",
+      "predicate": {
+        "kind": "quantities-equal",
+        "cell": "routine",
+        "at_ms": 1893571201000,
+        "records": {
+          "sleep": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          },
+          "eat-an-apple": {
+            "value": {
+              "scale": 0,
+              "value": "-1"
+            },
+            "unit": null
+          },
+          "exercise": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          }
+        }
+      }
+    },
+    {
+      "id": "exercise-due-apple-completed",
+      "predicate": {
+        "kind": "quantities-equal",
+        "cell": "routine",
+        "at_ms": 1893603601000,
+        "records": {
+          "sleep": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          },
+          "eat-an-apple": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          },
+          "exercise": {
+            "value": {
+              "scale": 0,
+              "value": "-1"
+            },
+            "unit": null
+          }
+        }
+      }
+    },
+    {
+      "id": "sleep-due-apple-and-exercise-completed",
+      "predicate": {
+        "kind": "quantities-equal",
+        "cell": "routine",
+        "at_ms": 1893621601000,
+        "records": {
+          "sleep": {
+            "value": {
+              "scale": 0,
+              "value": "-1"
+            },
+            "unit": null
+          },
+          "eat-an-apple": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          },
+          "exercise": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          }
+        }
+      }
+    },
+    {
+      "id": "all-first-occurrences-completed",
+      "predicate": {
+        "kind": "quantities-equal",
+        "cell": "routine",
+        "at_ms": 1893654001000,
+        "records": {
+          "sleep": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          },
+          "eat-an-apple": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          },
+          "exercise": {
+            "value": {
+              "scale": 0,
+              "value": "0"
+            },
+            "unit": null
+          }
+        }
+      }
+    },
+    {
+      "id": "all-habits-due-again",
+      "predicate": {
+        "kind": "quantities-equal",
+        "cell": "routine",
+        "at_ms": 1893708001000,
+        "records": {
+          "sleep": {
+            "value": {
+              "scale": 0,
+              "value": "-1"
+            },
+            "unit": null
+          },
+          "eat-an-apple": {
+            "value": {
+              "scale": 0,
+              "value": "-1"
+            },
+            "unit": null
+          },
+          "exercise": {
+            "value": {
+              "scale": 0,
+              "value": "-1"
+            },
+            "unit": null
+          }
+        }
+      }
+    },
+    {
+      "id": "once-per-occurrence",
+      "predicate": {
+        "kind": "once-per-occurrence"
+      }
+    },
+    {
+      "id": "no-unexpected-refusals",
+      "predicate": {
+        "kind": "no-unexpected-refusals"
+      }
+    }
+  ]
+}

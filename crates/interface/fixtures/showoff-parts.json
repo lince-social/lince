@@ -1,0 +1,132 @@
+{
+  "document": "doc_00000000000000000000000501",
+  "root": "root_00000000000000000000000501",
+  "parts": [
+    {
+      "id": "part_00000000000000000000000503",
+      "name": "Bracket",
+      "requires": [
+        {
+          "document": "doc_00000000000000000000000501",
+          "part": "part_00000000000000000000000502",
+          "revision": "sha256:ccdafc930dc29f2723cb2e9878d1820e9e8d49b381e531da4e16f7d9d7c531bf"
+        }
+      ]
+    },
+    {
+      "id": "part_00000000000000000000000503",
+      "name": "Bracket",
+      "requires": [
+        {
+          "document": "doc_00000000000000000000000501",
+          "part": "part_00000000000000000000000502",
+          "revision": "sha256:b86b61906deb8fdcc27703a792634d614c05145401011a85013a7343651faeec"
+        }
+      ]
+    },
+    {
+      "id": "part_00000000000000000000000505",
+      "name": "Coated bracket",
+      "requires": [
+        {
+          "document": "doc_00000000000000000000000501",
+          "part": "part_00000000000000000000000504",
+          "revision": "sha256:bb7b12586594ba25313a7b9d90a6ac1cda21bc7e49411f5fa9b64d2549c6543a"
+        }
+      ]
+    },
+    {
+      "id": "part_00000000000000000000000501",
+      "name": "Millimetre",
+      "intrinsic": {
+        "kind": "unit",
+        "symbol": "mm"
+      }
+    },
+    {
+      "id": "part_00000000000000000000000502",
+      "name": "Steel",
+      "intrinsic": {
+        "kind": "material",
+        "grade": "A36"
+      },
+      "requires": [
+        {
+          "document": "doc_00000000000000000000000501",
+          "part": "part_00000000000000000000000501",
+          "revision": "sha256:480ccc0b731b3b2655354018bbee53d07ef28f58cf29928d591b625f6260e983"
+        }
+      ]
+    },
+    {
+      "id": "part_00000000000000000000000502",
+      "name": "Steel",
+      "intrinsic": {
+        "kind": "material",
+        "grade": "304"
+      },
+      "requires": [
+        {
+          "document": "doc_00000000000000000000000501",
+          "part": "part_00000000000000000000000501",
+          "revision": "sha256:480ccc0b731b3b2655354018bbee53d07ef28f58cf29928d591b625f6260e983"
+        }
+      ]
+    },
+    {
+      "id": "part_00000000000000000000000504",
+      "name": "Workshop coating",
+      "intrinsic": {
+        "kind": "material",
+        "grade": "Source only"
+      },
+      "local_only": true
+    },
+    {
+      "id": "part_00000000000000000000000506",
+      "name": "Spacer"
+    }
+  ],
+  "slots": [
+    {
+      "id": "slot_00000000000000000000000501",
+      "part": "part_00000000000000000000000503",
+      "revision": "sha256:040bbc352c8a34565b8eea64dc35f89eafea410409cc09e13906d5d3bf5e1a22",
+      "metres": [
+        {
+          "value": "4",
+          "scale": 0
+        },
+        {
+          "value": "2",
+          "scale": 0
+        },
+        {
+          "value": "1",
+          "scale": 0
+        }
+      ],
+      "record": "r_00000000000000000000000501"
+    },
+    {
+      "id": "slot_00000000000000000000000502",
+      "part": "part_00000000000000000000000503",
+      "revision": "sha256:8303a75c2bca82cf7c9bef223e2e24bee649aac499254f9de754fa6844515f68",
+      "metres": [
+        {
+          "value": "9",
+          "scale": 0
+        },
+        {
+          "value": "0",
+          "scale": 0
+        },
+        {
+          "value": "0",
+          "scale": 0
+        }
+      ],
+      "record": null
+    }
+  ]
+}

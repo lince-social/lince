@@ -25,7 +25,6 @@ mod design;
 mod hand_models;
 mod maintenance;
 mod park;
-mod prune;
 mod ship;
 mod ui_process;
 mod ui_test;
@@ -284,20 +283,19 @@ fn dispatch() -> Result<()> {
             version(&root)
         }
         Some("ship") => ship::dispatch(&root, &extra),
-        Some("prune-target") => prune::budget::command(&prune::target_directory(&root), &extra),
-        Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
-        Some("check") => prune::with_cleanup(&root, || {
+        Some("dev") => dev(&extra),
+        Some("check") => {
             checked(cargo_command().arg("check").args(&extra))?;
             if extra.is_empty() {
                 test_interface(InterfaceSelection::All)?;
             }
             Ok(())
-        }),
+        }
         Some("test") => {
             if extra.is_empty() {
                 return Err("usage: cargo xtask test -p <package> <test-name> -- --exact".into());
             }
-            prune::with_cleanup(&root, || checked(cargo_command().arg("test").args(&extra)))
+            checked(cargo_command().arg("test").args(&extra))
         }
         Some("test-interface") => {
             let selection = match extra.as_slice() {
@@ -345,7 +343,7 @@ fn dispatch() -> Result<()> {
         }
         Some("check-instinct") => {
             no_extra(&extra)?;
-            prune::with_cleanup(&root, check_instinct)
+            check_instinct()
         }
         Some("test-store-transactions") => {
             no_extra(&extra)?;
@@ -370,9 +368,7 @@ fn dispatch() -> Result<()> {
         }
         Some("test-all") => {
             no_extra(&extra)?;
-            prune::with_cleanup(&root, || {
-                checked(cargo_command().args(["test", "--workspace", "--all-targets"]))
-            })
+            checked(cargo_command().args(["test", "--workspace", "--all-targets"]))
         }
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
@@ -406,13 +402,7 @@ fn dispatch() -> Result<()> {
                 "ship tests a snapshot, commits and pushes it, waits for its Linux workflow, and installs its verified Nix release; ship --help lists options."
             );
             println!(
-                "prune-target [--dry-run] enforces the 300 GB compiled-artifact budget without building the application."
-            );
-            println!(
                 "test-store-transactions runs the four Store transaction targets with the validated SQLite profile."
-            );
-            println!(
-                "dev, check, check-instinct, test and test-all prune superseded incremental snapshots and enforce the 300 GB target-cache budget before and after running."
             );
             Ok(())
         }

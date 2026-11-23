@@ -177,7 +177,40 @@ pub(super) fn replay(world: &mut World, frame: u32, directory: &Path, reopen: bo
                     world.get::<Identity>(item).unwrap().0,
                     disk(directory, workspace).canvas.unwrap().placement
                 );
-                screenshot(world, directory.join("reopened.png"));
+                if showcase {
+                    use lince_sandbox::topology::assets::{AssetDirectory, ImportedAsset, Ready};
+                    let mut assets = world.query_filtered::<&ImportedAsset, With<Ready>>();
+                    let sculpture = assets
+                        .iter(world)
+                        .find(|asset| asset.name == "Showoff sculpture")
+                        .expect("the shipped sculpture loaded in this fresh process");
+                    assert!(
+                        world
+                            .resource::<AssetDirectory>()
+                            .0
+                            .join(&sculpture.id)
+                            .join(&sculpture.file)
+                            .is_file()
+                    );
+                    if !world.resource::<Replay>().recover
+                        && world.resource::<Replay>().library.is_none()
+                    {
+                        world
+                            .spawn(bevy::render::view::screenshot::Screenshot::primary_window())
+                            .observe(bevy::render::view::screenshot::save_to_disk(
+                                directory.join("reopened.png"),
+                            ));
+                    }
+                } else {
+                    screenshot(world, directory.join("reopened.png"));
+                }
+            }
+            _ if showcase && frame >= 36 => {
+                if let Some(phase) = world.resource::<Replay>().library {
+                    super::library::replay(world, frame, directory, workspace, phase);
+                } else {
+                    super::receipts::replay(world, frame, directory, workspace);
+                }
             }
             _ => {}
         }

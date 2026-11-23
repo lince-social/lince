@@ -222,45 +222,10 @@ struct AddFiote;
 struct AddCommand;
 
 impl Action for AddCommand {
+    /// Places a Command Castle that first asks which saved Command to show. A new Command is
+    /// created only when the person presses Create.
     fn apply(&self, world: &mut World, root: Entity) {
-        if crate::native::laboratory::blocked(world, root) {
-            return;
-        }
-        let Some(entity) = open(world, root, "pending", Source::Local) else {
-            return;
-        };
-        let mut area = world
-            .get_mut::<crate::native::area::InfluenceArea>(entity)
-            .unwrap();
-        area.name = "Command Castle".into();
-        let config = area.protein.as_mut().unwrap();
-        config.enabled = false;
-        config.command = Some(Default::default());
-        config.width = 820.0;
-        let id = nucleus::new_uid("create-command");
-        let result = crate::native::sand_panel::send(
-            world,
-            entity,
-            cell::ClientMessage::Act {
-                id: id.clone(),
-                action: engine::actions::Action::CreateRecord {
-                    slug: None,
-                    kind: nucleus::RecordKind::Command,
-                    head: "Command".into(),
-                    body: "printf 'Hello\\n'\n".into(),
-                    quantity: 0.0,
-                },
-            },
-        );
-        match result {
-            Ok(()) => {
-                world.entity_mut(entity).insert(Creating(id));
-            }
-            Err(error) => {
-                world.despawn(entity);
-                crate::native::notifications::report(world, "interface::command", &error);
-            }
-        }
+        crate::native::record_creation::open_command(world, root);
     }
 }
 

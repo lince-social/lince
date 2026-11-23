@@ -1,8 +1,12 @@
 //! Run with a fresh output directory to exercise create/edit/save and reopen in separate native processes.
 #[path = "workspace_scene/bridge.rs"]
 mod bridge;
+#[path = "workspace_scene/library.rs"]
+mod library;
 #[path = "workspace_scene/pointer.rs"]
 mod pointer;
+#[path = "workspace_scene/receipts.rs"]
+mod receipts;
 use bevy::{
     a11y::AccessibilityNode,
     diagnostic::FrameCount,
@@ -37,6 +41,8 @@ struct Replay {
     reopen: bool,
     bridge: bool,
     showcase: bool,
+    recover: bool,
+    library: Option<library::Phase>,
     complete: Arc<AtomicBool>,
 }
 
@@ -183,12 +189,12 @@ fn bounds(world: &World, entity: Entity) -> Rect {
     )
 }
 
-fn verify_layout(world: &mut World, directory: &Path) {
+fn control_layout(world: &mut World, caption: &str) -> (Rect, Rect, Rect, Rect) {
     let (root, mode) = world.query::<(Entity, &EditMode)>().single(world).unwrap();
     let (panel, toggle) = (bounds(world, mode.panel), bounds(world, mode.toggle));
     let viewport = bounds(world, root);
-    let apply = control(world, "Apply to selected placement");
-    let visible = bounds(world, apply);
+    let button = control(world, caption);
+    let visible = bounds(world, button);
     assert!(
         (panel.min.x - viewport.min.x).abs() <= 1. && (panel.min.y - viewport.min.y).abs() <= 1.,
         "panel {panel:?}, viewport {viewport:?}"
@@ -201,6 +207,11 @@ fn verify_layout(world: &mut World, directory: &Path) {
             && visible.max.y <= panel.max.y + 1.,
         "focused control {visible:?}, panel {panel:?}"
     );
+    (viewport, panel, toggle, visible)
+}
+
+fn verify_layout(world: &mut World, directory: &Path) {
+    let (viewport, panel, toggle, visible) = control_layout(world, "Apply to selected placement");
     let corners = |r: Rect| [r.min.to_array(), r.max.to_array()];
     fs::write(directory.join("layout.json"),serde_json::to_vec_pretty(&serde_json::json!({
         "viewport":corners(viewport),"edit_panel":corners(panel),"edit_toggle":corners(toggle),"focused_apply":corners(visible)
@@ -387,14 +398,26 @@ fn main() -> AppExit {
     let phase = std::env::args().nth(2);
     let bridge = phase.as_ref().is_some_and(|s| s.starts_with("--bridge"));
     let showcase = phase.as_ref().is_some_and(|s| s.starts_with("--showcase"));
+    let recover = phase.as_deref() == Some("--showcase-recover");
+    let library = match phase.as_deref() {
+        Some("--showcase-import") => Some(library::Phase::Import),
+        Some("--showcase-library-reopen") => Some(library::Phase::Reopen),
+        _ => None,
+    };
     let reopen = match phase.as_deref() {
         None | Some("--bridge" | "--showcase") => {
             for phase in if showcase {
-                ["--showcase-create", "--showcase-reopen"]
+                &[
+                    "--showcase-create",
+                    "--showcase-reopen",
+                    "--showcase-recover",
+                    "--showcase-import",
+                    "--showcase-library-reopen",
+                ][..]
             } else if bridge {
-                ["--bridge-create", "--bridge-reopen"]
+                &["--bridge-create", "--bridge-reopen"][..]
             } else {
-                ["--create", "--reopen"]
+                &["--create", "--reopen"][..]
             } {
                 let result = std::process::Command::new(std::env::current_exe().unwrap())
                     .arg(&directory)
@@ -406,21 +429,33 @@ fn main() -> AppExit {
                 }
             }
             println!(
-                "Scene replay passed in both native processes. Evidence is in {}.",
+                "Scene replay passed across native process restarts. Evidence is in {}.",
                 directory.display()
             );
             return AppExit::Success;
         }
-        Some("--reopen" | "--bridge-reopen" | "--showcase-reopen") => true,
+        Some(
+            "--reopen"
+            | "--bridge-reopen"
+            | "--showcase-reopen"
+            | "--showcase-recover"
+            | "--showcase-import"
+            | "--showcase-library-reopen",
+        ) => true,
         Some("--create" | "--bridge-create" | "--showcase-create") => false,
         Some(arg) => panic!("Unknown scene replay phase {arg}"),
     };
     if !reopen {
         fs::create_dir(&directory).expect("use a fresh output directory");
     }
+    if showcase {
+        utils::config::set_lince_data_dir_override(directory.join("profile"))
+            .expect("isolate the Laboratory replay profile");
+    }
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .worker_threads(2)
+        .thread_stack_size(32 * 1024 * 1024)
         .build()
         .unwrap();
     let _entered = runtime.enter();
@@ -430,7 +465,21 @@ fn main() -> AppExit {
         std::process::exit(1);
     });
     let complete = Arc::new(AtomicBool::new(false));
-    let mut app = lince_sandbox::app::interface_app();
+    let mut app = if showcase {
+        lince_sandbox::app::interface_app_at(directory.join("profile/interface-assets"), false)
+    } else {
+        lince_sandbox::app::interface_app()
+    };
+    if showcase {
+        app.add_systems(
+            PostUpdate,
+            receipts::observe_action.after(lince_sandbox::actions::ApplyActions),
+        );
+    }
+
+    if phase.as_deref() == Some("--showcase-reopen") {
+        receipts::install(&mut app, &runtime);
+    }
     app.add_plugins(bevy::log::LogPlugin::default())
         .insert_resource(WorkspaceFile::new(directory.join("interface.json")))
         .insert_resource(Replay {
@@ -438,6 +487,8 @@ fn main() -> AppExit {
             reopen,
             bridge,
             showcase,
+            recover,
+            library,
             complete: complete.clone(),
         })
         .insert_resource(WinitSettings::continuous())

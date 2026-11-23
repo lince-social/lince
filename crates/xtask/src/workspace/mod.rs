@@ -34,21 +34,24 @@ pub(super) fn dispatch(root: &Path, caller: &Path, args: &[OsString]) -> Result<
             );
             Ok(())
         }
-        Some("showcase") if args.len() == 2 => crate::checked(
-            crate::cargo_command()
-                .current_dir(root)
-                .args([
-                    "run",
-                    "--locked",
-                    "-p",
-                    "lince-sandbox",
-                    "--example",
-                    "workspace_scene",
-                    "--",
-                ])
-                .arg(caller.join(&args[1]))
-                .arg("--showcase"),
-        ),
+        Some("showcase") if args.len() == 2 => {
+            model_dependencies(root)?;
+            crate::checked(
+                crate::cargo_command()
+                    .current_dir(root)
+                    .args([
+                        "run",
+                        "--locked",
+                        "-p",
+                        "lince-sandbox",
+                        "--example",
+                        "workspace_scene",
+                        "--",
+                    ])
+                    .arg(caller.join(&args[1]))
+                    .arg("--showcase"),
+            )
+        }
         Some("baseline") if args.len() == 2 => {
             let output = caller.join(&args[1]);
             if output.exists() {
@@ -84,4 +87,30 @@ pub(super) fn dispatch(root: &Path, caller: &Path, args: &[OsString]) -> Result<
         }
         _ => Err("Use cargo xtask workspace help".into()),
     }
+}
+
+// The model, publication and acceptance layers must run without the desktop or a Fiote provider.
+fn model_dependencies(root: &Path) -> Result<()> {
+    let tree = crate::cargo_command()
+        .current_dir(root)
+        .args([
+            "tree", "--locked", "--edges", "normal", "--prefix", "none", "--format", "{p}", "-p",
+            "nucleus", "-p", "store", "-p", "engine",
+        ])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !tree.status.success() {
+        return Err(String::from_utf8_lossy(&tree.stderr).into_owned());
+    }
+    for line in String::from_utf8_lossy(&tree.stdout).lines() {
+        if let Some(
+            name @ ("bevy" | "lince-interface" | "lince-sandbox" | "lince-fiote" | "transport"),
+        ) = line.split_whitespace().next()
+        {
+            return Err(format!(
+                "Workspace acceptance acquired a presentation or provider dependency on {name}."
+            ));
+        }
+    }
+    Ok(())
 }

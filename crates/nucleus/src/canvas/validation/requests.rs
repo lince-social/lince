@@ -10,7 +10,14 @@ use super::{
 impl Request {
     /// Reports whether processing the request can change the Canvas.
     pub fn is_mutation(&self) -> bool {
-        matches!(self, Self::Mutate { .. })
+        matches!(
+            self,
+            Self::Mutate { .. }
+                | Self::Scene {
+                    query: crate::canvas::scene::operation::Request::Submit { .. },
+                    ..
+                }
+        )
     }
 
     /// Checks request identifiers, bounds, and the mutation's local invariants.
@@ -20,6 +27,26 @@ impl Request {
     /// Returns an error for invalid input or a request larger than the protocol limit.
     pub fn validate(&self) -> Result<(), String> {
         match self {
+            Self::Scene { workspace, query } => {
+                use crate::canvas::scene::operation::Request;
+                workspace_id(*workspace)?;
+                if crate::json::encoded_len(self).map_err(|e| e.to_string())? > 2048 {
+                    return Err("Scene command exceeds 2 KiB.".into());
+                }
+                match query {
+                    Request::Inspect => (),
+                    Request::Submit { edit } => edit.validate()?,
+                    Request::Receipt {
+                        document,
+                        request_id,
+                    } => {
+                        if !document.valid() {
+                            return Err("Invalid scene document identity.".into());
+                        }
+                        request_identifier(request_id)?;
+                    }
+                }
+            }
             Self::InspectElement {
                 placement,
                 offset,

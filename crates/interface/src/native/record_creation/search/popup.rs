@@ -45,7 +45,24 @@ impl PopupPresentation {
 }
 
 fn scroll_to_selection(world: &mut World, popup: Entity, selected: usize) {
-    let offset = selected.saturating_sub(ROWS_ABOVE_SELECTION) as f32 * ROW_HEIGHT;
+    let first = selected.saturating_sub(ROWS_ABOVE_SELECTION);
+    // Long titles wrap, so measured rows are used once layout has run.
+    let offset = world
+        .get::<PopupPresentation>(popup)
+        .map(|view| {
+            view.rows
+                .iter()
+                .take(first)
+                .map(|row| {
+                    world
+                        .get::<ComputedNode>(*row)
+                        .map(|node| node.size().y * node.inverse_scale_factor())
+                        .filter(|height| *height > 0.0)
+                        .unwrap_or(ROW_HEIGHT)
+                })
+                .sum::<f32>()
+        })
+        .unwrap_or(first as f32 * ROW_HEIGHT);
     if let Some(mut position) = world.get_mut::<ScrollPosition>(popup)
         && position.0.y != offset
     {
@@ -104,6 +121,7 @@ pub(super) fn draw(world: &mut World, form: Entity, popup: Entity) {
     let selected = search.selected;
     let total = search.total;
     let message = search.message.clone();
+    let empty = search.empty;
     if let Some(children) = view.get::<Children>() {
         for child in children.iter().collect::<Vec<_>>() {
             world.despawn(child);
@@ -113,12 +131,7 @@ pub(super) fn draw(world: &mut World, form: Entity, popup: Entity) {
     let caption = if !message.is_empty() {
         Some(label(world, popup, &message, 13.0))
     } else if options.is_empty() {
-        Some(label(
-            world,
-            popup,
-            "No matches. Create a Record with these values.",
-            13.0,
-        ))
+        Some(label(world, popup, empty, 13.0))
     } else {
         rows.reserve_exact(options.len());
         for (index, (uid, title)) in options.iter().enumerate() {
@@ -128,9 +141,12 @@ pub(super) fn draw(world: &mut World, form: Entity, popup: Entity) {
                     ActionButton::new(form, crate::native::actions![Open(uid.clone())]),
                     Node {
                         width: percent(100),
+                        min_width: px(0),
                         min_height: px(ROW_HEIGHT),
                         flex_shrink: 0.0,
-                        padding: UiRect::all(px(6)),
+                        padding: UiRect::axes(px(8), px(6)),
+                        align_items: AlignItems::Center,
+                        overflow: Overflow::clip_x(),
                         ..default()
                     },
                     ChildOf(popup),
@@ -140,7 +156,8 @@ pub(super) fn draw(world: &mut World, form: Entity, popup: Entity) {
             if index == selected {
                 world.entity_mut(row).insert(background(Token::Accent));
             }
-            label(world, row, title, 14.0);
+            let caption = label(world, row, title, 14.0);
+            crate::native::record_creation::wrap(world, caption);
         }
         (total > MAX_RESULTS).then(|| {
             label(
@@ -151,6 +168,9 @@ pub(super) fn draw(world: &mut World, form: Entity, popup: Entity) {
             )
         })
     };
+    if let Some(caption) = caption {
+        crate::native::record_creation::wrap(world, caption);
+    }
     add("record-creation-search-rows-created", rows.len() as u64);
     world.entity_mut(popup).insert(PopupPresentation {
         rows,

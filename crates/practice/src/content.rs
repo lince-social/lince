@@ -11,7 +11,12 @@
 // - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites publication:
 //   String (103).
 
-use std::{collections::BTreeMap, env::var_os, path::PathBuf, sync::OnceLock};
+use std::{
+    collections::BTreeMap,
+    env::var_os,
+    path::{Path, PathBuf},
+    sync::OnceLock,
+};
 
 use lince_resources::{Library, publication::Publication};
 use serde::Deserialize;
@@ -69,6 +74,15 @@ pub(crate) struct Content {
     starts: BTreeMap<String, (&'static str, usize)>,
 }
 
+const ENTRY: &str = "Lince.lingua";
+
+fn local_entry(directory: &Path) -> Option<PathBuf> {
+    [ENTRY, "Instinct.lingua", "instinct/Instinct.lingua"]
+        .into_iter()
+        .map(|entry| directory.join(entry))
+        .find(|path| path.is_file())
+}
+
 pub fn location() -> Option<String> {
     if let Ok(value) = std::env::var("LINCE_CONTENT") {
         if value.is_empty() {
@@ -80,12 +94,13 @@ pub fn location() -> Option<String> {
                 .to_file_path()
                 .ok()
                 .and_then(|path| {
-                    lince_resources::Reference::path(&path.join("instinct/Instinct.lingua")).ok()
+                    let entry = local_entry(&path).unwrap_or_else(|| path.join(ENTRY));
+                    lince_resources::Reference::path(&entry).ok()
                 })
                 .map(|reference| reference.target);
         }
         if url.path().ends_with('/') {
-            url = url.join("instinct/Instinct.lingua").ok()?;
+            url = url.join(ENTRY).ok()?;
         }
         return Some(url.to_string());
     }
@@ -95,8 +110,7 @@ pub fn location() -> Option<String> {
         directory.to_path_buf(),
         directory.parent().unwrap_or(directory).to_path_buf(),
     ] {
-        let path = root.join("content/instinct/Instinct.lingua");
-        if path.is_file() {
+        if let Some(path) = local_entry(&root.join("content")) {
             return lince_resources::Reference::path(&path)
                 .ok()
                 .map(|reference| reference.target);
@@ -105,14 +119,10 @@ pub fn location() -> Option<String> {
     let config = var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .or_else(|| var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
-    let path = config.join("lince/content/instinct/Instinct.lingua");
-    path.is_file()
-        .then(|| {
-            lince_resources::Reference::path(&path)
-                .ok()
-                .map(|reference| reference.target)
-        })
-        .flatten()
+    let path = local_entry(&config.join("lince/content"))?;
+    lince_resources::Reference::path(&path)
+        .ok()
+        .map(|reference| reference.target)
 }
 
 pub fn publication() -> Result<Option<&'static Publication>, String> {

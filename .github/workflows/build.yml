@@ -1,8 +1,6 @@
 name: Linux Lince and Park
 
 on:
-  # schedule:
-  #   - cron: '17 6 * * *'
   push:
     branches:
       - main
@@ -17,7 +15,6 @@ on:
       - 'rust-toolchain.toml'
       - '.cargo/**'
       - '.github/**'
-      - 'institute/scripts/**'
       - 'institute/packaging/**'
   workflow_dispatch:
     inputs:
@@ -38,7 +35,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lince-build-release-deploy-${{ github.event_name == 'schedule' && 'rust-update' || inputs.rust_version && format('rust-validation-{0}', inputs.rust_version) || github.ref }}
+  group: lince-build-release-deploy-${{ inputs.rust_version && format('rust-validation-{0}', inputs.rust_version) || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -50,33 +47,6 @@ env:
   LINCE_BUILD_ENVIRONMENT: "1"
 
 jobs:
-  rust-update:
-    if: github.event_name == 'schedule'
-    name: Update stable Rust
-    runs-on: ubuntu-24.04
-    timeout-minutes: 130
-    permissions:
-      contents: write
-      actions: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Discover latest stable Rust
-        id: stable
-        run: |
-          latest=$(python3 -B institute/scripts/update-rust-toolchain.py --latest)
-          current=$(bash institute/scripts/rust-channel.sh)
-          if [[ "$current" == "version=$latest" ]]; then
-            echo 'update=false' >> "$GITHUB_OUTPUT"
-          else
-            echo 'update=true' >> "$GITHUB_OUTPUT"
-          fi
-      - uses: cachix/install-nix-action@v31.11.3
-        if: steps.stable.outputs.update == 'true'
-      - name: Validate and apply shared Rust update
-        if: steps.stable.outputs.update == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash institute/scripts/ci-update-rust.sh
   checks:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && !inputs.build_release)
     name: Linux compile checks (${{ matrix.mode }})
@@ -88,22 +58,17 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Select Rust update candidate for checks
-        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
-        env:
-          RUST_CANDIDATE: ${{ inputs.rust_version }}
-          BUILD_RELEASE: ${{ inputs.build_release }}
-        run: |
-          [[ "$BUILD_RELEASE" == false ]]
-          python3 -B institute/scripts/update-rust-toolchain.py --candidate "$RUST_CANDIDATE"
-      - name: Read pinned Rust version
+      - name: Restrict candidates to checks
+        if: inputs.rust_version != '' && inputs.build_release
+        run: exit 1
+      - uses: ./.github/actions/rust-version
         id: toolchain
-        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
+        with:
+          candidate: ${{ inputs.rust_version }}
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.toolchain.outputs.version }}
-      - name: Prepare Linux compiler and libraries
-        run: bash institute/scripts/ci-linux-setup.sh
+      - uses: ./.github/actions/linux-build
       - uses: ./.github/actions/rust-artifacts
         id: cache
         with:
@@ -140,7 +105,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
   binary:
-    if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
+    if: github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
     # Optimize elapsed time with two runners. For a compute-minute budget,
     # prefer one shared Cargo build; see .github/README.md before changing this.
     name: Linux release (${{ matrix.artifact }})
@@ -161,10 +126,8 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
         run: exit 1
 
-      - name: Read pinned Rust version
+      - uses: ./.github/actions/rust-version
         id: toolchain
-        shell: bash
-        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
 
       - name: Setup Rust
         id: rust
@@ -173,8 +136,7 @@ jobs:
           toolchain: ${{ steps.toolchain.outputs.version }}
           targets: ${{ env.BUILD_TARGET }}
 
-      - name: Prepare Linux compiler and libraries
-        run: bash institute/scripts/ci-linux-setup.sh
+      - uses: ./.github/actions/linux-build
       - uses: ./.github/actions/rust-artifacts
         id: cache
         with:
@@ -192,7 +154,7 @@ jobs:
           mkdir -p target
           cargo xtask park release --target "$BUILD_TARGET" > target/release-build-info.json
           if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
-            bash institute/packaging/linux/check-build-info.sh target/release-build-info.json
+            jq -L institute/packaging/linux -es 'include "build-info"; park_release' target/release-build-info.json >/dev/null
           fi
         shell: bash
 
@@ -221,10 +183,47 @@ jobs:
           key: ${{ job.status == 'failure' && format('{0}-partial-{1}-{2}', steps.cache.outputs.key, github.run_id, github.run_attempt) || steps.cache.outputs.key }}
 
       - name: Package Linux binary
+        shell: bash
         if: matrix.artifact == 'application'
         run: |
-          mkdir -p binary-artifacts
-          bash institute/packaging/linux/package.sh "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
+          executable=$(realpath "target/$BUILD_TARGET/release/lince")
+          destination=$(realpath -m "binary-artifacts/lince-$BUILD_TARGET.tar.gz")
+          [[ ! -e $(dirname "$executable")/.lince-wrapped ]] || { echo 'Package the compiled ELF before Nix wrapping' >&2; exit 1; }
+          [[ $(od -An -tx1 -N4 "$executable" | tr -d ' \n') == 7f454c46 ]] || { echo 'Expected an ELF executable' >&2; exit 1; }
+          mkdir -p "$(dirname "$destination")"
+          temporary=$(mktemp -d "$(dirname "$destination")/park-package-XXXXXX")
+          trap 'rm -rf -- "$temporary"' EXIT
+          root=$temporary/lince
+          mkdir -p "$root"
+          timeout 10 "$executable" --build-info > "$root/build-info.json"
+          jq -L institute/packaging/linux -es 'include "build-info"; park_release' "$root/build-info.json" >/dev/null
+          install -Dm755 "$executable" "$root/bin/lince"
+          for mapping in \
+              'LICENSE:LICENSE' \
+              'institute/packaging/linux/wayland-sessions/lince.desktop:share/wayland-sessions/lince.desktop' \
+              'crates/vendor/smithay-capture/LICENSE.txt:share/licenses/lince-smithay-capture/LICENSE.txt' \
+              'crates/vendor/smithay-capture/CREDITS.md:share/licenses/lince-smithay-capture/CREDITS.md' \
+              'crates/vendor/smithay/LICENSE.txt:share/licenses/smithay/LICENSE.txt' \
+              'institute/packaging/linux/ufw/lince:etc/ufw/applications.d/lince' \
+              'institute/packaging/linux/firewalld/lince.xml:lib/firewalld/services/lince.xml' \
+              'institute/packaging/linux/firewalld/lince-test.xml:lib/firewalld/services/lince-test.xml'; do
+              install -Dm644 "${mapping%%:*}" "$root/${mapping#*:}"
+          done
+          cat > "$root/bin/lince-park-session" <<'LAUNCHER'
+          #!/bin/sh
+          set -eu
+          lince_executable="$(dirname "$(readlink -f "$0")")/lince"
+          if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+              exec "$lince_executable" --park "$@"
+          fi
+          exec dbus-run-session -- "$lince_executable" --park "$@"
+          LAUNCHER
+          chmod 755 "$root/bin/lince-park-session"
+          jq -r .revision "$root/build-info.json" > "$root/revision"
+          tar -I 'gzip -1' -cf "$temporary/archive.tar.gz" -C "$temporary" lince
+          mv "$temporary/archive.tar.gz" "$destination"
+          printf '%s  %s\n' "$(sha256sum "$destination" | cut -d ' ' -f1)" "$(basename "$destination")" > "$destination.sha256"
+          jq -r .target "$root/build-info.json" > "$destination.target"
 
       - name: Upload binaries
         if: matrix.artifact == 'application'
@@ -292,11 +291,22 @@ jobs:
           (cd target/park-probe-build && sha256sum --check probe.tar.gz.sha256)
           mkdir -p target/park-measurement
           tar -xzf target/park-probe-build/probe.tar.gz -C target/park-measurement
-          bash institute/packaging/linux/package-park-probe.sh \
-            target/park-measurement/park-responsiveness \
-            target/park-measurement/probe-build-info.json \
-            target/application-identity/release-build-info.json \
-            "park-measurement-artifacts/park-responsiveness-$BUILD_TARGET.tar.gz"
+          measurement=target/park-measurement
+          application=target/application-identity/release-build-info.json
+          destination=$(realpath -m "park-measurement-artifacts/park-responsiveness-$BUILD_TARGET.tar.gz")
+          jq -L institute/packaging/linux -es --arg revision "$LINCE_REVISION" --arg target "$BUILD_TARGET" \
+            --slurpfile application "$application" \
+            'include "build-info"; matching_park_probe($application; $revision; $target)' "$measurement/probe-build-info.json" >/dev/null
+          mkdir -p "$(dirname "$destination")"
+          temporary=$(mktemp -d "$(dirname "$destination")/park-probe-XXXXXX")
+          trap 'rm -rf -- "$temporary"' EXIT
+          install -m 755 "$measurement/park-responsiveness" "$temporary/park-responsiveness"
+          install -m 644 "$measurement/probe-build-info.json" "$temporary/probe-build-info.json"
+          install -m 644 "$application" "$temporary/application-build-info.json"
+          (cd "$temporary" && sha256sum park-responsiveness probe-build-info.json application-build-info.json > SHA256SUMS)
+          tar -I 'gzip -1' -cf "$temporary/archive.tar.gz" -C "$temporary" park-responsiveness probe-build-info.json application-build-info.json SHA256SUMS
+          mv "$temporary/archive.tar.gz" "$destination"
+          (cd "$(dirname "$destination")" && sha256sum "$(basename "$destination")" > "$(basename "$destination").sha256")
       - name: Upload Park measurement probe
         uses: actions/upload-artifact@v4
         with:
@@ -307,32 +317,48 @@ jobs:
           compression-level: 0
 
   tooling:
-    if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
+    if: github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
     name: CI tooling checks
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Read pinned Rust version
-        id: toolchain
-        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ steps.toolchain.outputs.version }}
-      - name: Verify CI cache behavior
+      - name: Verify release and measurement artifact identities
+        shell: bash
         run: |
-          python3 -B -m unittest discover -s institute/scripts -p 'test_ci_cache_identity.py'
-          python3 -B -m unittest discover -s institute/scripts -p 'test_ci_source_cache.py'
-      - name: Verify release artifact identities
-        run: |
-          bash institute/packaging/linux/test-build-info.sh
-          bash institute/packaging/linux/test-package-park-probe.sh
-      - name: Verify automatic Rust updates
-        run: python3 -B -m unittest discover -s institute/scripts -p 'test_ci_update_rust.py'
-      - name: Verify target-cache cleanup
-        run: python3 -B -m unittest discover -s institute/scripts -p 'test_target_cache.py'
-      - name: Verify performance report accounting
-        run: python3 -B -m unittest discover -s institute/scripts/park -p 'test_*.py'
+          export LINCE_REVISION=fixture BUILD_TARGET=x86_64-unknown-linux-gnu
+          directory=$(mktemp -d)
+          trap 'rm -rf -- "$directory"' EXIT
+          application="$directory/application.json"
+          probe="$directory/probe.json"
+          changed="$directory/changed.json"
+          printf '%s\n' '{"version":"0.8.0","revision":"fixture","target":"x86_64-unknown-linux-gnu","optimized":true,"features":{"ui":true,"instinct":true,"park":true}}' > "$application"
+          printf '%s\n' '{"probe":"park-responsiveness-v1","package":"lince","version":"0.8.0","revision":"fixture","optimized":true,"architecture":"x86_64","os":"linux"}' > "$probe"
+          validate_release() {
+            jq -L institute/packaging/linux -es 'include "build-info"; park_release' "$1" >/dev/null
+          }
+          validate_probe() {
+            jq -L institute/packaging/linux -es --arg revision "$LINCE_REVISION" --arg target "$BUILD_TARGET" \
+              --slurpfile application "$1" 'include "build-info"; matching_park_probe($application; $revision; $target)' "$2" >/dev/null
+          }
+          validate_release "$application"
+          validate_probe "$application" "$probe"
+          for mutation in '.optimized=false' '.features.ui=false' '.target="aarch64-apple-darwin"' '.version=null' '.features.extra=true'; do
+            jq "$mutation" "$application" > "$changed"
+            if validate_release "$changed" || validate_probe "$changed" "$probe"; then
+              echo "Invalid release was accepted: $mutation" >&2
+              exit 1
+            fi
+          done
+          for mutation in '.revision="other"' '.version="other"' '.optimized=false' '.package="lince-park"' '.probe="unknown"' '.architecture="aarch64"' '.os="macos"'; do
+            jq "$mutation" "$probe" > "$changed"
+            if validate_probe "$application" "$changed"; then
+              echo "Invalid probe was accepted: $mutation" >&2
+              exit 1
+            fi
+          done
+          cat "$probe" "$probe" > "$changed"
+          if validate_probe "$application" "$changed"; then exit 1; fi
 
   publish-rolling:
     if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
@@ -440,7 +466,26 @@ jobs:
       - name: Package prebuilt Nix flake
         shell: bash
         run: |
-          bash institute/packaging/linux/package-flake.sh
+          artifacts=release-artifacts
+          asset=$artifacts/lince-x86_64-unknown-linux-gnu.tar.gz
+          version=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\([^"]*\)"$/\1/p' Cargo.toml)
+          [[ -n $version && -n ${GITHUB_SHA:-} && -n ${GITHUB_REPOSITORY:-} ]]
+          temporary=$(mktemp -d)
+          trap 'rm -rf -- "$temporary"' EXIT
+          root=$temporary/lince
+          mkdir -p "$root/institute/server"
+          tar -xOf "$asset" lince/build-info.json > "$temporary/build-info.json"
+          jq -L institute/packaging/linux -es 'include "build-info"; park_release' "$temporary/build-info.json" >/dev/null
+          jq -e --arg version "$version" --arg revision "$GITHUB_SHA" '.version == $version and .revision == $revision' "$temporary/build-info.json" >/dev/null
+          digest=$(sha256sum "$asset" | cut -d ' ' -f1)
+          checksum=$(printf '%b' "$(printf '%s' "$digest" | sed 's/../\\x&/g')" | base64 -w0)
+          jq --arg url "https://github.com/$GITHUB_REPOSITORY/releases/download/main-binary/$(basename "$asset")" --arg hash "sha256-$checksum" '{features,target,version,revision} + {url:$url,hash:$hash}' "$temporary/build-info.json" > "$root/binary.json"
+          cp flake.nix flake.lock Cargo.toml rust-toolchain.toml LICENSE "$root/"
+          cp institute/server/configuration.nix "$root/institute/server/"
+          cp -R institute/trails "$root/institute/"
+          cp -R institute/packaging "$root/institute/"
+          tar -czf "$artifacts/lince-flake.tar.gz" -C "$temporary" lince
+          printf '%s  lince-flake.tar.gz\n' "$(sha256sum "$artifacts/lince-flake.tar.gz" | cut -d ' ' -f1)" > "$artifacts/lince-flake.tar.gz.sha256"
 
       - name: Publish main binaries for NixOS
         env:

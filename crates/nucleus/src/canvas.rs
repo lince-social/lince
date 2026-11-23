@@ -431,6 +431,10 @@ pub enum Mutation {
     reason = "Mutate retains its public inline Mutation payload"
 )]
 pub enum Request {
+    Scene {
+        workspace: u64,
+        query: scene::operation::Request,
+    },
     InspectElement {
         placement: String,
         offset: usize,
@@ -482,6 +486,12 @@ pub struct Receipt {
     reason = "Element retains its public inline authoring payload"
 )]
 pub enum Response {
+    Scene {
+        inspection: scene::operation::Inspection,
+    },
+    SceneReceipt {
+        receipt: scene::operation::Receipt,
+    },
     Element {
         element: authoring::Element,
     },

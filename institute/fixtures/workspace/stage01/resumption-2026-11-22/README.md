@@ -43,7 +43,7 @@ The October run had a 125.54 ms p95 over its mixed 251-frame correctness replay,
 
 ## Reproduction
 
-Use the repository's interface Nix shell, the pinned Rust compiler and its workspace compiler wrapper from [the Linux CI setup](../../../../scripts/ci-linux-setup.sh). Complete compilation before the isolated window. Run the following from the repository root using new output names.
+Use the repository's interface Nix shell, the pinned Rust compiler and its workspace compiler wrapper from [the Linux CI setup](../../../../../.github/actions/linux-build/action.yml). Complete compilation before the isolated window. Run the following from the repository root using new output names.
 
 ```sh
 cargo test --locked -p xtask --features authoring workspace::tests

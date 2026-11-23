@@ -205,6 +205,9 @@ impl State {
     pub fn handle(&mut self, request: &Request) -> Result<Response, String> {
         request.validate()?;
         match request {
+            Request::Scene { .. } => {
+                Err("Open a published document in the native scene inspector.".into())
+            }
             Request::InspectElement { placement, .. } => self.inspect_element(placement),
             Request::Export { placement, name } => self.export(placement, name),
             Request::Registry => Ok(Response::Registry {

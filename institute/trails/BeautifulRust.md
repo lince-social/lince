@@ -2682,6 +2682,67 @@ non-whitespace characters. The Resources library's expansion goes from
 
 [Ergon tests](../../../crates/resources/tests/ergon.rs) · [Shared fixture helpers](../../../crates/resources/tests/ergon/fixture.rs) · [Publication export](../../../crates/resources/src/publication/export.rs)
 
+### Document rendering boundary
+
+`lince-document` keeps the public data types at its root and re-exports
+`Reader` and `Tile`. `reader` holds the backend dispatch, `tile` holds RGBA
+buffers and their checked `usize` offset arithmetic, and `geometry` holds the
+fraction, page-unit, and pixel conversions. The free `crop` function became
+`Tile::crop`. It takes ownership because it compacts rows in place and reuses
+the buffer, and the same compaction cuts section excerpts and PDFium page
+bands without a second copy. The single caller in the Interface media sand
+moved with it. The four deliberate float casts carry scoped `#[expect]`
+reasons, so the cast and `as_conversions` audits of the library are empty.
+EPUB sections live only in `Info`, the bundled fonts are built once per book
+instead of copied for every chapter, PDFium layouts are cached per section and
+width, and hayro keeps its rendered pixmap without copying it.
+
+The 17 library tests pass both with and without
+`LINCE_PDFIUM_LIBRARY` set to the Lince PDFium build. A probe compared the
+pre-refactor revision with the result across 333 outputs: tiles at four widths
+from the hayro, PDFium, and EPUB backends, excerpts for nine regions including
+edge, tolerance, and sub-pixel cases, image crops, and the error messages for
+invalid regions, tiles, files, and resources. All outputs matched byte for
+byte. Repeated EPUB layout timings showed no measurable change, so the font
+change claims no speedup. `cargo clippy -D clippy::unwrap_used` passes for all
+targets. Interface checks with all targets and default features. The
+document viewer and media sand need `native-presentation`, and they and the
+Sandbox document examples remain uncompiled because of the existing Engine
+`Send` errors.
+
+Code-only nonblank library lines, excluding comments, Rustdoc, and lint
+expectations, went from 972 to 1,165 and non-whitespace characters from
+23,934 to 28,376. Most of the growth is checked offset arithmetic, in-place
+compaction, the layout caches, and the imports of the new modules. The test
+file grew from 504 to 768 nonblank lines with focused crop, rounding, band,
+excerpt-pixel, and rewound-source tests. `tests.rs` and `examples/render.rs`
+keep their markers.
+
+The owner delegated the open decisions, and they were settled as follows.
+
+- **Error type.** `Result<T>` stays `Result<T, String>`. No caller matches on
+  the messages, and a typed error would change every public signature for
+  no current consumer.
+- **Document format.** `Info::is_pdf` became `Info::format` with a closed
+  `Format` enum and an `Info::is_pdf` helper. The document viewer runtime, UI,
+  and test moved with it and await the Engine fix to compile. `Reader::info` stays public, because `layout`
+  rejects an invalid section through a checked lookup.
+- **Excerpt rounding.** `Tile::crop` keeps every partially covered pixel,
+  and a section excerpt rounds its region down and starts an EPUB excerpt at
+  the located passage. Both stay as they are, so stored references keep
+  their excerpt dimensions.
+- **Unsupported resources.** `open_resource` now rejects a resource that
+  starts with neither `%PDF` nor `PK` right after the signature, instead of
+  downloading up to 256 MiB first. Such a resource now reports that it is not
+  a PDF or EPUB even when its hash would also mismatch.
+- **PDFium page renders.** Each PDFium tile still renders the page once and
+  keeps one band. A page cache would hold up to 64 MiB per open document.
+- **SVG references.** An SVG reference that cannot be loaded still becomes an
+  empty `href`, like a broken image in a browser.
+
+`Mode` is a closed, persisted enum and stays exhaustive.
+[Reader](../../../crates/document/src/reader.rs) · [Tiles](../../../crates/document/src/tile.rs) · [Geometry](../../../crates/document/src/geometry.rs) · [Media sand](../../../crates/interface/src/native/media_sand.rs)
+
 ### Deferred authority decisions
 
 Run the in-memory authority suite with `cargo test -p protein-authority --test authority`.

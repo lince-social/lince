@@ -91,13 +91,25 @@ pub(crate) fn populate(
         &binding,
         "head",
     );
-    world.get_mut::<Node>(head).unwrap().width = px(0);
-    world.get_mut::<Node>(head).unwrap().flex_grow = 1.0;
+    {
+        let mut node = world.get_mut::<Node>(head).unwrap();
+        node.width = px(0);
+        node.min_width = px(160);
+        node.flex_grow = 1.0;
+        node.flex_shrink = 1.0;
+    }
     if local {
-        panel::button(world, title, owner, "Run", Control::Run);
+        for (caption, control) in [("Find Command", Control::Find), ("Run", Control::Run)] {
+            let button = panel::button(world, title, owner, caption, control);
+            let mut node = world.get_mut::<Node>(button).unwrap();
+            node.height = px(36);
+            node.align_items = AlignItems::Center;
+            node.justify_content = JustifyContent::Center;
+        }
     }
     let identity = panel::column(world, owner);
-    let label = crate::native::edit_mode::label(world, identity, "Slug", 13.0);
+    world.get_mut::<Node>(identity).unwrap().row_gap = px(4);
+    let label = note(world, identity, "Slug", 13.0);
     world
         .entity_mut(label)
         .insert(crate::native::record_binding::BindingStatus);
@@ -112,7 +124,7 @@ pub(crate) fn populate(
     if local {
         crate::native::protein_area::attach_scalar(world, slug, binding.clone(), "slug", data);
     }
-    crate::native::edit_mode::label(world, owner, "Shell script", 13.0);
+    note(world, owner, "Shell script", 13.0);
     let script = editor(
         world,
         owner,
@@ -122,7 +134,7 @@ pub(crate) fn populate(
         "body",
     );
     if !local {
-        crate::native::edit_mode::label(
+        note(
             world,
             owner,
             "Open a local Command Record to run it on this machine.",
@@ -130,12 +142,24 @@ pub(crate) fn populate(
         );
         return;
     }
+    let directory = panel::column(world, owner);
+    world.get_mut::<Node>(directory).unwrap().row_gap = px(4);
     let cwd = panel::field(
         world,
-        owner,
+        directory,
         "Working directory on this machine (~ is your home)",
         &settings.cwd,
     );
+    if let Some(caption) = world
+        .get::<Children>(directory)
+        .and_then(|children| children.first().copied())
+    {
+        crate::native::record_creation::wrap(world, caption);
+    }
+    if let Some(mut node) = world.get_mut::<Node>(cwd) {
+        node.width = percent(100);
+        node.min_width = px(0);
+    }
     let controls = panel::row(world, owner);
     world
         .entity_mut(owner)
@@ -151,13 +175,13 @@ pub(crate) fn populate(
         Control::Visibility,
     );
     let visibility_label = world.get::<Children>(button).unwrap()[0];
-    crate::native::edit_mode::label(
+    note(
         world,
         owner,
         "Recent runs · 10 finished runs retained · 256 MiB output limit per run",
         13.0,
     );
-    let status = crate::native::edit_mode::label(
+    let status = note(
         world,
         owner,
         "Ready · removing this Castle keeps commands running",
@@ -194,7 +218,7 @@ fn editor(
     property: &str,
 ) -> Entity {
     if binding.source != Source::Local {
-        return crate::native::edit_mode::label(world, parent, value, 14.0);
+        return note(world, parent, value, 14.0);
     }
     let entity = world
         .spawn(crate::native::sand::text_editor(
@@ -218,8 +242,7 @@ fn editor(
         ChildOf(parent),
         crate::native::sand::Unsaved(false),
     ));
-    let status =
-        multiline.then(|| crate::native::edit_mode::label(world, parent, "Opening Record…", 12.0));
+    let status = multiline.then(|| note(world, parent, "Opening Record…", 12.0));
     if matches!(property, "head" | "body") {
         crate::native::record_binding::attach(world, entity, binding.clone(), property, status);
     }
@@ -228,6 +251,13 @@ fn editor(
         world.entity_mut(entity).insert(font);
     }
     entity
+}
+
+/// A label that wraps inside the Castle instead of running past its edge.
+fn note(world: &mut World, parent: Entity, value: &str, size: f32) -> Entity {
+    let label = crate::native::edit_mode::label(world, parent, value, size);
+    crate::native::record_creation::wrap(world, label);
+    label
 }
 
 fn visibility_caption(show: bool) -> &'static str {
@@ -240,6 +270,8 @@ fn visibility_caption(show: bool) -> &'static str {
 
 #[derive(Clone)]
 enum Control {
+    /// Searches saved Commands to show another one here, or creates a new one.
+    Find,
     Run,
     Visibility,
     Stop(String),
@@ -251,6 +283,13 @@ impl Action for Control {
         let Some(castle) = world.get::<CommandCastle>(owner) else {
             return;
         };
+        if matches!(self, Self::Find) {
+            if castle.binding.source == Source::Local {
+                let area = castle.binding.area;
+                crate::native::record_creation::open_command(world, area);
+            }
+            return;
+        }
         if castle.binding.source != Source::Local
             || crate::native::laboratory::blocked(world, owner)
             || castle.changes.as_ref().is_some_and(|changes| !changes.current(world, owner))
@@ -303,6 +342,7 @@ impl Action for Control {
                 Ok(())
             }
             Self::Toggle(run) => history::toggle(world, owner, run),
+            Self::Find => Ok(()),
         };
         if let Err(error) = result {
             panel::status(world, status, error);

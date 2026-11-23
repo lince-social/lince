@@ -1,0 +1,23 @@
+Stage 004 — Recover an edit receipt after a lost reply (@ws-stage-004: 0, is #chapter, #part-of @workspace-stages: 4, #done) { r_6W4R3SSCXGXGSTZ5M2FSM3R3CM
+**Status** Done on 2026-11-22. [Workbench and reproduction steps](../../../fixtures/workspace/stage04/README.md)
+
+## Capability
+
+Send the same revisioned operation through a native control and the authorized programmatic route. Retain the request identity, actual receipt and derivation generation.
+
+## Completion checks
+
+- [x] Lose a reply, retry and observe one accepted edit. Finish an older job late and see its output rejected. Exercise the local Fiote path here and its full delegation at the Agent stages.
+
+## Implementation references
+
+[Durable model and accepted-change foundation](../features/Model.lingua) · [02.T04](../features/Model.lingua#task-02t04) · [02.T05](../features/Model.lingua#task-02t05)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+**Laboratory showcase.** Save the Bracket example. Under **Accepted edits and measurements**, publish a copy and interrupt its reply, then retry. The same slot and original receipt appear once. Hold a measurement, publish the linked Bracket at (6, 0, 8) m, measure it and finish the held job. The visible result stays at 10 m. A local Fiote can then place and move a copy through its registered Canvas tool. Undo its last move in the inspector. Reopen the scene and find either Actor’s receipt by request UID. [Explore each workflow](../../../fixtures/workspace/stage04/README.md)
+
+**Handoff** On base `3efe8354` with the recorded source changes, `cargo xtask workspace showcase <fresh-output-directory>` passed across three native processes. Separate child-writer interruptions before and after publication recovered the old scene or the exact accepted edit. Forty warm commits met the 200 ms limit, with a 34.085 ms p95 and a 113.751 ms maximum. All duplicate retries wrote zero bytes. The normal Linux binary opened the exhibit with `lince --showoff`. Delegation expiry and hosted authority retain their later stage gates. The fixture records three pre-existing failures in the broader Laboratory suite. [Measurements, checks and source hashes](../../../fixtures/workspace/stage04/verification.json) · [Recovered receipt in the desktop](../../../fixtures/workspace/stage04/recovered-receipt.png)
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 003](003-edit-an-existing-canvas-item-through-the-model.lingua) · [Next · 005](005-reuse-a-definition-from-another-document.lingua)
+} r_6W4R3SSCXGXGSTZ5M2FSM3R3CM

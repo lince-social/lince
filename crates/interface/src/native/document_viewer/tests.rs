@@ -38,7 +38,7 @@ fn inline_scrolling_crosses_sections_and_releases_the_outer_page_at_the_end() {
         view.info = Some(Info {
             title: "Book".into(),
             sections: vec!["One".into(), "Two".into()],
-            is_pdf: true,
+            format: lince_document::Format::Pdf,
         });
         view.layout = Some(Layout {
             width: 400,

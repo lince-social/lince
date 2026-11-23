@@ -1,31 +1,24 @@
-// non-lean-yet
-// Scope: static PDFIUM, fn pdfium, struct Source, struct Pdf.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94, 112, 133.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 63, 118, 125, 142, 143, 149, 151.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   125.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 125.
-// - [rustc: unreachable_pub] unreachable `pub` item. Sites 86, 104, 108, 129.
-
 use std::{
+    env::var_os,
     io::{self, Read, Seek, SeekFrom},
     sync::{Arc, Mutex, OnceLock},
 };
 
 use lince_resources::RangeReader;
-use pdfium_render::prelude::*;
+use pdfium_render::prelude::{PdfPage, PdfRenderConfig, Pdfium};
 
-use crate::{Layout, Result, Tile};
+use crate::{
+    Layout, MAX_SECTIONS, Result,
+    geometry::{PDF_PAGE_TOO_LARGE, pdf_layout},
+    tile::{PixelRect, Tile},
+};
 
 static PDFIUM: OnceLock<std::result::Result<Mutex<Pdfium>, String>> = OnceLock::new();
 
 fn pdfium() -> Result<&'static Mutex<Pdfium>> {
     PDFIUM
         .get_or_init(|| {
-            let bindings = if let Some(path) = std::env::var_os("LINCE_PDFIUM_LIBRARY") {
+            let bindings = if let Some(path) = var_os("LINCE_PDFIUM_LIBRARY") {
                 Pdfium::bind_to_library(path)
             } else {
                 Pdfium::bind_to_system_library()
@@ -38,6 +31,10 @@ fn pdfium() -> Result<&'static Mutex<Pdfium>> {
         .map_err(Clone::clone)
 }
 
+/// A cloneable cursor over a shared [`RangeReader`].
+///
+/// The engine reports a failed read only as a parse error, so the first read
+/// error is kept in `failure` for the caller to report instead.
 #[derive(Clone)]
 struct Source {
     reader: Arc<Mutex<RangeReader>>,
@@ -76,7 +73,7 @@ impl Read for Source {
                 *failure = Some(error.to_string());
             }
         })?;
-        self.position += count as u64;
+        self.position = reader.stream_position()?;
         Ok(count)
     }
 }
@@ -93,13 +90,15 @@ impl Seek for Source {
     }
 }
 
-pub(super) struct Pdf {
+pub(crate) struct Pdf {
     source: Source,
     pages: usize,
+    /// The last computed layout, which spares a document load on every tile.
+    layout: Option<(usize, Layout)>,
 }
 
 impl Pdf {
-    pub fn new(reader: RangeReader) -> Result<Self> {
+    pub(crate) fn new(reader: RangeReader) -> Result<Self> {
         let source = Source {
             reader: Arc::new(Mutex::new(reader)),
             failure: Arc::new(Mutex::new(None)),
@@ -111,17 +110,30 @@ impl Pdf {
             .map_err(|error| error.to_string())?;
         let pages = usize::try_from(document.pages().len()).map_err(|error| error.to_string())?;
         source.check()?;
-        if pages == 0 || pages >= 100_000 {
+        if pages == 0 || pages >= MAX_SECTIONS {
             return Err("PDF has no pages or too many pages".into());
         }
-        Ok(Self { source, pages })
+        Ok(Self {
+            source,
+            pages,
+            layout: None,
+        })
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.pages
     }
 
-    pub fn layout(&self, section: usize, width: u32) -> Result<Layout> {
+    /// Loads the document and passes page `section` to `visit`.
+    ///
+    /// A loaded `PdfDocument` borrows the `Pdfium` instance behind the global
+    /// lock, so it cannot outlive this call and each visit reloads it through
+    /// the range reader, which keeps fetched ranges.
+    fn with_page<T>(
+        &self,
+        section: usize,
+        visit: impl FnOnce(PdfPage<'_>) -> Result<T>,
+    ) -> Result<T> {
         let engine = pdfium()?.lock().map_err(|error| error.to_string())?;
         self.source.clear_failure()?;
         let document = engine
@@ -131,46 +143,58 @@ impl Pdf {
             .pages()
             .get(i32::try_from(section).map_err(|error| error.to_string())?)
             .map_err(|error| error.to_string())?;
-        let height = (page.height().value * width as f32 / page.width().value).ceil();
+        let output = visit(page)?;
         self.source.check()?;
-        if !height.is_finite() || !(1.0..=8192.0).contains(&height) {
-            return Err("PDF page dimensions exceed the rendering limit".into());
-        }
-        Ok(Layout {
-            width,
-            height: height as u32,
-        })
+        Ok(output)
     }
 
-    pub fn tile(&self, section: usize, layout: Layout, top: u32, height: u32) -> Result<Tile> {
-        let engine = pdfium()?.lock().map_err(|error| error.to_string())?;
-        self.source.clear_failure()?;
-        let document = engine
-            .load_pdf_from_reader(self.source.clone(), None)
-            .map_err(|error| error.to_string())?;
-        let page = document
-            .pages()
-            .get(i32::try_from(section).map_err(|error| error.to_string())?)
-            .map_err(|error| error.to_string())?;
-        let bitmap = page
-            .render_with_config(
-                &PdfRenderConfig::new()
-                    .set_target_width(layout.width as i32)
-                    .set_target_height(layout.height as i32)
-                    .render_form_data(false),
-            )
-            .map_err(|error| error.to_string())?;
-        let bytes = bitmap.as_rgba_bytes();
-        self.source.check()?;
-        let stride = layout.width as usize * 4;
-        let rgba = bytes
-            .get(top as usize * stride..(top + height) as usize * stride)
-            .ok_or("Invalid PDF region")?
-            .to_vec();
-        Ok(Tile {
+    pub(crate) fn layout(&mut self, section: usize, width: u32) -> Result<Layout> {
+        if let Some((loaded, layout)) = self.layout
+            && loaded == section
+            && layout.width == width
+        {
+            return Ok(layout);
+        }
+        let (page_width, page_height) = self.with_page(section, |page| {
+            Ok((page.width().value, page.height().value))
+        })?;
+        let layout = pdf_layout(page_width, page_height, width)?;
+        self.layout = Some((section, layout));
+        Ok(layout)
+    }
+
+    pub(crate) fn tile(
+        &self,
+        section: usize,
+        layout: Layout,
+        top: u32,
+        height: u32,
+    ) -> Result<Tile> {
+        let target_width = i32::try_from(layout.width).map_err(|_| PDF_PAGE_TOO_LARGE)?;
+        let target_height = i32::try_from(layout.height).map_err(|_| PDF_PAGE_TOO_LARGE)?;
+        let rgba = self.with_page(section, |page| {
+            let bitmap = page
+                .render_with_config(
+                    &PdfRenderConfig::new()
+                        .set_target_width(target_width)
+                        .set_target_height(target_height)
+                        .render_form_data(false),
+                )
+                .map_err(|error| error.to_string())?;
+            Ok(bitmap.as_rgba_bytes())
+        })?;
+        let page = Tile {
+            width: layout.width,
+            height: layout.height,
+            rgba,
+        };
+        let band = PixelRect {
+            left: 0,
+            top,
             width: layout.width,
             height,
-            rgba,
-        })
+        };
+        page.into_rect(band)
+            .ok_or_else(|| "Invalid PDF region".into())
     }
 }

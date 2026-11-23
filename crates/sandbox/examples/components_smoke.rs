@@ -191,6 +191,27 @@ fn exercise(world: &mut World) {
                     .editor
                     .set_text("@laboratory-sample");
             }
+            if trial.names[trial.index] == "Command Castle" {
+                // Placing a Command Castle opens find-or-create; create the sample Command.
+                let script = world
+                    .query::<(Entity, &bevy::text::EditableText)>()
+                    .iter(world)
+                    .find(|(_, text)| text.allow_newlines)
+                    .map(|(entity, _)| entity);
+                let create = world
+                    .query::<(&Text, &ChildOf)>()
+                    .iter(world)
+                    .find(|(text, _)| text.0 == "Create")
+                    .and_then(|(_, parent)| world.get::<ActionButton>(parent.parent()).cloned());
+                if let (Some(script), Some(create)) = (script, create) {
+                    world
+                        .get_mut::<bevy::text::EditableText>(script)
+                        .unwrap()
+                        .editor
+                        .set_text("printf 'Hello\\n'\n");
+                    create.actions.run(world, create.target);
+                }
+            }
 
             trial.items = items(world, root);
             let surfaces: Vec<_> = trial

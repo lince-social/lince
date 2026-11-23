@@ -43,6 +43,7 @@ struct Search {
     enter: bool,
     step: i32,
     dismissed: bool,
+    empty: &'static str,
 }
 
 impl Search {
@@ -60,7 +61,7 @@ impl Search {
     }
 }
 
-pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
+pub(super) fn start(world: &mut World, form: Entity, root: Entity, mode: Mode) {
     let popup = world
         .spawn((
             Node {
@@ -69,13 +70,18 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
                 flex_direction: FlexDirection::Column,
                 max_height: px(280),
                 padding: UiRect::all(px(4)),
+                row_gap: px(2),
                 border: UiRect::all(px(1)),
-                overflow: Overflow::scroll_y(),
+                overflow: Overflow {
+                    x: OverflowAxis::Clip,
+                    y: OverflowAxis::Scroll,
+                },
                 ..default()
             },
             ScrollPosition::default(),
             crate::native::scroll_sand::ScrollSand,
             crate::native::token_style::background(crate::native::tokens::Token::Surface),
+            crate::native::token_style::border(crate::native::tokens::Token::Accent),
             GlobalZIndex(80),
             crate::native::inspection::InspectionExcluded,
             ChildOf(root),
@@ -86,12 +92,16 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
         .resource_mut::<Searches>()
         .active
         .insert(form, (id.clone(), popup));
+    let mut records = json!({
+        "source":"record", "fields":["uid","head","body","slug","quantity","start_date","due_date","estimate_min","assertions","assignees","work_logs"],
+        "order":[{"asc":"head"}], "limit":null
+    });
+    if mode == Mode::Command {
+        records["where"] = json!([{"kind_eq":"command"}]);
+    }
     world.resource_mut::<Searches>().outgoing.push_back(cell::ClientMessage::Subscribe {
         id: id.clone(),
-        protein: serde_json::from_value(json!({
-            "source":"record", "fields":["uid","head","body","slug","quantity","start_date","due_date","estimate_min","assertions","assignees","work_logs"],
-            "order":[{"asc":"head"}], "limit":null
-        })).unwrap(),
+        protein: serde_json::from_value(records).unwrap(),
     });
     world
         .resource_mut::<Searches>()
@@ -112,10 +122,18 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
         options: Arc::default(),
         selected: 0,
         total: 0,
-        message: "Loading Records…".into(),
+        message: match mode {
+            Mode::Record => "Loading Records…",
+            Mode::Command => "Loading Commands…",
+        }
+        .into(),
         enter: false,
         step: 0,
         dismissed: false,
+        empty: match mode {
+            Mode::Record => "No matches. Create a Record with these values.",
+            Mode::Command => "No saved Command matches. Create saves a new Command.",
+        },
     });
     let first = world.get::<Form>(form).unwrap().fields[0].1;
     world
@@ -123,16 +141,13 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
         .set(first, FocusCause::Pressed);
 }
 
+/// Fields whose typing opens the search dropdown and whose Enter and arrow keys drive it: the
+/// title and the slug. Other fields still narrow the matches but keep their own keys.
 fn editors(form: &Form) -> impl Iterator<Item = Entity> + '_ {
     form.fields
         .iter()
+        .filter(|(key, _)| matches!(*key, "head" | "slug"))
         .map(|(_, entity)| *entity)
-        .chain(
-            form.relations
-                .iter()
-                .flat_map(|(_, _, fields)| fields.iter().copied()),
-        )
-        .chain(form.logs.iter().flat_map(|(_, start, end)| [*start, *end]))
 }
 
 pub(super) fn keys(world: &mut World, forms: &mut QueryState<(Entity, &'static Form)>) {

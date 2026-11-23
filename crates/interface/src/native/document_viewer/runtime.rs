@@ -14,7 +14,7 @@ use bevy::{
 };
 
 pub(super) fn display_width(state: &DocumentViewer, view: &View) -> f32 {
-    if !view.info.as_ref().is_some_and(|info| info.is_pdf) {
+    if !view.info.as_ref().is_some_and(|info| info.is_pdf()) {
         return view.viewport_size.x;
     }
     let width = if state.position().mode == Mode::Pages {
@@ -97,7 +97,7 @@ pub(super) fn update(world: &mut World) {
                         let content = view.content;
                         let count = view.info.as_ref().unwrap().sections.len();
                         let viewport = view.viewport_size;
-                        let pdf = view.info.as_ref().unwrap().is_pdf;
+                        let pdf = view.info.as_ref().unwrap().is_pdf();
                         let mut state = world.get_mut::<DocumentViewer>(owner).unwrap();
                         if let Some(mut position) = rendered.position {
                             let height = rendered.layout.height as f32 * viewport.x
@@ -180,7 +180,7 @@ fn refresh(world: &mut World, owner: Entity) {
     }
     let pdf = view.info.as_ref().map_or_else(
         || state.path.to_ascii_lowercase().ends_with(".pdf"),
-        |info| info.is_pdf,
+        lince_document::Info::is_pdf,
     );
     let width = if pdf {
         size.x * state.zoom * 1.5
@@ -343,7 +343,7 @@ fn refresh(world: &mut World, owner: Entity) {
     let view = world.get::<View>(owner).unwrap();
     let info = view.info.as_ref().unwrap();
     let section = position.section.min(info.sections.len() - 1);
-    let noun = if info.is_pdf { "Page" } else { "Chapter" };
+    let noun = if info.is_pdf() { "Page" } else { "Chapter" };
     let message = format!(
         "{} · {noun} {} / {} · {:.0}% in {} · {:.0}% zoom{}{}",
         info.title,

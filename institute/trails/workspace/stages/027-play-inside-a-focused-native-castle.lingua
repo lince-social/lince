@@ -1,0 +1,21 @@
+Stage 027 — Play inside a focused native Castle (@ws-stage-027: 0, is #chapter, #part-of @workspace-stages: 27) { r_2SGNZ1D9HXM4D0RPAGEJCZ913D
+**Status** Planned optional capability. Current verification is pending.
+
+## Capability
+
+Place Kamalie like an ordinary desktop element. Give its bounded render target, input and lifecycle to a direct Bevy game with its own world or isolated schedule. Keep actors, builds and dungeon rooms inside the game.
+
+## Completion checks
+
+- [ ] Click to focus, move through a seeded room, finish or restart a short run, release focus and drag the Castle. Two copies must have independent input and state. Capture focused, unfocused and closed frame costs separately.
+
+This is the first planned Kamalie delivery. The host owns normal placement, sizing, focus, input release, rendering budget and teardown. Ordinary game entities can use Bevy components and systems directly. Historical commit `e6b9f081` described a prototype awaiting verification. Its Castle was removed in `fccb2fe6`. The current [Sand kind](../../../../crates/interface/src/native/sand_store.rs) accepts the old name as a Square alias. Verify the current host entry point when implementing.
+
+## Implementation references
+
+[Native game direction](../Workspace-Development.lingua#concrete-parallel-opportunities-and-deliberate-joins) · [Desktop focus and placement](../features/Mounted-Apps.lingua)
+
+**Handoff** Pending. Record the implementation revision, exact replay, expected and observed result, evidence location and remaining limits here.
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 026](026-use-a-park-application-on-a-surface.lingua) · [Next · 028](028-shape-a-room-in-the-native-editor.lingua)
+} r_2SGNZ1D9HXM4D0RPAGEJCZ913D

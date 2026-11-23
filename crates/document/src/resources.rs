@@ -1,20 +1,24 @@
-// non-lean-yet
-// Scope: fn load, fn markup, fn embed, fn is_svg.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
-use std::io::Cursor;
+use std::{borrow::Cow, io::Cursor};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use blitz_traits::net::Url;
+use image::ImageReader;
 use quick_xml::{
-    Reader, Writer,
+    Reader, Writer, XmlVersion,
     events::{BytesStart, Event},
 };
 
-use super::Result;
+use crate::Result;
 
-pub(super) fn load(book: &rbook::Epub, url: &Url, depth: usize) -> Result<Vec<u8>> {
-    if depth > 4 {
+const MAX_SVG_DEPTH: usize = 4;
+const MAX_EMBEDDED_BASE64_BYTES: usize = 8 * 1024 * 1024;
+const MAX_RESOURCE_BYTES: usize = 32 * 1024 * 1024;
+const MAX_IMAGE_PIXELS: u64 = 16_000_000;
+const BOOK_HOST: &str = "book.invalid";
+const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
+
+pub(crate) fn load(book: &rbook::Epub, url: &Url, depth: usize) -> Result<Vec<u8>> {
+    if depth > MAX_SVG_DEPTH {
         return Err("SVG resource nesting exceeds the limit".into());
     }
     if url.scheme() == "data" {
@@ -24,43 +28,43 @@ pub(super) fn load(book: &rbook::Epub, url: &Url, depth: usize) -> Result<Vec<u8
             .ok_or("Invalid embedded image")?;
         if !header.starts_with("data:image/")
             || !header.ends_with(";base64")
-            || data.len() > 8 * 1024 * 1024
+            || data.len() > MAX_EMBEDDED_BASE64_BYTES
         {
             return Err("Unsupported embedded resource".into());
         }
         let bytes = STANDARD.decode(data).map_err(|error| error.to_string())?;
-        let reader = image::ImageReader::new(Cursor::new(&bytes))
+        let reader = ImageReader::new(Cursor::new(bytes.as_slice()))
             .with_guessed_format()
             .map_err(|error| error.to_string())?;
-        let (width, height) = reader
-            .into_dimensions()
-            .map_err(|error| error.to_string())?;
-        if u64::from(width) * u64::from(height) > 16_000_000 {
+        if pixel_count(reader)? > MAX_IMAGE_PIXELS {
             return Err("Embedded image is too large".into());
         }
         return Ok(bytes);
     }
-    if url.scheme() != "https" || url.host_str() != Some("book.invalid") {
+    if url.scheme() != "https" || url.host_str() != Some(BOOK_HOST) {
         return Err("Book resources must be inside the EPUB".into());
     }
     let bytes = book
         .read_resource_bytes(url.path())
         .map_err(|error| error.to_string())?;
-    if bytes.len() > 32 * 1024 * 1024 {
-        return Err("EPUB resource exceeds 32 MiB".into());
+    if bytes.len() > MAX_RESOURCE_BYTES {
+        return Err(format!(
+            "EPUB resource exceeds {} MiB",
+            MAX_RESOURCE_BYTES >> 20
+        ));
     }
-    if let Ok(reader) = image::ImageReader::new(Cursor::new(&bytes)).with_guessed_format()
+    if let Ok(reader) = ImageReader::new(Cursor::new(bytes.as_slice())).with_guessed_format()
         && reader.format().is_some()
     {
-        let (width, height) = reader
-            .into_dimensions()
-            .map_err(|error| error.to_string())?;
-        if u64::from(width) * u64::from(height) > 16_000_000 {
-            return Err("EPUB image exceeds 16 million pixels".into());
+        if pixel_count(reader)? > MAX_IMAGE_PIXELS {
+            return Err(format!(
+                "EPUB image exceeds {} million pixels",
+                MAX_IMAGE_PIXELS / 1_000_000
+            ));
         }
         return Ok(bytes);
     }
-    if bytes.starts_with(&[0x1f, 0x8b]) {
+    if bytes.starts_with(&GZIP_MAGIC) {
         return Err("Compressed SVG resources are not supported".into());
     }
     if is_svg(&bytes) {
@@ -69,7 +73,7 @@ pub(super) fn load(book: &rbook::Epub, url: &Url, depth: usize) -> Result<Vec<u8
     Ok(bytes)
 }
 
-pub(super) fn markup(
+pub(crate) fn markup(
     book: &rbook::Epub,
     base: &Url,
     source: &[u8],
@@ -85,36 +89,20 @@ pub(super) fn markup(
             .map_err(|error| format!("Invalid EPUB markup: {error}"))?;
         match &event {
             Event::Start(tag) | Event::Empty(tag) => {
+                let is_empty = matches!(event, Event::Empty(_));
                 let svg = tag.local_name().as_ref() == "svg";
-                if svg && matches!(event, Event::Start(_)) {
+                if svg && !is_empty {
                     svg_depth += 1;
                 }
                 if svg_depth > 0 || svg {
-                    let mut clean = BytesStart::new(tag.name().into_inner());
-                    for attribute in tag.attributes() {
-                        let attribute = attribute.map_err(|error| error.to_string())?;
-                        let key = attribute.key.into_inner();
-                        if attribute.key.local_name().as_ref() == "href" {
-                            let value = attribute
-                                .normalized_value(quick_xml::XmlVersion::Implicit1_0)
-                                .map_err(|error| error.to_string())?;
-                            let value = if value.starts_with('#') {
-                                value.into_owned()
-                            } else {
-                                embed(book, base, &value, depth + 1).unwrap_or_default()
-                            };
-                            clean.push_attribute((key, value.as_str()));
-                        } else {
-                            clean.push_attribute(attribute);
-                        }
-                    }
-                    let event = if matches!(event, Event::Empty(_)) {
+                    let clean = rewrite_svg_tag(book, base, tag, depth)?;
+                    let rewritten = if is_empty {
                         Event::Empty(clean)
                     } else {
                         Event::Start(clean)
                     };
                     writer
-                        .write_event(event)
+                        .write_event(rewritten)
                         .map_err(|error| error.to_string())?;
                     continue;
                 }
@@ -130,6 +118,42 @@ pub(super) fn markup(
             .map_err(|error| error.to_string())?;
     }
     Ok(writer.into_inner())
+}
+
+fn pixel_count(reader: ImageReader<Cursor<&[u8]>>) -> Result<u64> {
+    let (width, height) = reader
+        .into_dimensions()
+        .map_err(|error| error.to_string())?;
+    Ok(u64::from(width) * u64::from(height))
+}
+
+fn rewrite_svg_tag<'a>(
+    book: &rbook::Epub,
+    base: &Url,
+    tag: &'a BytesStart<'a>,
+    depth: usize,
+) -> Result<BytesStart<'a>> {
+    let mut clean = BytesStart::new(tag.name().into_inner());
+    for attribute in tag.attributes() {
+        let attribute = attribute.map_err(|error| error.to_string())?;
+        let key = attribute.key.into_inner();
+        if attribute.key.local_name().as_ref() == "href" {
+            let value = attribute
+                .normalized_value(XmlVersion::Implicit1_0)
+                .map_err(|error| error.to_string())?;
+            // An unloadable reference becomes an empty `href`, so the rest of
+            // the SVG still renders.
+            let replacement = if value.starts_with('#') {
+                value
+            } else {
+                Cow::Owned(embed(book, base, &value, depth + 1).unwrap_or_default())
+            };
+            clean.push_attribute((key, replacement.as_ref()));
+        } else {
+            clean.push_attribute(attribute);
+        }
+    }
+    Ok(clean)
 }
 
 fn embed(book: &rbook::Epub, base: &Url, value: &str, depth: usize) -> Result<String> {
@@ -153,7 +177,7 @@ fn is_svg(bytes: &[u8]) -> bool {
                 return tag.local_name().as_ref() == "svg";
             }
             Ok(Event::Decl(_) | Event::Comment(_) | Event::DocType(_)) => {}
-            Ok(Event::Text(text)) if text.bytes().all(|byte| byte.is_ascii_whitespace()) => {}
+            Ok(Event::Text(text)) if text.as_ref().trim_ascii().is_empty() => {}
             _ => return false,
         }
     }

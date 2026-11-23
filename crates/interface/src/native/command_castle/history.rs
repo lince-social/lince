@@ -129,6 +129,13 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
             Control::Toggle(run.id.clone()),
         );
         let label = world.get::<Children>(button).unwrap()[0];
+        {
+            let mut node = world.get_mut::<Node>(button).unwrap();
+            node.flex_grow = 1.0;
+            node.flex_shrink = 1.0;
+            node.min_width = px(0);
+        }
+        crate::native::record_creation::wrap(world, label);
         let stop = panel::button(
             world,
             controls,
@@ -173,16 +180,18 @@ pub(super) fn toggle(world: &mut World, owner: Entity, id: &str) -> Result<(), S
     let entry = castle.entries.get(id).ok_or("Run was not found")?;
     let (content, open) = (entry.content, !entry.open);
     if open {
-        crate::native::edit_mode::label(
+        let place = crate::native::edit_mode::label(
             world,
             content,
             &format!("Local machine · {}", run.cwd),
             12.0,
         );
+        crate::native::record_creation::wrap(world, place);
         let script = panel::column(world, content);
         world.get_mut::<Node>(script).unwrap().max_height = px(140);
         crate::native::scroll_sand::attach(world, script);
-        crate::native::edit_mode::label(world, script, &run.script, 13.0);
+        let text = crate::native::edit_mode::label(world, script, &run.script, 13.0);
+        crate::native::record_creation::wrap(world, text);
         if let Err(error) = crate::native::terminal::attach(world, content, &run) {
             panel::clear(world, content);
             return Err(error);

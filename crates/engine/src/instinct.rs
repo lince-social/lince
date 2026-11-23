@@ -257,6 +257,8 @@ fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, lingua::
             let assertions = record
                 .assertions
                 .into_iter()
+                // Instinct imports local Record links. URI links belong to the publication.
+                .filter(|assertion| assertion.object_uri.is_none())
                 .map(|assertion| {
                     let object = assertion
                         .object_slug
@@ -374,6 +376,38 @@ mod tests {
         )])
         .unwrap_err();
         assert!(error.to_string().contains("@missing does not resolve"));
+    }
+
+    #[test]
+    fn publication_links_do_not_become_instinct_tags() {
+        let records = records_from(&[(
+            "Main.lingua",
+            r#"
+Root (@root: 0, #instinct, #contains "First.lingua", #contains "Second.lingua", #contains @child) {
+Root.
+}
+Child (@child: 0) {
+Child.
+}
+"#,
+        )])
+        .unwrap();
+        let root = records
+            .iter()
+            .find(|record| record.slug.as_deref() == Some("root"))
+            .unwrap();
+        let child = records
+            .iter()
+            .find(|record| record.slug.as_deref() == Some("child"))
+            .unwrap();
+        let linked: Vec<_> = root
+            .projection
+            .assertions
+            .iter()
+            .filter(|line| line.predicate == "contains")
+            .collect();
+        assert_eq!(linked.len(), 1);
+        assert_eq!(linked[0].object.as_ref().unwrap().uid, child.projection.uid);
     }
 
     #[test]

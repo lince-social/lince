@@ -1,33 +1,26 @@
-// non-lean-yet
-// Scope: struct Pdf.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 27, 50, 67.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 28, 34, 51, 55, 56, 62, 67.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   34, 55, 56.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 34.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   66.
-// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
-//   `Result`. Sites 38.
+use hayro::{
+    RenderCache, RenderSettings, hayro_interpret::InterpreterSettings, hayro_syntax,
+    vello_cpu::Pixmap,
+};
+use peniko::color::palette::css::WHITE;
 
-use hayro::{RenderCache, RenderSettings, hayro_syntax};
+use crate::{
+    Layout, MAX_SECTIONS, Result,
+    geometry::{PDF_PAGE_TOO_LARGE, pdf_layout},
+    tile::Tile,
+};
 
-use super::{Layout, Result, Tile};
-
-pub(super) struct Pdf {
+pub(crate) struct Pdf {
     document: hayro_syntax::Pdf,
-    cached: Option<(usize, Layout, Vec<u8>)>,
+    /// The last rendered page, which serves every tile of that page.
+    cached: Option<(usize, Layout, Pixmap)>,
 }
 
 impl Pdf {
-    pub(super) fn new(bytes: Vec<u8>) -> Result<Self> {
+    pub(crate) fn new(bytes: Vec<u8>) -> Result<Self> {
         let document =
             hayro_syntax::Pdf::new(bytes).map_err(|error| format!("Cannot open PDF: {error:?}"))?;
-        if document.pages().is_empty() || document.pages().len() >= 100_000 {
+        if document.pages().is_empty() || document.pages().len() >= MAX_SECTIONS {
             return Err("PDF has no pages or too many pages".into());
         }
         Ok(Self {
@@ -36,56 +29,53 @@ impl Pdf {
         })
     }
 
-    pub(super) fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.document.pages().len()
     }
 
-    pub(super) fn layout(&self, section: usize, width: u32) -> Result<Layout> {
-        let (w, h) = self.document.pages()[section].render_dimensions();
-        let height = (h * width as f32 / w).ceil();
-        if !height.is_finite() || !(1.0..=8192.0).contains(&height) {
-            return Err("PDF page dimensions exceed the rendering limit".into());
-        }
-        Ok(Layout {
-            width,
-            height: height as u32,
-        })
+    fn page(&self, section: usize) -> Result<&hayro_syntax::page::Page<'_>> {
+        self.document
+            .pages()
+            .get(section)
+            .ok_or_else(|| "Invalid document section".into())
     }
 
-    pub(super) fn tile(
+    pub(crate) fn layout(&self, section: usize, width: u32) -> Result<Layout> {
+        let (page_width, page_height) = self.page(section)?.render_dimensions();
+        pdf_layout(page_width, page_height, width)
+    }
+
+    pub(crate) fn tile(
         &mut self,
         section: usize,
         layout: Layout,
         top: u32,
         height: u32,
     ) -> Result<Tile> {
-        if self
-            .cached
-            .as_ref()
-            .is_none_or(|(page, size, _)| *page != section || *size != layout)
-        {
-            let page = &self.document.pages()[section];
-            let scale = layout.width as f32 / page.render_dimensions().0;
-            let settings = RenderSettings {
-                x_scale: scale,
-                y_scale: scale,
-                width: Some(layout.width as u16),
-                height: Some(layout.height as u16),
-                bg_color: peniko::color::palette::css::WHITE,
-            };
-            let pixmap = hayro::render(page, &RenderCache::new(), &Default::default(), &settings);
-            self.cached = Some((section, layout, pixmap.data_as_u8_slice().to_vec()));
-        }
-        let stride = layout.width as usize * 4;
-        let (_, _, pixels) = self
-            .cached
-            .as_ref()
-            .expect("the PDF page cache is populated before reading its pixels");
-        let rgba = pixels[top as usize * stride..(top + height) as usize * stride].to_vec();
-        Ok(Tile {
-            width: layout.width,
-            height,
-            rgba,
-        })
+        let pixmap = match &self.cached {
+            Some((page, size, pixmap)) if *page == section && *size == layout => pixmap,
+            _ => {
+                let page = self.page(section)?;
+                let width = u16::try_from(layout.width).map_err(|_| PDF_PAGE_TOO_LARGE)?;
+                let height = u16::try_from(layout.height).map_err(|_| PDF_PAGE_TOO_LARGE)?;
+                let scale = f32::from(width) / page.render_dimensions().0;
+                let settings = RenderSettings {
+                    x_scale: scale,
+                    y_scale: scale,
+                    width: Some(width),
+                    height: Some(height),
+                    bg_color: WHITE,
+                };
+                let pixmap = hayro::render(
+                    page,
+                    &RenderCache::new(),
+                    &InterpreterSettings::default(),
+                    &settings,
+                );
+                &self.cached.insert((section, layout, pixmap)).2
+            }
+        };
+        Tile::from_rows(pixmap.data_as_u8_slice(), layout.width, top, height)
+            .ok_or_else(|| "Invalid PDF region".into())
     }
 }

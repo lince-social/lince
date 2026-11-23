@@ -1,0 +1,23 @@
+Stage 005 — Reuse a definition from another document (@ws-stage-005: 0, is #chapter, #part-of @workspace-stages: 5, #done) { r_4H4VS9HJBZYMM2ZM9BHQ1AMGDG
+**Status** Done on 2026-11-22. [Workbench, checks and measurements](../../../fixtures/workspace/stage05/README.md)
+
+## Capability
+
+Import a small permitted dependency closure. Display which definitions were reused, brought in, conflicting or unavailable.
+
+## Completion checks
+
+- [x] Open B39 twice, including a same-name definition with different content. Inspect both revisions and verify existing instances still reference their original source.
+
+## Implementation references
+
+[Durable model and accepted-change foundation](../features/Model.lingua) · [02.T08](../features/Model.lingua#task-02t08)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+**Laboratory showcase.** At the Model workbench, open **Scene document → Definition library → Browse the example parts library**. Import and place both Bracket revisions. Inspect their Steel grades and the shared Millimetre definition. Withhold a requirement, try the dependent import, restore permission and try again. Publish a placement move through **Accepted edits and measurements**, then inspect both Brackets after reopening the destination with the source offline. [Controls, expected results and replay cases](../../../fixtures/workspace/stage05/README.md)
+
+**Handoff** On base `3efe8354` with the recorded changes, `cargo xtask workspace showcase <fresh-output-directory>` passed across five native desktop processes. The first Bracket brought in three definitions. The second brought in two and reused Millimetre. Repeating the import added zero. A fresh desktop resolved both grades with the source offline, preserving three earlier slots, their Room binding and the accepted move. A workspace saved by the Stage 004 binary passed the same import and reopen checks. All 40 warm durable saves met 200 ms, with a 30.469 ms p95 and a 32.186 ms maximum. The binary and the 360 × 700 pointer placement and undo passed. [Captured results and tested source hashes](../../../fixtures/workspace/stage05/verification.json)
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 004](004-recover-an-edit-receipt-after-a-lost-reply.lingua) · [Next · 006](006-save-a-behavior-choice-on-an-occurrence.lingua)
+} r_4H4VS9HJBZYMM2ZM9BHQ1AMGDG

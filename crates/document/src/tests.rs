@@ -10,11 +10,18 @@
 // - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 406.
 
 use std::{
-    io::{Cursor, Write},
+    io::{Cursor, Read, Write},
     time::Instant,
 };
 
+use lince_resources::{Library, Locator, Resource};
+
 use super::*;
+use crate::{
+    geometry::{MAX_PDF_HEIGHT, bounded_page_height, scale_ceil, scale_floor},
+    reader::Content,
+    tile::PixelRect,
+};
 
 fn pdf() -> Vec<u8> {
     pdf_fixture(0)
@@ -131,7 +138,7 @@ fn epub_fixture(encrypted: bool, padding: usize) -> Vec<u8> {
 #[test]
 fn renders_pdf_text_vectors_and_reuses_page_pixels() {
     let mut reader = Reader::from_bytes(pdf(), "test.pdf").unwrap();
-    assert!(reader.info.is_pdf);
+    assert!(reader.info.is_pdf());
     assert_eq!(reader.info.sections.len(), 2);
     let layout = reader.layout(0, 720).unwrap();
     assert_eq!(
@@ -363,14 +370,12 @@ fn chapter_passage_image_and_page_region_references_use_shared_locators() {
             .is_err()
     );
     assert!(
-        crop(
-            Tile {
-                width: 1,
-                height: 1,
-                rgba: vec![0; 4]
-            },
-            [0.8, 0.0, 0.5, 1.0]
-        )
+        Tile {
+            width: 1,
+            height: 1,
+            rgba: vec![0; 4]
+        }
+        .crop([0.8, 0.0, 0.5, 1.0])
         .is_err()
     );
 }
@@ -520,4 +525,278 @@ fn online_books_render_from_ranges_and_reopen_seen_content_without_the_server() 
             assert!(offline.tile(1, 720, 0).is_err());
         }
     }
+}
+
+/// A tile whose pixel at `(x, y)` is `[x, y, x ^ y, 255]`.
+fn grid(width: u8, height: u8) -> Tile {
+    let mut rgba = Vec::new();
+    for y in 0..height {
+        for x in 0..width {
+            rgba.extend_from_slice(&[x, y, x ^ y, 255]);
+        }
+    }
+    Tile {
+        width: width.into(),
+        height: height.into(),
+        rgba,
+    }
+}
+
+/// Copies `rect` out of `tile` by direct indexing, independently of the code under test.
+fn pixels_in(tile: &Tile, rect: PixelRect) -> Vec<u8> {
+    let stride = tile.width as usize * 4;
+    (rect.top..rect.top + rect.height)
+        .flat_map(|row| {
+            let start = row as usize * stride + rect.left as usize * 4;
+            tile.rgba[start..start + rect.width as usize * 4]
+                .iter()
+                .copied()
+        })
+        .collect()
+}
+
+fn rect(left: u32, top: u32, width: u32, height: u32) -> PixelRect {
+    PixelRect {
+        left,
+        top,
+        width,
+        height,
+    }
+}
+
+#[test]
+fn crop_keeps_every_partially_covered_pixel() {
+    let cropped = grid(4, 3).crop([0.25, 1.0 / 3.0, 0.5, 2.0 / 3.0]).unwrap();
+    assert_eq!((cropped.width, cropped.height), (2, 2));
+    assert_eq!(
+        cropped.rgba,
+        [1, 1, 0, 255, 2, 1, 3, 255, 1, 2, 3, 255, 2, 2, 0, 255]
+    );
+
+    let tile = grid(9, 7);
+    for (region, expected) in [
+        ([0.0, 0.0, 1.0, 1.0], rect(0, 0, 9, 7)),
+        ([0.25, 0.25, 0.5, 0.5], rect(2, 1, 5, 4)),
+        ([0.33, 0.66, 0.67, 0.34], rect(2, 4, 7, 3)),
+        // Validation tolerates a region that overshoots the edge by 0.0001,
+        // and the crop clamps it to the tile.
+        ([0.5, 0.0, 0.5001, 1.0], rect(4, 0, 5, 7)),
+        // A region smaller than a pixel still keeps the pixel it touches.
+        ([0.1, 0.3, 0.0001, 0.0001], rect(0, 2, 1, 1)),
+        ([0.9999, 0.9999, 0.0001, 0.0001], rect(8, 6, 1, 1)),
+    ] {
+        let cropped = tile.clone().crop(region).unwrap();
+        assert_eq!(
+            (cropped.width, cropped.height),
+            (expected.width, expected.height),
+            "{region:?}"
+        );
+        assert_eq!(cropped.rgba, pixels_in(&tile, expected), "{region:?}");
+    }
+}
+
+#[test]
+fn crop_rejects_invalid_regions_and_tiles() {
+    let invalid_region = "Choose a valid page, passage, image region or time interval";
+    for region in [
+        [0.8, 0.0, 0.5, 1.0],
+        [0.0, 0.0, 0.0, 0.0],
+        [-0.1, 0.0, 0.5, 0.5],
+        [0.5, 0.5, f32::NAN, 0.1],
+    ] {
+        assert_eq!(
+            grid(9, 7).crop(region).unwrap_err(),
+            invalid_region,
+            "{region:?}"
+        );
+    }
+    for (width, height, rgba) in [
+        (0, 1, Vec::new()),
+        (2, 1, vec![0; 4]),
+        (u32::MAX, u32::MAX, Vec::new()),
+    ] {
+        let tile = Tile {
+            width,
+            height,
+            rgba,
+        };
+        assert_eq!(
+            tile.crop([0.0, 0.0, 1.0, 1.0]).unwrap_err(),
+            "Invalid image dimensions",
+            "{width}x{height}"
+        );
+    }
+}
+
+#[test]
+fn rows_and_rects_stay_inside_the_buffer() {
+    let tile = grid(4, 3);
+    let rows = Tile::from_rows(&tile.rgba, 4, 1, 2).unwrap();
+    assert_eq!(rows.rgba, pixels_in(&tile, rect(0, 1, 4, 2)));
+    assert!(Tile::from_rows(&tile.rgba, 4, 2, 2).is_none());
+    assert!(Tile::from_rows(&tile.rgba, 4, u32::MAX, 1).is_none());
+
+    let band = tile.clone().into_rect(rect(0, 1, 4, 2)).unwrap();
+    assert_eq!(band.rgba, rows.rgba);
+    let inner = tile.clone().into_rect(rect(1, 1, 2, 2)).unwrap();
+    assert_eq!(inner.rgba, pixels_in(&tile, rect(1, 1, 2, 2)));
+    for outside in [rect(3, 0, 2, 1), rect(0, 2, 1, 2), rect(u32::MAX, 0, 2, 1)] {
+        assert!(tile.clone().into_rect(outside).is_none(), "{outside:?}");
+    }
+    let short = Tile {
+        rgba: vec![0; 4],
+        ..tile
+    };
+    assert!(short.into_rect(rect(0, 0, 1, 1)).is_none());
+}
+
+#[test]
+fn page_heights_accept_only_their_limits() {
+    assert_eq!(bounded_page_height(1.0, MAX_PDF_HEIGHT, "limit"), Ok(1));
+    assert_eq!(
+        bounded_page_height(8192.0, MAX_PDF_HEIGHT, "limit"),
+        Ok(8192)
+    );
+    for height in [0.0, 0.999, 8193.0, f32::NAN, f32::INFINITY, -1.0] {
+        assert_eq!(
+            bounded_page_height(height, MAX_PDF_HEIGHT, "limit"),
+            Err("limit".into()),
+            "{height}"
+        );
+    }
+}
+
+#[test]
+fn scaled_fractions_round_at_the_extent_edges() {
+    assert_eq!(scale_floor(1.0, 7), 7);
+    assert_eq!(scale_floor(0.9999, 10_000), 9999);
+    assert_eq!(scale_ceil(0.9999, 7), 7);
+    assert_eq!(scale_ceil(0.0001, 7), 1);
+    assert_eq!(scale_floor(0.0, 7), 0);
+    // `u32::MAX` rounds up to 2^32 in f32, so the conversion saturates.
+    assert_eq!(scale_floor(1.0, u32::MAX), u32::MAX);
+}
+
+#[test]
+fn excerpt_regions_cut_the_same_pixels_as_the_whole_section() {
+    let mut readers = vec![
+        Reader::from_bytes(pdf(), "test.pdf").unwrap(),
+        Reader::from_bytes(epub(false), "test.epub").unwrap(),
+    ];
+    let pdfium = std::env::var_os("LINCE_PDFIUM_LIBRARY").map(|_| {
+        let temporary = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temporary.path(), pdf()).unwrap();
+        Reader::open(temporary.path()).unwrap()
+    });
+    readers.extend(pdfium);
+    for mut reader in readers {
+        let (page, layout) = if reader.info.is_pdf() {
+            (
+                Locator {
+                    page: Some(2),
+                    ..Default::default()
+                },
+                Layout {
+                    width: 400,
+                    height: 534,
+                },
+            )
+        } else {
+            (
+                Locator {
+                    href: "EPUB/two.xhtml".into(),
+                    ..Default::default()
+                },
+                Layout {
+                    width: 400,
+                    height: 207,
+                },
+            )
+        };
+        let whole = reader
+            .excerpt(
+                &Locator {
+                    region: Some([0.0, 0.0, 1.0, 1.0]),
+                    ..page.clone()
+                },
+                400,
+            )
+            .unwrap();
+        assert_eq!((whole.width, whole.height), (layout.width, layout.height));
+        // A PDF excerpt starts at the region's top row. An EPUB excerpt
+        // starts at the located passage, here the chapter start.
+        let top = |pdf_top: u32| if reader.info.is_pdf() { pdf_top } else { 0 };
+        for (region, expected) in [
+            (
+                [0.25, 0.25, 0.5, 0.5],
+                rect(100, top(133), 200, layout.height / 2),
+            ),
+            ([0.5, 0.0, 0.5001, 1.0], rect(200, 0, 200, layout.height)),
+            (
+                [0.3, 0.1, 0.4, 0.05],
+                rect(120, top(53), 160, layout.height / 20),
+            ),
+            ([0.9999, 0.9999, 0.0001, 0.0001], rect(399, top(533), 1, 1)),
+        ] {
+            let excerpt = reader
+                .excerpt(
+                    &Locator {
+                        region: Some(region),
+                        ..page.clone()
+                    },
+                    400,
+                )
+                .unwrap();
+            assert_eq!(
+                (excerpt.width, excerpt.height),
+                (expected.width, expected.height),
+                "{region:?}"
+            );
+            assert_eq!(excerpt.rgba, pixels_in(&whole, expected), "{region:?}");
+        }
+    }
+}
+
+#[test]
+fn reader_debug_names_the_backend_and_metadata() {
+    let debug = format!("{:?}", Reader::from_bytes(pdf(), "debug.pdf").unwrap());
+    assert!(
+        debug.starts_with(r#"Reader { backend: "Pdf", info: Info { title: "debug.pdf""#),
+        "{debug}"
+    );
+}
+
+#[test]
+fn svg_resources_nest_only_to_the_limit() {
+    let book = rbook::Epub::read(Cursor::new(epub(false))).unwrap();
+    let url = blitz_traits::net::Url::parse("https://book.invalid/EPUB/art.svg").unwrap();
+    assert!(super::resources::load(&book, &url, 4).is_ok());
+    assert_eq!(
+        super::resources::load(&book, &url, 5).unwrap_err(),
+        "SVG resource nesting exceeds the limit"
+    );
+}
+
+#[test]
+fn open_resource_rejects_unrecognized_bytes_before_downloading_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let library = Library::new(directory.path().join("library"));
+    let resource = |name: &str, bytes: &[u8]| {
+        let path = directory.path().join(name);
+        std::fs::write(&path, bytes).unwrap();
+        Resource {
+            uri: path.to_string_lossy().into_owned(),
+            title: name.into(),
+            ..Default::default()
+        }
+    };
+    let text = resource("notes.txt", b"not a document");
+    assert_eq!(
+        Reader::open_resource(library.clone(), &text).unwrap_err(),
+        "This file is not a PDF or EPUB"
+    );
+    let book = resource("book.epub", &epub(false));
+    let reader = Reader::open_resource(library, &book).unwrap();
+    assert_eq!(reader.info.title, "book.epub");
+    assert_eq!(reader.info.sections, ["/EPUB/one.xhtml", "/EPUB/two.xhtml"]);
 }

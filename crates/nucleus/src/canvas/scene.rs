@@ -6,12 +6,26 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, sync::Arc};
 
+pub mod definitions;
+pub mod operation;
+pub use definitions::{DefinitionKind, Part, Pin};
+
 pub const MAX_PARTS: usize = 64;
 pub const MAX_SLOTS: usize = 128;
 
 macro_rules! identity {
     ($name:ident, $prefix:literal) => {
-        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+        #[derive(
+            Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            PartialOrd,
+            Ord,
+            Serialize,
+            Deserialize,
+            schemars::JsonSchema,
+        )]
         #[serde(transparent)]
         pub struct $name(String);
         impl $name {
@@ -32,7 +46,7 @@ identity!(RootId, "root");
 identity!(PartId, "part");
 identity!(SlotId, "slot");
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Handle {
     pub root: RootId,
@@ -46,23 +60,12 @@ pub const PART_ORIGIN: ElementId = ElementId(0);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Part {
-    pub id: PartId,
-    pub name: String,
-}
-
-impl Part {
-    pub fn revision(&self) -> Result<CanonicalHash, String> {
-        canonical_hash("lince.workspace.definition.v1", self).map_err(|e| e.to_string())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Slot {
     pub id: SlotId,
     pub part: PartId,
     pub revision: CanonicalHash,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<DocumentId>,
     pub metres: [DecimalValue; 3],
     pub record: Option<String>,
 }
@@ -131,21 +134,30 @@ impl Scene {
         {
             return Err("Invalid Room, placement or occurrence in canvas binding.".into());
         }
-        let mut revisions = std::collections::BTreeMap::new();
+        let mut revisions = BTreeSet::new();
         for part in self.parts.iter() {
-            if !part.id.valid()
-                || !valid_name(&part.name)
-                || revisions.insert(&part.id, part.revision()?).is_some()
+            part.validate()?;
+            if part.source.as_ref() == Some(&self.document)
+                || !revisions.insert(part.pin(&self.document)?)
             {
                 return Err("Invalid or duplicate part definition.".into());
             }
+        }
+        if self
+            .parts
+            .iter()
+            .flat_map(|p| &p.requires)
+            .any(|pin| !revisions.contains(pin))
+        {
+            return Err("Missing required pinned definition.".into());
         }
         let mut ids = BTreeSet::new();
         for slot in self.slots.iter() {
             if slot.metres != slot.metres.map(normalized)
                 || !slot.id.valid()
                 || !ids.insert(&slot.id)
-                || revisions.get(&slot.part) != Some(&slot.revision)
+                || slot.source.as_ref() == Some(&self.document)
+                || !revisions.contains(&slot.pin(&self.document))
                 || slot.record.as_ref().is_some_and(|r| !valid_uid(r, "r"))
             {
                 return Err(
@@ -160,10 +172,7 @@ impl Scene {
         if !valid_name(name) || self.parts.len() >= MAX_PARTS {
             return Err("Use a part name of 1–128 bytes and at most 64 definitions.".into());
         }
-        let part = Part {
-            id: PartId::new(),
-            name: name.into(),
-        };
+        let part = Part::new(name, DefinitionKind::Part);
         let handle = self.insert_slot(&part)?;
         Arc::make_mut(&mut self.parts).push(part);
         Ok(handle)
@@ -177,6 +186,7 @@ impl Scene {
             id: SlotId::new(),
             part: part.id.clone(),
             revision: part.revision()?,
+            source: part.source.clone(),
             metres: [DecimalValue::from_integer(0); 3],
             record: None,
         };
@@ -203,13 +213,7 @@ impl Scene {
         let slot = self
             .slot(handle)
             .ok_or("Select a placement in this scene.")?;
-        let part = self
-            .parts
-            .iter()
-            .find(|p| p.id == slot.part)
-            .ok_or("Missing definition.")?
-            .clone();
-        self.insert_slot(&part)
+        self.place_definition(&slot.pin(&self.document))
     }
 
     pub fn edit(

@@ -106,6 +106,60 @@ fn native_conflict_retains_the_draft_and_can_save_a_copy() {
 }
 
 #[test]
+fn library_rechecks_a_review_before_import_and_undo_preserves_both_existing_placements() {
+    let dir = tempfile::tempdir().unwrap();
+    let source = dir.path().join("source.workspace");
+    crate::native::laboratory::showoff::parts_library(&source).unwrap();
+    let published = workspace_scene::open(&source).unwrap();
+    let mut library = published.scene;
+    let bracket = library.slots[0].pin(&library.document);
+    let steel = library.definition(&bracket).unwrap().requires[0].clone();
+    let review = format!("Review Bracket · {}", &bracket.revision.as_str()[7..19]);
+    let (mut app, root) = super::super::tests::fixture();
+    open_inspector(&mut app, root);
+    activate(&mut app, "New scene");
+    text(&mut app, "New part name", "Bracket");
+    activate(&mut app, "Create part and place it");
+    activate(&mut app, "Place another copy of this part");
+    let before = session(&app, root).scene.clone().unwrap();
+    let depth = session(&app, root).undo.len();
+    activate(&mut app, "Definition library");
+    text(&mut app, "Source scene directory", source.to_str().unwrap());
+    activate(&mut app, "Browse source definitions");
+    activate(&mut app, &review);
+    activate(&mut app, "Show source and revision details");
+    activate(&mut app, "Hide source and revision details");
+    library.set_local_only(&steel, true).unwrap();
+    let restricted = workspace_scene::save(&source, &library, Some(&published.revision)).unwrap();
+    activate(&mut app, "Import reviewed definitions");
+    assert!(session(&app, root).message.contains("permissions changed"));
+    assert_eq!(session(&app, root).scene.as_ref(), Some(&before));
+    assert_eq!(session(&app, root).undo.len(), depth);
+    activate(&mut app, "Browse source definitions");
+    activate(&mut app, &review);
+    assert!(session(&app, root).message.contains("Incomplete import"));
+    let world = app.world_mut();
+    assert!(
+        !world
+            .query_filtered::<&AccessibilityNode, With<ActionButton>>()
+            .iter(world)
+            .any(|n| n.label() == Some("Import reviewed definitions"))
+    );
+    library.set_local_only(&steel, false).unwrap();
+    workspace_scene::save(&source, &library, Some(&restricted)).unwrap();
+    activate(&mut app, "Browse source definitions");
+    activate(&mut app, &review);
+    activate(&mut app, "Import reviewed definitions");
+    let imported = session(&app, root).scene.clone().unwrap();
+    assert_eq!(imported.parts.len(), before.parts.len() + 3);
+    assert!(Arc::ptr_eq(&imported.slots, &before.slots));
+    activate(&mut app, "Undo scene edit");
+    assert_eq!(session(&app, root).scene.as_ref(), Some(&before));
+    activate(&mut app, "Redo scene edit");
+    assert_eq!(session(&app, root).scene.as_ref(), Some(&imported));
+}
+
+#[test]
 fn linked_room_uses_local_axes_and_rejects_cancelled_or_superseded_drags() {
     use crate::native::{
         canvas::CanvasItem,
@@ -206,4 +260,151 @@ fn linked_room_uses_local_axes_and_rejects_cancelled_or_superseded_drags() {
     app.world_mut().despawn(duplicate);
     activate(&mut app, "Undo scene edit");
     assert_eq!(session(&app, root).scene.as_ref().unwrap(), &before);
+}
+
+#[test]
+fn accepted_commands_preserve_native_drafts_and_recheck_revocation_at_publication() {
+    use nucleus::{
+        canvas::{
+            Response,
+            scene::operation::{Edit, Operation, Request},
+        },
+        component::composition::Origin,
+    };
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("scene.workspace");
+    let (mut app, root) = super::super::tests::fixture();
+    open_inspector(&mut app, root);
+    text(&mut app, "Scene directory", path.to_str().unwrap());
+    activate(&mut app, "New scene");
+    text(&mut app, "New part name", "Bracket");
+    activate(&mut app, "Create part and place it");
+    activate(&mut app, "Save scene");
+    let before = workspace_scene::open(&path).unwrap();
+    let handle = before.scene.handle(&before.scene.slots[0]);
+    let edit = Edit {
+        request_id: nucleus::new_uid("request"),
+        document: before.scene.document.clone(),
+        expected: before.revision.clone(),
+        operation: Operation::Move {
+            target: handle.clone(),
+            metres: [DecimalValue::from_integer(3); 3],
+        },
+    };
+    let request = Request::Submit { edit: edit.clone() };
+    let fiote = Origin {
+        agent: nucleus::new_uid("r"),
+        thread: nucleus::new_uid("r"),
+    };
+    let checks = std::cell::Cell::new(0);
+    let revoked = accepted::request(app.world_mut(), root, 1, &request, Some(&fiote), || {
+        let check = checks.get();
+        checks.set(check + 1);
+        check != 0
+    });
+    assert!(revoked.unwrap_err().contains("cancelled"));
+    assert_eq!(
+        workspace_scene::open(&path).unwrap().revision,
+        before.revision
+    );
+    assert!(
+        workspace_scene::acceptance::receipt(&path, &edit.document, Some(&edit.request_id))
+            .is_err()
+    );
+    let response =
+        accepted::request(app.world_mut(), root, 1, &request, Some(&fiote), || false).unwrap();
+    let Response::SceneReceipt { receipt } = response else {
+        panic!("Expected the Fiote receipt")
+    };
+    assert_eq!(receipt.fiote.as_ref(), Some(&fiote));
+    text(&mut app, "X (m)", "7");
+    activate(&mut app, "Apply to selected placement");
+    let draft = session(&app, root).scene.clone().unwrap();
+    assert!(session(&app, root).dirty);
+    let recovered =
+        accepted::request(app.world_mut(), root, 1, &request, Some(&fiote), || false).unwrap();
+    assert_eq!(
+        recovered,
+        Response::SceneReceipt {
+            receipt: receipt.clone()
+        }
+    );
+    let another = Origin {
+        agent: nucleus::new_uid("r"),
+        thread: fiote.thread.clone(),
+    };
+    let lookup = Request::Receipt {
+        document: edit.document.clone(),
+        request_id: edit.request_id.clone(),
+    };
+    assert!(
+        accepted::request(app.world_mut(), root, 1, &lookup, Some(&another), || false).is_err()
+    );
+    let fresh = Request::Submit {
+        edit: Edit {
+            expected: receipt.revision.clone(),
+            request_id: nucleus::new_uid("request"),
+            ..edit
+        },
+    };
+    assert!(
+        accepted::request(app.world_mut(), root, 1, &fresh, Some(&fiote), || false)
+            .unwrap_err()
+            .contains("draft")
+    );
+    assert_eq!(session(&app, root).scene.as_ref(), Some(&draft));
+    assert!(session(&app, root).dirty);
+    assert_eq!(
+        workspace_scene::open(&path).unwrap().revision,
+        receipt.revision
+    );
+}
+
+#[test]
+fn later_measurement_wins_on_the_same_source_and_selection_change_retires_a_held_job() {
+    let temp = tempfile::tempdir().unwrap();
+    let (mut app, root) = super::super::tests::fixture();
+    open_inspector(&mut app, root);
+    text(
+        &mut app,
+        "Scene directory",
+        temp.path().join("scene.workspace").to_str().unwrap(),
+    );
+    activate(&mut app, "New scene");
+    text(&mut app, "New part name", "Bracket");
+    activate(&mut app, "Create part and place it");
+    activate(&mut app, "Place another copy of this part");
+    activate(&mut app, "Save scene");
+    activate(&mut app, "Accepted edits and measurements");
+    let run = |app: &mut App, command| {
+        let page = app
+            .world_mut()
+            .query_filtered::<Entity, With<Form>>()
+            .single(app.world())
+            .unwrap();
+        Command::Accepted(command).apply(app.world_mut(), page);
+    };
+    run(&mut app, accepted::Action::Hold);
+    activate(&mut app, "Measure distance from origin");
+    activate(&mut app, "Finish the held measurement");
+    assert!(
+        session(&app, root)
+            .message
+            .contains("Discarded the late measurement")
+    );
+    run(&mut app, accepted::Action::Hold);
+    let other = session(&app, root).scene.as_ref().unwrap().slots[0]
+        .id
+        .as_str()
+        .to_owned();
+    activate(&mut app, &format!("Placement {other}"));
+    activate(&mut app, "Finish the held measurement");
+    assert!(
+        session(&app, root)
+            .message
+            .contains("Discarded the late measurement")
+    );
+    run(&mut app, accepted::Action::Hold);
+    activate(&mut app, "Cancel the held measurement");
+    assert!(session(&app, root).message.contains("Cancelled"));
 }

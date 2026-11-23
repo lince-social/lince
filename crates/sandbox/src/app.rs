@@ -78,7 +78,8 @@ pub fn offscreen_interface_app() -> App {
     )
 }
 
-fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
+/// Build the native host with a persistent asset root shared by reopened sessions.
+pub fn interface_app_at(directory: std::path::PathBuf, offscreen: bool) -> App {
     let plugins = DefaultPlugins
         .build()
         .disable::<LogPlugin>()

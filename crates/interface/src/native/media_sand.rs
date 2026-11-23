@@ -203,14 +203,12 @@ pub(crate) fn decode_resource(
     }
     let pixels = decode_bytes(bytes)?;
     if let Some(region) = resource.locator.region {
-        let tile = lince_document::crop(
-            lince_document::Tile {
-                width: pixels.width,
-                height: pixels.height,
-                rgba: pixels.rgba,
-            },
-            region,
-        )?;
+        let tile = lince_document::Tile {
+            width: pixels.width,
+            height: pixels.height,
+            rgba: pixels.rgba,
+        }
+        .crop(region)?;
         return Ok(Pixels {
             width: tile.width,
             height: tile.height,

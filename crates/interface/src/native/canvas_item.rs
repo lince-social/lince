@@ -271,7 +271,9 @@ fn menu(world: &mut World, mut queries: Local<MenuQueries>) {
                 border: UiRect::all(px(1)),
                 ..default()
             },
-            GlobalZIndex(23),
+            // Canvas actions can overlap either inspector on small screens. Desktop controls
+            // (20) and the open editors (21) keep their visible and pointer order.
+            GlobalZIndex(19),
             ChildOf(root),
             crate::native::token_style::background(crate::native::tokens::Token::Surface),
             crate::native::token_style::border(crate::native::tokens::Token::Accent),
@@ -791,12 +793,16 @@ pub(crate) mod tests {
     fn spatial_area_hits_reach_selection_after_hover_generation() {
         use bevy::picking::{
             backend::{HitData, PointerHits},
-            hover::{HoverMap, PreviousHoverMap, generate_hovermap},
-            pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
+            hover::{HoverMap, PointerCaptureMap, PreviousHoverMap, generate_hovermap},
+            pointer::{
+                Location, PointerAction, PointerButton, PointerId, PointerInput, PointerMap,
+            },
         };
         let (mut app, root, _, area) = deletion_fixture();
         app.init_resource::<HoverMap>()
             .init_resource::<PreviousHoverMap>()
+            .init_resource::<PointerMap>()
+            .init_resource::<PointerCaptureMap>()
             .init_resource::<ButtonInput<KeyCode>>()
             .add_message::<PointerHits>()
             .add_message::<PointerInput>()

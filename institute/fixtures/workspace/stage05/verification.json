@@ -1,0 +1,2235 @@
+{
+  "stage": 5,
+  "base_revision": "3efe835475102069d57e5747a5970d212c865924",
+  "date": "2026-11-22",
+  "checks": {
+    "focused_native": 100,
+    "previous_native_cases_rerun": 84,
+    "store_functional": 9,
+    "definition_import_integration": 4,
+    "baseline_dataset_cases": 10,
+    "legacy_two_process_ui_replay": "passed",
+    "current_library_recheck_on_revocation": "passed",
+    "cargo_check_sandbox_example": "passed",
+    "normal_model_dependency_boundaries": "passed as part of cargo xtask workspace showcase",
+    "document_renderer_tests_after_build_fix": 9,
+    "canvas_item_menu_tests": 8,
+    "canvas_area_fixture": {
+      "earlier_test_executable": "lince_interface-eb77aafa50407026 (2026-11-22 11:42 local)",
+      "earlier_result": "reproduced missing Bevy picking resources",
+      "repair": "initialize both the pointer lookup and the pointer capture map in the spatial Area fixture",
+      "current": "passed"
+    },
+    "completion_criteria": {
+      "central_record": "Workspace-Refactor.lingua",
+      "stage_count": 190,
+      "earlier_stages_with_showcase_handoff": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "previously_reported_broader_cases": {
+      "failed": [
+        "native::laboratory::driver::a_button_moved_during_pointer_input_cannot_receive_the_stale_click",
+        "native::laboratory::interface::protein_area_filter_visible_and_selectable",
+        "native::laboratory::interface::workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits"
+      ],
+      "passed": [],
+      "earlier_evidence": "../stage04/verification.json"
+    }
+  },
+  "definition_import_storage": {
+    "first_import": {
+      "first_commit_heap": 14964,
+      "first_commit_us": 44853,
+      "first_imports": [
+        {
+          "added": 3,
+          "adopt_peak_heap_bytes": 7247,
+          "adopt_us": 246,
+          "browse_peak_heap_bytes": 16173,
+          "browse_us": 377,
+          "read": {
+            "bytes": 2831,
+            "files": 8,
+            "largest_input_bytes": 1577
+          },
+          "review_peak_heap_bytes": 5550,
+          "review_us": 210
+        },
+        {
+          "added": 2,
+          "adopt_peak_heap_bytes": 9152,
+          "adopt_us": 340,
+          "browse_peak_heap_bytes": 16173,
+          "browse_us": 211,
+          "read": {
+            "bytes": 2831,
+            "files": 8,
+            "largest_input_bytes": 1577
+          },
+          "review_peak_heap_bytes": 7596,
+          "review_us": 203
+        }
+      ],
+      "imported_definition_json_bytes": 1432,
+      "new_immutable_page_bytes": 2871,
+      "undo_prior_definition_json_bytes": 59,
+      "untouched_shared_placement_json_bytes": 555
+    },
+    "samples": [
+      {
+        "browse_heap": 16173,
+        "browse_us": 700,
+        "open_heap": 13044,
+        "open_us": 810,
+        "preview_heap": 7284,
+        "preview_us": 870,
+        "reused_heap": 7284,
+        "reused_us": 754,
+        "save_heap": 16854,
+        "save_us": 22572
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 215,
+        "open_heap": 13044,
+        "open_us": 2026,
+        "preview_heap": 7284,
+        "preview_us": 277,
+        "reused_heap": 7284,
+        "reused_us": 264,
+        "save_heap": 16854,
+        "save_us": 19658
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 657,
+        "open_heap": 13044,
+        "open_us": 1412,
+        "preview_heap": 7284,
+        "preview_us": 788,
+        "reused_heap": 7284,
+        "reused_us": 755,
+        "save_heap": 16854,
+        "save_us": 22236
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 329,
+        "open_heap": 13044,
+        "open_us": 2205,
+        "preview_heap": 7284,
+        "preview_us": 350,
+        "reused_heap": 7284,
+        "reused_us": 309,
+        "save_heap": 16854,
+        "save_us": 22238
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 672,
+        "open_heap": 13044,
+        "open_us": 2760,
+        "preview_heap": 7284,
+        "preview_us": 866,
+        "reused_heap": 7284,
+        "reused_us": 828,
+        "save_heap": 16854,
+        "save_us": 21814
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 1152,
+        "open_heap": 13044,
+        "open_us": 1236,
+        "preview_heap": 7284,
+        "preview_us": 1411,
+        "reused_heap": 7284,
+        "reused_us": 1303,
+        "save_heap": 16854,
+        "save_us": 22797
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 377,
+        "open_heap": 13044,
+        "open_us": 1475,
+        "preview_heap": 7284,
+        "preview_us": 488,
+        "reused_heap": 7284,
+        "reused_us": 610,
+        "save_heap": 16854,
+        "save_us": 24562
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 679,
+        "open_heap": 13044,
+        "open_us": 2244,
+        "preview_heap": 7284,
+        "preview_us": 851,
+        "reused_heap": 7284,
+        "reused_us": 838,
+        "save_heap": 16854,
+        "save_us": 24110
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 869,
+        "open_heap": 13044,
+        "open_us": 2194,
+        "preview_heap": 7284,
+        "preview_us": 1185,
+        "reused_heap": 7284,
+        "reused_us": 892,
+        "save_heap": 16854,
+        "save_us": 30918
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 646,
+        "open_heap": 13044,
+        "open_us": 2383,
+        "preview_heap": 7284,
+        "preview_us": 849,
+        "reused_heap": 7284,
+        "reused_us": 847,
+        "save_heap": 16854,
+        "save_us": 26219
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 645,
+        "open_heap": 13044,
+        "open_us": 2145,
+        "preview_heap": 7284,
+        "preview_us": 799,
+        "reused_heap": 7284,
+        "reused_us": 773,
+        "save_heap": 16854,
+        "save_us": 27364
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 663,
+        "open_heap": 13044,
+        "open_us": 3285,
+        "preview_heap": 7284,
+        "preview_us": 1361,
+        "reused_heap": 7284,
+        "reused_us": 891,
+        "save_heap": 16854,
+        "save_us": 27799
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 1195,
+        "open_heap": 13044,
+        "open_us": 2023,
+        "preview_heap": 7284,
+        "preview_us": 1211,
+        "reused_heap": 7284,
+        "reused_us": 1005,
+        "save_heap": 16854,
+        "save_us": 32186
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 674,
+        "open_heap": 13044,
+        "open_us": 2034,
+        "preview_heap": 7284,
+        "preview_us": 888,
+        "reused_heap": 7284,
+        "reused_us": 772,
+        "save_heap": 16854,
+        "save_us": 25918
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 1056,
+        "open_heap": 13044,
+        "open_us": 1945,
+        "preview_heap": 7284,
+        "preview_us": 1304,
+        "reused_heap": 7284,
+        "reused_us": 1373,
+        "save_heap": 16854,
+        "save_us": 28301
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 624,
+        "open_heap": 13044,
+        "open_us": 2122,
+        "preview_heap": 7284,
+        "preview_us": 815,
+        "reused_heap": 7284,
+        "reused_us": 816,
+        "save_heap": 16854,
+        "save_us": 29517
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 681,
+        "open_heap": 13044,
+        "open_us": 1964,
+        "preview_heap": 7284,
+        "preview_us": 772,
+        "reused_heap": 7284,
+        "reused_us": 779,
+        "save_heap": 16854,
+        "save_us": 30469
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 615,
+        "open_heap": 13044,
+        "open_us": 745,
+        "preview_heap": 7284,
+        "preview_us": 780,
+        "reused_heap": 7284,
+        "reused_us": 757,
+        "save_heap": 16854,
+        "save_us": 25512
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 209,
+        "open_heap": 13044,
+        "open_us": 2185,
+        "preview_heap": 7284,
+        "preview_us": 643,
+        "reused_heap": 7284,
+        "reused_us": 762,
+        "save_heap": 16854,
+        "save_us": 25074
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 668,
+        "open_heap": 13044,
+        "open_us": 2062,
+        "preview_heap": 7284,
+        "preview_us": 805,
+        "reused_heap": 7284,
+        "reused_us": 884,
+        "save_heap": 16854,
+        "save_us": 24414
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 622,
+        "open_heap": 13044,
+        "open_us": 2418,
+        "preview_heap": 7284,
+        "preview_us": 766,
+        "reused_heap": 7284,
+        "reused_us": 799,
+        "save_heap": 16854,
+        "save_us": 28792
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 781,
+        "open_heap": 13044,
+        "open_us": 2213,
+        "preview_heap": 7284,
+        "preview_us": 905,
+        "reused_heap": 7284,
+        "reused_us": 770,
+        "save_heap": 16854,
+        "save_us": 22944
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 689,
+        "open_heap": 13044,
+        "open_us": 2183,
+        "preview_heap": 7284,
+        "preview_us": 857,
+        "reused_heap": 7284,
+        "reused_us": 813,
+        "save_heap": 16854,
+        "save_us": 24218
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 713,
+        "open_heap": 13044,
+        "open_us": 2258,
+        "preview_heap": 7284,
+        "preview_us": 840,
+        "reused_heap": 7284,
+        "reused_us": 819,
+        "save_heap": 16854,
+        "save_us": 25190
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 667,
+        "open_heap": 13044,
+        "open_us": 2230,
+        "preview_heap": 7284,
+        "preview_us": 851,
+        "reused_heap": 7284,
+        "reused_us": 850,
+        "save_heap": 16854,
+        "save_us": 28723
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 683,
+        "open_heap": 13044,
+        "open_us": 1408,
+        "preview_heap": 7284,
+        "preview_us": 900,
+        "reused_heap": 7284,
+        "reused_us": 1388,
+        "save_heap": 16854,
+        "save_us": 24758
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 344,
+        "open_heap": 13044,
+        "open_us": 783,
+        "preview_heap": 7284,
+        "preview_us": 422,
+        "reused_heap": 7284,
+        "reused_us": 403,
+        "save_heap": 16854,
+        "save_us": 28494
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 223,
+        "open_heap": 13044,
+        "open_us": 698,
+        "preview_heap": 7284,
+        "preview_us": 266,
+        "reused_heap": 7284,
+        "reused_us": 256,
+        "save_heap": 16854,
+        "save_us": 15917
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 210,
+        "open_heap": 13044,
+        "open_us": 2425,
+        "preview_heap": 7284,
+        "preview_us": 269,
+        "reused_heap": 7284,
+        "reused_us": 222,
+        "save_heap": 16854,
+        "save_us": 19552
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 803,
+        "open_heap": 13044,
+        "open_us": 1974,
+        "preview_heap": 7284,
+        "preview_us": 840,
+        "reused_heap": 7284,
+        "reused_us": 822,
+        "save_heap": 16854,
+        "save_us": 19117
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 625,
+        "open_heap": 13044,
+        "open_us": 2021,
+        "preview_heap": 7284,
+        "preview_us": 785,
+        "reused_heap": 7284,
+        "reused_us": 755,
+        "save_heap": 16854,
+        "save_us": 20467
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 666,
+        "open_heap": 13044,
+        "open_us": 2305,
+        "preview_heap": 7284,
+        "preview_us": 887,
+        "reused_heap": 7284,
+        "reused_us": 827,
+        "save_heap": 16854,
+        "save_us": 19845
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 687,
+        "open_heap": 13044,
+        "open_us": 1088,
+        "preview_heap": 7284,
+        "preview_us": 923,
+        "reused_heap": 7284,
+        "reused_us": 674,
+        "save_heap": 16854,
+        "save_us": 22517
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 306,
+        "open_heap": 13044,
+        "open_us": 637,
+        "preview_heap": 7284,
+        "preview_us": 347,
+        "reused_heap": 7284,
+        "reused_us": 327,
+        "save_heap": 16854,
+        "save_us": 17137
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 209,
+        "open_heap": 13044,
+        "open_us": 848,
+        "preview_heap": 7284,
+        "preview_us": 255,
+        "reused_heap": 7284,
+        "reused_us": 234,
+        "save_heap": 16854,
+        "save_us": 16732
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 241,
+        "open_heap": 13044,
+        "open_us": 995,
+        "preview_heap": 7284,
+        "preview_us": 302,
+        "reused_heap": 7284,
+        "reused_us": 303,
+        "save_heap": 16854,
+        "save_us": 16369
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 213,
+        "open_heap": 13044,
+        "open_us": 839,
+        "preview_heap": 7284,
+        "preview_us": 252,
+        "reused_heap": 7284,
+        "reused_us": 250,
+        "save_heap": 16854,
+        "save_us": 19633
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 241,
+        "open_heap": 13044,
+        "open_us": 2069,
+        "preview_heap": 7284,
+        "preview_us": 281,
+        "reused_heap": 7284,
+        "reused_us": 230,
+        "save_heap": 16854,
+        "save_us": 17607
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 876,
+        "open_heap": 13044,
+        "open_us": 3911,
+        "preview_heap": 7284,
+        "preview_us": 862,
+        "reused_heap": 7284,
+        "reused_us": 866,
+        "save_heap": 16854,
+        "save_us": 21340
+      },
+      {
+        "browse_heap": 16173,
+        "browse_us": 738,
+        "open_heap": 13044,
+        "open_us": 1199,
+        "preview_heap": 7284,
+        "preview_us": 867,
+        "reused_heap": 7284,
+        "reused_us": 838,
+        "save_heap": 16854,
+        "save_us": 20368
+      }
+    ],
+    "warmup_pairs": 1,
+    "measured_pairs": 40,
+    "limit_per_durable_commit_us": 200000,
+    "warm_distributions": {
+      "browse_heap": {
+        "p50": 16173,
+        "p95": 16173,
+        "p99": 16173,
+        "max": 16173
+      },
+      "browse_us": {
+        "p50": 663,
+        "p95": 1056,
+        "p99": 1195,
+        "max": 1195
+      },
+      "open_heap": {
+        "p50": 13044,
+        "p95": 13044,
+        "p99": 13044,
+        "max": 13044
+      },
+      "open_us": {
+        "p50": 2026,
+        "p95": 2760,
+        "p99": 3911,
+        "max": 3911
+      },
+      "preview_heap": {
+        "p50": 7284,
+        "p95": 7284,
+        "p99": 7284,
+        "max": 7284
+      },
+      "preview_us": {
+        "p50": 815,
+        "p95": 1304,
+        "p99": 1411,
+        "max": 1411
+      },
+      "reused_heap": {
+        "p50": 7284,
+        "p95": 7284,
+        "p99": 7284,
+        "max": 7284
+      },
+      "reused_us": {
+        "p50": 773,
+        "p95": 1303,
+        "p99": 1388,
+        "max": 1388
+      },
+      "save_heap": {
+        "p50": 16854,
+        "p95": 16854,
+        "p99": 16854,
+        "max": 16854
+      },
+      "save_us": {
+        "p50": 22944,
+        "p95": 30469,
+        "p99": 32186,
+        "max": 32186
+      }
+    }
+  },
+  "previous_stage_regression_timings_us": {
+    "accepted_edit": {
+      "p50": 26880,
+      "p95": 33372,
+      "p99": 130690,
+      "max": 130690
+    },
+    "duplicate_retry": {
+      "p50": 969,
+      "p95": 2725,
+      "p99": 2902,
+      "max": 2902
+    },
+    "ordinary_save": {
+      "p50": 19359,
+      "p95": 21056,
+      "p99": 21338,
+      "max": 21338
+    },
+    "ordinary_open": {
+      "p50": 667,
+      "p95": 748,
+      "p99": 861,
+      "max": 861
+    }
+  },
+  "showcase": {
+    "normal_desktop": {
+      "target": "x86_64-unknown-linux-gnu",
+      "launch": "lince --showoff --directory <fresh-profile> --no-tray --port 0 --peer-port 0",
+      "active_workspace": "showoff",
+      "workbench": "Model workbench",
+      "has_accepted_edits_instructions": true,
+      "has_definition_library_instructions": true,
+      "bracket": "placement_01M82KEFTT88HV82EJ53VB2TX7",
+      "room": "placement_01M82KEFTT8JDT76ZM64FTT8F9",
+      "record": "r_01M82KEFTW9E38TJ214S2TWYGS",
+      "initial_local_position": [
+        500.0,
+        0.0,
+        200.0
+      ],
+      "imported_sculpture_bytes": 1644,
+      "sha256": "242099052e788851ebd547507ce1e299f6af558517621b89a706a56a538f28e1"
+    },
+    "fresh_processes": 5,
+    "phases": [
+      "build and bind the Room while physics runs",
+      "recover native and Fiote edits",
+      "reload earlier receipts",
+      "import, place, revise a local part and republish permission",
+      "reopen with the example source directory offline"
+    ],
+    "earlier_slots_unchanged": 3,
+    "before_import": {
+      "slots": [
+        {
+          "id": "slot_01M82JWEKW86WAHGP688W5M2JS",
+          "part": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "revision": "sha256:d9714f00aba7014a41fe0b3ec556149f932f248ff50ec1d3faa75ea93cc956b6",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        },
+        {
+          "id": "slot_01M82JWFDN831SW0J68SFK62RX",
+          "part": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "revision": "sha256:d9714f00aba7014a41fe0b3ec556149f932f248ff50ec1d3faa75ea93cc956b6",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "5"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "2"
+            }
+          ],
+          "record": "r_01M82JVVF28WEB6EPTZJ1J2993"
+        },
+        {
+          "id": "slot_01M82JXCG38J3AYM8R4DJ766W1",
+          "part": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "revision": "sha256:d9714f00aba7014a41fe0b3ec556149f932f248ff50ec1d3faa75ea93cc956b6",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        }
+      ],
+      "binding": {
+        "handle": {
+          "root": "root_01M82JWDDC8WTAGWCF8TXCFWKW",
+          "slot": "slot_01M82JWFDN831SW0J68SFK62RX"
+        },
+        "room": "placement_01M82JVVF08HDAC1FS25V6BK4R",
+        "placement": "placement_01M82JVVF09Q8B4AD8T8N6WFFK"
+      },
+      "document": "doc_01M82JWDDC9BKRFFCQQMQJGKXJ",
+      "parts": [
+        {
+          "id": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "name": "Bracket"
+        }
+      ]
+    },
+    "after_import": {
+      "head": "sha256:79201c5fa73012fd5ed6c34d4928d3ee53556db6104dde29dfe58906030a5268",
+      "source_document": "doc_00000000000000000000000501",
+      "slots": [
+        {
+          "id": "slot_01M82JWEKW86WAHGP688W5M2JS",
+          "part": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "revision": "sha256:d9714f00aba7014a41fe0b3ec556149f932f248ff50ec1d3faa75ea93cc956b6",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        },
+        {
+          "id": "slot_01M82JWFDN831SW0J68SFK62RX",
+          "part": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "revision": "sha256:d9714f00aba7014a41fe0b3ec556149f932f248ff50ec1d3faa75ea93cc956b6",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "5"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "2"
+            }
+          ],
+          "record": "r_01M82JVVF28WEB6EPTZJ1J2993"
+        },
+        {
+          "id": "slot_01M82JXCG38J3AYM8R4DJ766W1",
+          "part": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "revision": "sha256:d9714f00aba7014a41fe0b3ec556149f932f248ff50ec1d3faa75ea93cc956b6",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        },
+        {
+          "id": "slot_01M82JY78P8QMV76A0CDK1TX5K",
+          "part": "part_00000000000000000000000503",
+          "revision": "sha256:040bbc352c8a34565b8eea64dc35f89eafea410409cc09e13906d5d3bf5e1a22",
+          "source": "doc_00000000000000000000000501",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        },
+        {
+          "id": "slot_01M82JY8YX9ZYST4KSVG4VJPE2",
+          "part": "part_00000000000000000000000503",
+          "revision": "sha256:8303a75c2bca82cf7c9bef223e2e24bee649aac499254f9de754fa6844515f68",
+          "source": "doc_00000000000000000000000501",
+          "metres": [
+            {
+              "scale": 3,
+              "value": "0.375"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        },
+        {
+          "id": "slot_01M82JYANE8FF9T7J2YHW770VT",
+          "part": "part_01M82JYANE9WBAQ1TMS9M8KT67",
+          "revision": "sha256:c9518c941f3c3ddef7e9e52ee8406f8648fd212b7fb83ade82d255e760f89a02",
+          "metres": [
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            },
+            {
+              "scale": 0,
+              "value": "0"
+            }
+          ],
+          "record": null
+        }
+      ],
+      "definitions": [
+        {
+          "id": "part_01M82JWEKW8A1AENF1Y8DPDY29",
+          "name": "Bracket"
+        },
+        {
+          "id": "part_00000000000000000000000501",
+          "name": "Millimetre",
+          "intrinsic": {
+            "kind": "unit",
+            "symbol": "mm"
+          },
+          "source": "doc_00000000000000000000000501"
+        },
+        {
+          "id": "part_00000000000000000000000502",
+          "name": "Steel",
+          "intrinsic": {
+            "kind": "material",
+            "grade": "A36"
+          },
+          "requires": [
+            {
+              "document": "doc_00000000000000000000000501",
+              "part": "part_00000000000000000000000501",
+              "revision": "sha256:480ccc0b731b3b2655354018bbee53d07ef28f58cf29928d591b625f6260e983"
+            }
+          ],
+          "source": "doc_00000000000000000000000501"
+        },
+        {
+          "id": "part_00000000000000000000000503",
+          "name": "Bracket",
+          "requires": [
+            {
+              "document": "doc_00000000000000000000000501",
+              "part": "part_00000000000000000000000502",
+              "revision": "sha256:ccdafc930dc29f2723cb2e9878d1820e9e8d49b381e531da4e16f7d9d7c531bf"
+            }
+          ],
+          "source": "doc_00000000000000000000000501"
+        },
+        {
+          "id": "part_00000000000000000000000502",
+          "name": "Steel",
+          "intrinsic": {
+            "kind": "material",
+            "grade": "304"
+          },
+          "requires": [
+            {
+              "document": "doc_00000000000000000000000501",
+              "part": "part_00000000000000000000000501",
+              "revision": "sha256:480ccc0b731b3b2655354018bbee53d07ef28f58cf29928d591b625f6260e983"
+            }
+          ],
+          "source": "doc_00000000000000000000000501"
+        },
+        {
+          "id": "part_00000000000000000000000503",
+          "name": "Bracket",
+          "requires": [
+            {
+              "document": "doc_00000000000000000000000501",
+              "part": "part_00000000000000000000000502",
+              "revision": "sha256:b86b61906deb8fdcc27703a792634d614c05145401011a85013a7343651faeec"
+            }
+          ],
+          "source": "doc_00000000000000000000000501"
+        },
+        {
+          "id": "part_01M82JYANE9WBAQ1TMS9M8KT67",
+          "name": "Workbench mounting plate"
+        },
+        {
+          "id": "part_01M82JYANE9WBAQ1TMS9M8KT67",
+          "name": "Workbench mounting plate",
+          "requires": [
+            {
+              "document": "doc_00000000000000000000000501",
+              "part": "part_00000000000000000000000502",
+              "revision": "sha256:b86b61906deb8fdcc27703a792634d614c05145401011a85013a7343651faeec"
+            }
+          ]
+        }
+      ],
+      "receipt": {
+        "edit": {
+          "request_id": "request_01M82JYCXX99D9R96TYNA59P3A",
+          "document": "doc_01M82JWDDC9BKRFFCQQMQJGKXJ",
+          "expected": "sha256:53eec9ec2ae91b67ea1d8a9533d8a424b6e346f02f3036123a6d56e9a49daa0c",
+          "operation": {
+            "kind": "move",
+            "target": {
+              "root": "root_01M82JWDDC8WTAGWCF8TXCFWKW",
+              "slot": "slot_01M82JY8YX9ZYST4KSVG4VJPE2"
+            },
+            "metres": [
+              {
+                "scale": 3,
+                "value": "0.375"
+              },
+              {
+                "scale": 0,
+                "value": "0"
+              },
+              {
+                "scale": 0,
+                "value": "0"
+              }
+            ]
+          }
+        },
+        "fiote": null,
+        "revision": "sha256:34eaeb5d2392f611a5dcc2851674ab8baffaf5e6f422f2f605482b1a18cd0090",
+        "handle": {
+          "root": "root_01M82JWDDC8WTAGWCF8TXCFWKW",
+          "slot": "slot_01M82JY8YX9ZYST4KSVG4VJPE2"
+        },
+        "effect": "moved"
+      },
+      "republishing_permission": "withheld, blocked dependent import, then restored and verified"
+    },
+    "normal_layout": {
+      "viewport": [
+        1680.0,
+        960.0
+      ],
+      "control_min": [
+        17.0,
+        869.0
+      ],
+      "control_max": [
+        393.0,
+        900.0
+      ],
+      "pointer_placed_and_undo": true
+    },
+    "narrow_layout": {
+      "viewport": [
+        360.0,
+        700.0
+      ],
+      "control_min": [
+        17.0,
+        609.0
+      ],
+      "control_max": [
+        170.0,
+        640.0
+      ],
+      "pointer_placed_and_undo": true
+    },
+    "earlier_workflows": {
+      "room_drag": {
+        "canvas_before": [
+          -240.0,
+          640.0
+        ],
+        "canvas_after": [
+          -116.92306518554688,
+          689.2308349609375
+        ],
+        "room_origin": [
+          -740.0,
+          440.0
+        ],
+        "model_xz_metres": [
+          6.230769348144531,
+          2.492308349609375
+        ]
+      },
+      "accepted_distance": "Distance from origin: 10.000000 m\nGeneration job_01M82JXB3X980T14404YHYYPY9\nSource sha256:2bc6bfdf72644ab17772ba45ab414d5793ef4267b7b00b7d62acfa7a2bfdc584",
+      "earlier_fiote_request": "request_01M82JXCDD97ATD6TGKFX6XKFS"
+    },
+    "upgrade_from_stage004": {
+      "original_revision": "sha256:22228f9cb17c265f09781068ff4238e15bf23bc7c84ede744ab307bac7777b37",
+      "reopened_revision": "sha256:a61025470f5d70563c6fbf2bb3c243c008b0ce05cb318155a1a6e6851eb2b6a0",
+      "earlier_slots_retained": 3,
+      "original_room_binding": {
+        "handle": {
+          "root": "root_01M82CC5308VZTA4N7G0FCQCYV",
+          "slot": "slot_01M82CC5Y58NSSXX4TB9KQYVYA"
+        },
+        "room": "placement_01M82CBXQN8KHVVTMRXG400CTE",
+        "placement": "placement_01M82CBXQN8A9TWBDPM1SCD05P"
+      },
+      "source_offline_on_reopen": true,
+      "pointer_placement_undone": true
+    },
+    "preliminary_while_compiling": {
+      "durable_accepted_edit_samples": 10,
+      "commit_us": {
+        "p50": 1236431,
+        "p95": 2895745,
+        "p99": 2895745,
+        "max": 2895745
+      }
+    },
+    "final_native_replay": {
+      "durable_accepted_edit_samples": 10,
+      "commit_us": {
+        "p50": 25117,
+        "p95": 32886,
+        "p99": 32886,
+        "max": 32886
+      }
+    },
+    "narrow_focus_regression": {
+      "geometry_before_reveal": {
+        "target_y": [
+          1650,
+          1681
+        ],
+        "panel_y": [
+          0,
+          648
+        ]
+      },
+      "old_requested_scroll_y": 2082,
+      "old_focused_y": [
+        -432,
+        -401
+      ],
+      "correct_required_scroll_y": 1041,
+      "same_saved_scene_after_scroll_and_stacking_fixes": {
+        "viewport": [
+          360.0,
+          700.0
+        ],
+        "control_min": [
+          17.0,
+          609.0
+        ],
+        "control_max": [
+          170.0,
+          640.0
+        ],
+        "pointer_placed_and_undo": true
+      },
+      "earlier_receipt_layout": {
+        "viewport": [
+          360.0,
+          700.0
+        ],
+        "control_min": [
+          17.0,
+          592.0
+        ],
+        "control_max": [
+          170.0,
+          640.0
+        ]
+      },
+      "earlier_placement_layout": {
+        "viewport": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            360.0,
+            700.0
+          ]
+        ],
+        "edit_panel": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            360.0,
+            648.0
+          ]
+        ],
+        "edit_toggle": [
+          [
+            4.0,
+            656.0
+          ],
+          [
+            44.0,
+            696.0
+          ]
+        ],
+        "focused_apply": [
+          [
+            17.0,
+            609.0
+          ],
+          [
+            333.0,
+            640.0
+          ]
+        ]
+      }
+    },
+    "native_control_activation_to_action_frame_us": {
+      "Definition library": [
+        46312,
+        52343
+      ],
+      "Browse source definitions": [
+        45175,
+        48019,
+        50199,
+        48115,
+        47713
+      ],
+      "Review Bracket · 040bbc352c8a": [
+        45559
+      ],
+      "Import reviewed definitions": [
+        48722,
+        46528,
+        46693
+      ],
+      "Place this definition": [
+        49212,
+        523766
+      ],
+      "Review Bracket · 8303a75c2bca": [
+        52536,
+        45497,
+        48742,
+        51045
+      ],
+      "Review Coated bracket · 321850e108c2": [
+        44387
+      ],
+      "Inspect Steel · b86b61906deb": [
+        44173,
+        51050
+      ],
+      "Keep this definition local": [
+        48242
+      ],
+      "Allow this definition to be imported": [
+        44585
+      ],
+      "Inspect Bracket · 040bbc352c8a": [
+        47068
+      ],
+      "Inspect Bracket · 8303a75c2bca": [
+        46969
+      ]
+    }
+  },
+  "measurement_context": {
+    "build": "unoptimized Rust 1.99.1 on x86_64 Linux, native CPU instructions, workspace compiler wrapper",
+    "kernel": "6.18.63",
+    "machine": "Intel Core i7-1165G7, 4 cores and 8 threads; Intel Iris Xe (TGL GT2), Mesa 26.3.0 on a private Weston 16 headless GL display",
+    "storage": "local NVMe, btrfs; fixture and all build/timing outputs inside the repository target directory",
+    "heap_boundary": "peak live Rust allocator bytes above phase entry; bytes in encoded undo snapshots are reported separately from heap and immutable files",
+    "sample_boundary": "one initial durable import save, one warm-up pair and 40 warm edits with the imported closure; each open verifies all definitions, placements and equality",
+    "cache": "fresh temporary documents on an already running OS, with no filesystem cache flush",
+    "import_admission": {
+      "quiet_before_run_seconds": 15.2,
+      "total_wait_seconds": 498.2,
+      "compilers_or_test_runners_seen_while_waiting": [
+        "cargo",
+        "cc1",
+        "gcc",
+        "ld-wrapper.sh",
+        "lince_document-",
+        "rust-lld",
+        "rustc"
+      ],
+      "max_dirty_and_writeback_kib_during_admission": 65060,
+      "admission": "15 consecutive seconds without a detected compiler, linker, Cargo command or native/document test process and with system Dirty + Writeback at most 64 MiB"
+    },
+    "import_process_sample": {
+      "elapsed_wall_seconds": 1.58,
+      "concurrent_active_build_tools": [],
+      "background_cpu_percent_one_logical_core": {
+        "workspace_defin": 24.7,
+        "codex": 10.8,
+        ".ghostty-wrappe": 10.1,
+        "niri": 9.5,
+        "it-thinks-demo": 5.1,
+        ".noctalia-wrapp": 4.4,
+        "claude": 2.5,
+        "steam": 1.9,
+        "steamwebhelper": 1.3,
+        "kworker/u33:4+i915_flip": 0.6,
+        "kworker/u32:9-btrfs-endio-meta": 0.6,
+        "kworker/u32:6-btrfs-endio-meta": 0.6,
+        "kworker/u33:1-i915_flip": 0.6
+      },
+      "tested_process_exit_code": 0
+    },
+    "import_rss_kib": 4948,
+    "journal_admission": {
+      "quiet_before_run_seconds": 15.2,
+      "total_wait_seconds": 15.2,
+      "compilers_or_test_runners_seen_while_waiting": [],
+      "max_dirty_and_writeback_kib_during_admission": 892,
+      "admission": "15 consecutive seconds without a detected compiler, linker, Cargo command or native/document test process and with system Dirty + Writeback at most 64 MiB"
+    },
+    "journal_process_sample": {
+      "elapsed_wall_seconds": 1.57,
+      "concurrent_active_build_tools": [],
+      "background_cpu_percent_one_logical_core": {
+        ".ghostty-wrappe": 8.9,
+        "codex": 8.9,
+        "niri": 8.3,
+        "it-thinks-demo": 5.7,
+        ".noctalia-wrapp": 3.2,
+        "claude": 1.9,
+        "steam": 1.3,
+        "kworker/u32:3-btrfs-endio-meta": 0.6,
+        "kworker/u32:6-btrfs-endio-meta": 0.6,
+        "kworker/u32:8-i915": 0.6,
+        "systemd": 0.6,
+        "gameoverlayui": 0.6,
+        "kworker/u32:4-btrfs-endio-meta": 0.6,
+        "kworker/u32:5-btrfs-endio-meta": 0.6,
+        "kworker/1:1H-i915_cleanup": 0.6,
+        "kworker/7:1H-kblockd": 0.6,
+        "steamwebhelper": 0.6,
+        "kworker/u33:1-i915_flip": 0.6
+      },
+      "tested_process_exit_code": 0
+    },
+    "journal_rss_kib": 9712,
+    "tiny_admission": {
+      "quiet_before_run_seconds": 15.2,
+      "total_wait_seconds": 15.2,
+      "compilers_or_test_runners_seen_while_waiting": [],
+      "max_dirty_and_writeback_kib_during_admission": 1552,
+      "admission": "15 consecutive seconds without a detected compiler, linker, Cargo command or native/document test process and with system Dirty + Writeback at most 64 MiB"
+    },
+    "tiny_process_sample": {
+      "elapsed_wall_seconds": 0.95,
+      "concurrent_active_build_tools": [],
+      "background_cpu_percent_one_logical_core": {
+        "codex": 10.5,
+        ".ghostty-wrappe": 9.5,
+        "niri": 8.4,
+        ".noctalia-wrapp": 4.2,
+        "it-thinks-demo": 4.2,
+        "rcu_preempt": 1.1,
+        "steamwebhelper": 1.1,
+        "steam": 1.1,
+        "gameoverlayui": 1.1,
+        "kworker/u33:1-i915_flip": 1.1
+      },
+      "tested_process_exit_code": 0
+    },
+    "tiny_rss_kib": 9244,
+    "earlier_timing_attempt_during_external_build": {
+      "import": {
+        "context": {
+          "elapsed_wall_seconds": 1.23,
+          "concurrent_active_build_tools": [
+            "cargo",
+            "rustc"
+          ],
+          "background_cpu_percent_one_logical_core": {
+            "rustc": 126.4,
+            "workspace_defin": 16.2,
+            "codex": 11.3,
+            "cargo": 11.3,
+            "rust-lld": 9.7,
+            "kswapd0": 8.1,
+            ".ghostty-wrappe": 7.3,
+            "niri": 6.5,
+            "claude": 4.9,
+            "it-thinks-demo": 4.1,
+            "kworker/u32:4-btrfs-endio-meta": 4.1,
+            ".noctalia-wrapp": 2.4,
+            "steamwebhelper": 1.6,
+            "kworker/u32:5+btrfs-endio": 1.6,
+            "kworker/u32:17-btrfs-endio-meta": 0.8,
+            "steam": 0.8,
+            "kworker/u32:5-btrfs-endio-meta": 0.8,
+            "kworker/u32:9-btrfs-endio-meta": 0.8,
+            "gcc": 0.8,
+            "ld-wrapper.sh": 0.8
+          },
+          "tested_process_exit_code": 0
+        },
+        "durable_us": {
+          "p50": 19445,
+          "p95": 29756,
+          "p99": 39557,
+          "max": 39557
+        },
+        "samples": {
+          "first_commit_heap": 14964,
+          "first_commit_us": 36694,
+          "first_imports": [
+            {
+              "added": 3,
+              "adopt_peak_heap_bytes": 7247,
+              "adopt_us": 386,
+              "browse_peak_heap_bytes": 16173,
+              "browse_us": 435,
+              "read": {
+                "bytes": 2831,
+                "files": 8,
+                "largest_input_bytes": 1577
+              },
+              "review_peak_heap_bytes": 5550,
+              "review_us": 267
+            },
+            {
+              "added": 2,
+              "adopt_peak_heap_bytes": 9152,
+              "adopt_us": 454,
+              "browse_peak_heap_bytes": 16173,
+              "browse_us": 289,
+              "read": {
+                "bytes": 2831,
+                "files": 8,
+                "largest_input_bytes": 1577
+              },
+              "review_peak_heap_bytes": 7596,
+              "review_us": 288
+            }
+          ],
+          "imported_definition_json_bytes": 1432,
+          "new_immutable_page_bytes": 2871,
+          "samples": [
+            {
+              "browse_heap": 16173,
+              "browse_us": 217,
+              "open_heap": 13044,
+              "open_us": 909,
+              "preview_heap": 7284,
+              "preview_us": 265,
+              "reused_heap": 7284,
+              "reused_us": 261,
+              "save_heap": 16854,
+              "save_us": 17593
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 270,
+              "open_heap": 13044,
+              "open_us": 943,
+              "preview_heap": 7284,
+              "preview_us": 315,
+              "reused_heap": 7284,
+              "reused_us": 287,
+              "save_heap": 16854,
+              "save_us": 17199
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 261,
+              "open_heap": 13044,
+              "open_us": 1010,
+              "preview_heap": 7284,
+              "preview_us": 296,
+              "reused_heap": 7284,
+              "reused_us": 286,
+              "save_heap": 16854,
+              "save_us": 17481
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 379,
+              "open_heap": 13044,
+              "open_us": 1020,
+              "preview_heap": 7284,
+              "preview_us": 330,
+              "reused_heap": 7284,
+              "reused_us": 311,
+              "save_heap": 16854,
+              "save_us": 18552
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 364,
+              "open_heap": 13044,
+              "open_us": 1032,
+              "preview_heap": 7284,
+              "preview_us": 346,
+              "reused_heap": 7284,
+              "reused_us": 380,
+              "save_heap": 16854,
+              "save_us": 18845
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 257,
+              "open_heap": 13044,
+              "open_us": 1549,
+              "preview_heap": 7284,
+              "preview_us": 310,
+              "reused_heap": 7284,
+              "reused_us": 368,
+              "save_heap": 16854,
+              "save_us": 22823
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 272,
+              "open_heap": 13044,
+              "open_us": 854,
+              "preview_heap": 7284,
+              "preview_us": 377,
+              "reused_heap": 7284,
+              "reused_us": 468,
+              "save_heap": 16854,
+              "save_us": 24289
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 219,
+              "open_heap": 13044,
+              "open_us": 1207,
+              "preview_heap": 7284,
+              "preview_us": 279,
+              "reused_heap": 7284,
+              "reused_us": 291,
+              "save_heap": 16854,
+              "save_us": 21572
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 306,
+              "open_heap": 13044,
+              "open_us": 823,
+              "preview_heap": 7284,
+              "preview_us": 339,
+              "reused_heap": 7284,
+              "reused_us": 319,
+              "save_heap": 16854,
+              "save_us": 29756
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 246,
+              "open_heap": 13044,
+              "open_us": 1257,
+              "preview_heap": 7284,
+              "preview_us": 366,
+              "reused_heap": 7284,
+              "reused_us": 422,
+              "save_heap": 16854,
+              "save_us": 18886
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 361,
+              "open_heap": 13044,
+              "open_us": 1006,
+              "preview_heap": 7284,
+              "preview_us": 458,
+              "reused_heap": 7284,
+              "reused_us": 451,
+              "save_heap": 16854,
+              "save_us": 20246
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 235,
+              "open_heap": 13044,
+              "open_us": 916,
+              "preview_heap": 7284,
+              "preview_us": 298,
+              "reused_heap": 7284,
+              "reused_us": 293,
+              "save_heap": 16854,
+              "save_us": 18564
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 237,
+              "open_heap": 13044,
+              "open_us": 912,
+              "preview_heap": 7284,
+              "preview_us": 319,
+              "reused_heap": 7284,
+              "reused_us": 284,
+              "save_heap": 16854,
+              "save_us": 19201
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 331,
+              "open_heap": 13044,
+              "open_us": 928,
+              "preview_heap": 7284,
+              "preview_us": 464,
+              "reused_heap": 7284,
+              "reused_us": 294,
+              "save_heap": 16854,
+              "save_us": 25650
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 252,
+              "open_heap": 13044,
+              "open_us": 856,
+              "preview_heap": 7284,
+              "preview_us": 325,
+              "reused_heap": 7284,
+              "reused_us": 342,
+              "save_heap": 16854,
+              "save_us": 21547
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 235,
+              "open_heap": 13044,
+              "open_us": 914,
+              "preview_heap": 7284,
+              "preview_us": 298,
+              "reused_heap": 7284,
+              "reused_us": 270,
+              "save_heap": 16854,
+              "save_us": 23579
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 240,
+              "open_heap": 13044,
+              "open_us": 1045,
+              "preview_heap": 7284,
+              "preview_us": 287,
+              "reused_heap": 7284,
+              "reused_us": 275,
+              "save_heap": 16854,
+              "save_us": 18244
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 245,
+              "open_heap": 13044,
+              "open_us": 940,
+              "preview_heap": 7284,
+              "preview_us": 296,
+              "reused_heap": 7284,
+              "reused_us": 276,
+              "save_heap": 16854,
+              "save_us": 18966
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 260,
+              "open_heap": 13044,
+              "open_us": 1276,
+              "preview_heap": 7284,
+              "preview_us": 296,
+              "reused_heap": 7284,
+              "reused_us": 274,
+              "save_heap": 16854,
+              "save_us": 19629
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 507,
+              "open_heap": 13044,
+              "open_us": 948,
+              "preview_heap": 7284,
+              "preview_us": 573,
+              "reused_heap": 7284,
+              "reused_us": 550,
+              "save_heap": 16854,
+              "save_us": 19543
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 241,
+              "open_heap": 13044,
+              "open_us": 1665,
+              "preview_heap": 7284,
+              "preview_us": 297,
+              "reused_heap": 7284,
+              "reused_us": 295,
+              "save_heap": 16854,
+              "save_us": 20338
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 415,
+              "open_heap": 13044,
+              "open_us": 942,
+              "preview_heap": 7284,
+              "preview_us": 490,
+              "reused_heap": 7284,
+              "reused_us": 496,
+              "save_heap": 16854,
+              "save_us": 23346
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 231,
+              "open_heap": 13044,
+              "open_us": 1059,
+              "preview_heap": 7284,
+              "preview_us": 288,
+              "reused_heap": 7284,
+              "reused_us": 288,
+              "save_heap": 16854,
+              "save_us": 19128
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 247,
+              "open_heap": 13044,
+              "open_us": 913,
+              "preview_heap": 7284,
+              "preview_us": 295,
+              "reused_heap": 7284,
+              "reused_us": 309,
+              "save_heap": 16854,
+              "save_us": 19363
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 248,
+              "open_heap": 13044,
+              "open_us": 870,
+              "preview_heap": 7284,
+              "preview_us": 309,
+              "reused_heap": 7284,
+              "reused_us": 270,
+              "save_heap": 16854,
+              "save_us": 18240
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 248,
+              "open_heap": 13044,
+              "open_us": 840,
+              "preview_heap": 7284,
+              "preview_us": 304,
+              "reused_heap": 7284,
+              "reused_us": 270,
+              "save_heap": 16854,
+              "save_us": 17103
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 234,
+              "open_heap": 13044,
+              "open_us": 1494,
+              "preview_heap": 7284,
+              "preview_us": 287,
+              "reused_heap": 7284,
+              "reused_us": 286,
+              "save_heap": 16854,
+              "save_us": 17484
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 513,
+              "open_heap": 13044,
+              "open_us": 1880,
+              "preview_heap": 7284,
+              "preview_us": 557,
+              "reused_heap": 7284,
+              "reused_us": 569,
+              "save_heap": 16854,
+              "save_us": 21786
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 463,
+              "open_heap": 13044,
+              "open_us": 1498,
+              "preview_heap": 7284,
+              "preview_us": 523,
+              "reused_heap": 7284,
+              "reused_us": 694,
+              "save_heap": 16854,
+              "save_us": 21474
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 325,
+              "open_heap": 13044,
+              "open_us": 1423,
+              "preview_heap": 7284,
+              "preview_us": 339,
+              "reused_heap": 7284,
+              "reused_us": 511,
+              "save_heap": 16854,
+              "save_us": 30719
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 439,
+              "open_heap": 13044,
+              "open_us": 1372,
+              "preview_heap": 7284,
+              "preview_us": 530,
+              "reused_heap": 7284,
+              "reused_us": 506,
+              "save_heap": 16854,
+              "save_us": 22511
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 416,
+              "open_heap": 13044,
+              "open_us": 1194,
+              "preview_heap": 7284,
+              "preview_us": 400,
+              "reused_heap": 7284,
+              "reused_us": 319,
+              "save_heap": 16854,
+              "save_us": 22458
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 278,
+              "open_heap": 13044,
+              "open_us": 945,
+              "preview_heap": 7284,
+              "preview_us": 425,
+              "reused_heap": 7284,
+              "reused_us": 310,
+              "save_heap": 16854,
+              "save_us": 19004
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 249,
+              "open_heap": 13044,
+              "open_us": 928,
+              "preview_heap": 7284,
+              "preview_us": 294,
+              "reused_heap": 7284,
+              "reused_us": 350,
+              "save_heap": 16854,
+              "save_us": 18624
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 223,
+              "open_heap": 13044,
+              "open_us": 906,
+              "preview_heap": 7284,
+              "preview_us": 277,
+              "reused_heap": 7284,
+              "reused_us": 276,
+              "save_heap": 16854,
+              "save_us": 18243
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 248,
+              "open_heap": 13044,
+              "open_us": 851,
+              "preview_heap": 7284,
+              "preview_us": 279,
+              "reused_heap": 7284,
+              "reused_us": 288,
+              "save_heap": 16854,
+              "save_us": 19445
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 254,
+              "open_heap": 13044,
+              "open_us": 1172,
+              "preview_heap": 7284,
+              "preview_us": 333,
+              "reused_heap": 7284,
+              "reused_us": 306,
+              "save_heap": 16854,
+              "save_us": 17838
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 255,
+              "open_heap": 13044,
+              "open_us": 1283,
+              "preview_heap": 7284,
+              "preview_us": 309,
+              "reused_heap": 7284,
+              "reused_us": 304,
+              "save_heap": 16854,
+              "save_us": 25561
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 365,
+              "open_heap": 13044,
+              "open_us": 924,
+              "preview_heap": 7284,
+              "preview_us": 355,
+              "reused_heap": 7284,
+              "reused_us": 351,
+              "save_heap": 16854,
+              "save_us": 28595
+            },
+            {
+              "browse_heap": 16173,
+              "browse_us": 266,
+              "open_heap": 13044,
+              "open_us": 1495,
+              "preview_heap": 7284,
+              "preview_us": 311,
+              "reused_heap": 7284,
+              "reused_us": 288,
+              "save_heap": 16854,
+              "save_us": 39557
+            }
+          ],
+          "undo_prior_definition_json_bytes": 59,
+          "untouched_shared_placement_json_bytes": 555
+        }
+      },
+      "journal": {
+        "context": {
+          "elapsed_wall_seconds": 9.11,
+          "concurrent_active_build_tools": [
+            "cargo",
+            "rustc"
+          ],
+          "background_cpu_percent_one_logical_core": {
+            "lince_document-": 11.4,
+            "claude": 9.3,
+            ".ghostty-wrappe": 9.0,
+            "codex": 9.0,
+            "cargo": 8.3,
+            "niri": 8.0,
+            "it-thinks-demo": 5.6,
+            ".noctalia-wrapp": 4.4,
+            "rustc": 2.2,
+            "steam": 1.6,
+            "kworker/u32:5+flush-btrfs-1": 1.1,
+            "steamwebhelper": 1.0
+          },
+          "tested_process_exit_code": 101
+        },
+        "durable_us": {
+          "p50": 43559,
+          "p95": 1089165,
+          "p99": 2664897,
+          "max": 2664897
+        },
+        "samples": [
+          {
+            "commit_us": 32525,
+            "peak_file_bytes": 601,
+            "request_bytes": 455,
+            "retry_us": 1534,
+            "staged_bytes": 2062
+          },
+          {
+            "commit_us": 39526,
+            "peak_file_bytes": 601,
+            "request_bytes": 455,
+            "retry_us": 1631,
+            "staged_bytes": 2173
+          },
+          {
+            "commit_us": 41462,
+            "peak_file_bytes": 601,
+            "request_bytes": 455,
+            "retry_us": 1730,
+            "staged_bytes": 2284
+          },
+          {
+            "commit_us": 43966,
+            "peak_file_bytes": 601,
+            "request_bytes": 455,
+            "retry_us": 707,
+            "staged_bytes": 2395
+          },
+          {
+            "commit_us": 44191,
+            "peak_file_bytes": 676,
+            "request_bytes": 455,
+            "retry_us": 1689,
+            "staged_bytes": 2506
+          },
+          {
+            "commit_us": 43798,
+            "peak_file_bytes": 787,
+            "request_bytes": 455,
+            "retry_us": 1801,
+            "staged_bytes": 2617
+          },
+          {
+            "commit_us": 44882,
+            "peak_file_bytes": 898,
+            "request_bytes": 455,
+            "retry_us": 1928,
+            "staged_bytes": 2728
+          },
+          {
+            "commit_us": 47160,
+            "peak_file_bytes": 1009,
+            "request_bytes": 455,
+            "retry_us": 1851,
+            "staged_bytes": 2839
+          },
+          {
+            "commit_us": 49845,
+            "peak_file_bytes": 1120,
+            "request_bytes": 458,
+            "retry_us": 1910,
+            "staged_bytes": 2956
+          },
+          {
+            "commit_us": 43385,
+            "peak_file_bytes": 1231,
+            "request_bytes": 458,
+            "retry_us": 1747,
+            "staged_bytes": 3067
+          },
+          {
+            "commit_us": 45049,
+            "peak_file_bytes": 1342,
+            "request_bytes": 458,
+            "retry_us": 1934,
+            "staged_bytes": 3178
+          },
+          {
+            "commit_us": 49986,
+            "peak_file_bytes": 1453,
+            "request_bytes": 458,
+            "retry_us": 1079,
+            "staged_bytes": 3289
+          },
+          {
+            "commit_us": 40191,
+            "peak_file_bytes": 1564,
+            "request_bytes": 458,
+            "retry_us": 1981,
+            "staged_bytes": 3400
+          },
+          {
+            "commit_us": 40323,
+            "peak_file_bytes": 1675,
+            "request_bytes": 458,
+            "retry_us": 2027,
+            "staged_bytes": 3511
+          },
+          {
+            "commit_us": 46628,
+            "peak_file_bytes": 1786,
+            "request_bytes": 458,
+            "retry_us": 1056,
+            "staged_bytes": 3622
+          },
+          {
+            "commit_us": 43364,
+            "peak_file_bytes": 1897,
+            "request_bytes": 458,
+            "retry_us": 2166,
+            "staged_bytes": 3733
+          },
+          {
+            "commit_us": 38228,
+            "peak_file_bytes": 2008,
+            "request_bytes": 458,
+            "retry_us": 1035,
+            "staged_bytes": 3844
+          },
+          {
+            "commit_us": 44670,
+            "peak_file_bytes": 2119,
+            "request_bytes": 458,
+            "retry_us": 2317,
+            "staged_bytes": 3955
+          },
+          {
+            "commit_us": 46030,
+            "peak_file_bytes": 2230,
+            "request_bytes": 458,
+            "retry_us": 3407,
+            "staged_bytes": 4066
+          },
+          {
+            "commit_us": 39289,
+            "peak_file_bytes": 2341,
+            "request_bytes": 458,
+            "retry_us": 2374,
+            "staged_bytes": 4177
+          },
+          {
+            "commit_us": 43559,
+            "peak_file_bytes": 2452,
+            "request_bytes": 458,
+            "retry_us": 2350,
+            "staged_bytes": 4288
+          },
+          {
+            "commit_us": 42601,
+            "peak_file_bytes": 2563,
+            "request_bytes": 458,
+            "retry_us": 2696,
+            "staged_bytes": 4399
+          },
+          {
+            "commit_us": 46552,
+            "peak_file_bytes": 2674,
+            "request_bytes": 458,
+            "retry_us": 2566,
+            "staged_bytes": 4510
+          },
+          {
+            "commit_us": 46768,
+            "peak_file_bytes": 2785,
+            "request_bytes": 458,
+            "retry_us": 1558,
+            "staged_bytes": 4621
+          },
+          {
+            "commit_us": 37458,
+            "peak_file_bytes": 2896,
+            "request_bytes": 458,
+            "retry_us": 2477,
+            "staged_bytes": 4732
+          },
+          {
+            "commit_us": 37914,
+            "peak_file_bytes": 3007,
+            "request_bytes": 458,
+            "retry_us": 2555,
+            "staged_bytes": 4843
+          },
+          {
+            "commit_us": 42318,
+            "peak_file_bytes": 3118,
+            "request_bytes": 458,
+            "retry_us": 2695,
+            "staged_bytes": 4954
+          },
+          {
+            "commit_us": 41785,
+            "peak_file_bytes": 3229,
+            "request_bytes": 458,
+            "retry_us": 2677,
+            "staged_bytes": 5065
+          },
+          {
+            "commit_us": 40461,
+            "peak_file_bytes": 3340,
+            "request_bytes": 458,
+            "retry_us": 3245,
+            "staged_bytes": 5176
+          },
+          {
+            "commit_us": 36129,
+            "peak_file_bytes": 3451,
+            "request_bytes": 458,
+            "retry_us": 2641,
+            "staged_bytes": 5287
+          },
+          {
+            "commit_us": 40846,
+            "peak_file_bytes": 3562,
+            "request_bytes": 458,
+            "retry_us": 2649,
+            "staged_bytes": 5398
+          },
+          {
+            "commit_us": 152764,
+            "peak_file_bytes": 1750,
+            "request_bytes": 458,
+            "retry_us": 834,
+            "staged_bytes": 7469
+          },
+          {
+            "commit_us": 42222,
+            "peak_file_bytes": 1750,
+            "request_bytes": 458,
+            "retry_us": 1146,
+            "staged_bytes": 3929
+          },
+          {
+            "commit_us": 38067,
+            "peak_file_bytes": 1829,
+            "request_bytes": 458,
+            "retry_us": 1247,
+            "staged_bytes": 3786
+          },
+          {
+            "commit_us": 1089165,
+            "peak_file_bytes": 1829,
+            "request_bytes": 458,
+            "retry_us": 2870,
+            "staged_bytes": 4119
+          },
+          {
+            "commit_us": 2664897,
+            "peak_file_bytes": 1908,
+            "request_bytes": 458,
+            "retry_us": 2695,
+            "staged_bytes": 3865
+          },
+          {
+            "commit_us": 1460172,
+            "peak_file_bytes": 1908,
+            "request_bytes": 458,
+            "retry_us": 2704,
+            "staged_bytes": 3976
+          },
+          {
+            "commit_us": 694404,
+            "peak_file_bytes": 1908,
+            "request_bytes": 458,
+            "retry_us": 1323,
+            "staged_bytes": 3976
+          },
+          {
+            "commit_us": 524283,
+            "peak_file_bytes": 1987,
+            "request_bytes": 458,
+            "retry_us": 1540,
+            "staged_bytes": 3944
+          },
+          {
+            "commit_us": 752087,
+            "peak_file_bytes": 1987,
+            "request_bytes": 458,
+            "retry_us": 1077,
+            "staged_bytes": 4166
+          }
+        ]
+      }
+    }
+  },
+  "tested_source_sha256": {
+    "crates/interface/src/native/canvas_item.rs": "398cff95e79560f8994b32b03e441d8af0dcf7ae2bbdaf874a758111d1359a0f",
+    "crates/document/src/epub.rs": "85d84e1c2eb7a789cfebf02bbbe7bcfb77938121ebd3ff554a4429b02d0d0517",
+    "crates/interface/src/native/edit_mode.rs": "4f7b66d289ad27c460dabe5506a320c27106b0d61dcad19757eb35d0c948d567",
+    "crates/interface/src/native/scroll_sand.rs": "51dcc2e3fc4b0fc2d2c42fbdf863c6aaf722a38c6187273155d4df770677dce1",
+    "crates/nucleus/src/canvas/scene.rs": "d3c0715b39b0855f678f52819f77ceaa81bfcdbf9aa0e5cdb077c2041cc0fdca",
+    "crates/nucleus/src/canvas/scene/definitions.rs": "d7354b273984a6333e22c53f7ad8e3fcced66735e9c9b1a7a2c3ad67ee0467a6",
+    "crates/nucleus/src/canvas/scene/operation.rs": "a06beed1339ed1fa20b4476689983be3cb9d31cdf12e9b4a2cf0c2cefeec33c1",
+    "crates/store/src/workspace_scene.rs": "89775b2662035e7872a48fd44ddc0d5f2d7c3afedabdacdd9ffe36a45371fdd1",
+    "crates/store/src/workspace_scene/library.rs": "f670dd02a93e5c62c95d56fb72d25c7379bfd5eee1a2f06f5f2edcd3edaab73f",
+    "crates/store/tests/workspace_definition_import.rs": "56ad5408788e8f27b9cd537601ef0a256225598bba0f4dec3965c27986366f4c",
+    "crates/interface/src/native/edit_mode/scene.rs": "626190aa38901f644aff8d8c2e6da6608fe6e577bcaec58a2c31b758b3d9905d",
+    "crates/interface/src/native/edit_mode/scene/library.rs": "9807b589a1fc5020ac243dc431ba50fd2add8849679d6b03bd38a9791e5091e3",
+    "crates/interface/src/native/edit_mode/scene/tests.rs": "a9cfed938037900415417eb2259dc4fbcb31ef68b5bff7ed21372a3b74fd8df7",
+    "crates/interface/src/native/laboratory/showoff.rs": "92def77391f73bee3ec3ccde4850dfc2388c7fa7c9c762fe3ea1719f2789aa7e",
+    "crates/interface/fixtures/showoff-parts.json": "b52f9d655f9106a87790bda9ad36b5ed19c61126285a91088f4d97d08c129977",
+    "crates/sandbox/examples/workspace_scene.rs": "4018d3e5ca16bb5902b93d2fb23aee617d7a5e926db9c4261d47eda7749eee1a",
+    "crates/sandbox/examples/workspace_scene/bridge.rs": "156c1b126f55f96258d44aecdfc232c2a63b994747db0120671c792c1ef1000f",
+    "crates/sandbox/examples/workspace_scene/library.rs": "53fe64e4c8fe8b66d90fe64dc56ecd58dcfa06ec14861ed2bf87d29db0512369",
+    "crates/sandbox/examples/workspace_scene/receipts.rs": "556007906bed59091fc18064968a074187932566e5f69246b1095adb98c9bee6",
+    "crates/xtask/src/workspace/mod.rs": "d4de7c8e8269f155aa366a1b7531fb35b15c70a740360ff73a9db0e5f8448304"
+  }
+}

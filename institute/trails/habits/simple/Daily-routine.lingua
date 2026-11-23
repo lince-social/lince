@@ -1,0 +1,75 @@
+Daily routine (@daily-routine: 0, is #chapter, #contains @sleep, #contains @eat-an-apple, #contains @exercise) {
+Sleep, eat an apple, and exercise are three independent daily habits. Each Frequency makes its Record a Need (-1). Set the quantity to zero when you complete it. An incomplete habit stays at -1 when its next occurrence arrives.
+
+The Frequencies use example times in UTC, starting on 2 January 2030. Choose the times, timezone, and first occurrences before using the example for your own routine. The simulation uses these same Records, Frequencies, and Rules.
+}
+
+Sleep (@sleep: 0, #part-of @daily-routine) {
+The example makes Sleep due at 22:00 UTC. Record completion after sleeping.
+}
+
+Eat an apple (@eat-an-apple: 0, #part-of @daily-routine) {
+The example makes Eat an apple due at 08:00 UTC. Record completion after eating an apple.
+}
+
+Exercise (@exercise: 0, #part-of @daily-routine) {
+The example makes Exercise due at 17:00 UTC. Record completion after the activity.
+}
+
+Frequency daily-sleep {
+    title "Daily sleep"
+    quantity 1
+    every 1 day
+    timezone "UTC"
+    next_at 2030-01-02T22:00:00Z
+}
+
+Frequency daily-apple {
+    title "Daily apple"
+    quantity 1
+    every 1 day
+    timezone "UTC"
+    next_at 2030-01-02T08:00:00Z
+}
+
+Frequency daily-exercise {
+    title "Daily exercise"
+    quantity 1
+    every 1 day
+    timezone "UTC"
+    next_at 2030-01-02T17:00:00Z
+}
+
+Karma daily-routine {
+    Rules {
+        Rule reset-sleep-need {
+            quantity 1
+            frequency @daily-sleep
+            record @sleep
+            condition """freq(@daily-sleep)"""
+            gate !=0
+            carry const:-1
+            consequences """[{"kind":"set-quantity"}]"""
+        }
+
+        Rule reset-apple-need {
+            quantity 1
+            frequency @daily-apple
+            record @eat-an-apple
+            condition """freq(@daily-apple)"""
+            gate !=0
+            carry const:-1
+            consequences """[{"kind":"set-quantity"}]"""
+        }
+
+        Rule reset-exercise-need {
+            quantity 1
+            frequency @daily-exercise
+            record @exercise
+            condition """freq(@daily-exercise)"""
+            gate !=0
+            carry const:-1
+            consequences """[{"kind":"set-quantity"}]"""
+        }
+    }
+}

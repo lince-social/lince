@@ -20,8 +20,12 @@
 // - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
 //   15, 16, 17, 21, 22, 23, 59, 60, 61, 68, 74, 91, 92, 99, 106, 110, 114, 388, 396, 399.
 
+pub mod scene_edits;
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
-use nucleus::canvas::{Component, Descriptor, Mutation, Request, Response};
+use nucleus::canvas::{
+    Component, Descriptor, Mutation, Request, Response, scene::operation as scene,
+};
 use serde::Deserialize;
 use std::{
     collections::BTreeMap,
@@ -47,6 +51,7 @@ pub struct Context {
 
 enum ExpectedResponse {
     Registry,
+    Scene(scene::Request),
     Element { placement: String },
     Export { name: String },
     Snapshot,
@@ -58,6 +63,7 @@ impl From<&Request> for ExpectedResponse {
     fn from(request: &Request) -> Self {
         match request {
             Request::Registry => Self::Registry,
+            Request::Scene { query, .. } => Self::Scene(query.clone()),
             Request::InspectElement { placement, .. } => Self::Element {
                 placement: placement.clone(),
             },
@@ -81,6 +87,7 @@ impl From<&Request> for ExpectedResponse {
 pub struct Call {
     pub request: Request,
     pub context: Context,
+    scene_enqueued: Option<(std::time::Instant, usize)>,
     live: Arc<AtomicBool>,
     canvas_live: Arc<AtomicBool>,
     reply: Option<oneshot::Sender<Result<Response, String>>>,
@@ -130,7 +137,11 @@ impl Receiver {
     }
 
     pub fn try_recv(&mut self) -> Result<Call, tokio::sync::mpsc::error::TryRecvError> {
-        self.receiver.try_recv()
+        let call = self.receiver.try_recv()?;
+        if let Some((start, bytes)) = call.scene_enqueued {
+            tracing::debug!(target: "engine::scene_edits", request_bytes = bytes, queue_us = start.elapsed().as_micros(), remaining_calls = self.receiver.len(), "Scene request admitted and dequeued");
+        }
+        Ok(call)
     }
 
     pub async fn recv(&mut self) -> Option<Call> {
@@ -367,7 +378,16 @@ impl Broker {
             pending.push((context.clone(), Arc::downgrade(&live)));
         }
         let (reply, answer) = oneshot::channel();
+        let scene_enqueued = if matches!(request, Request::Scene { .. }) {
+            Some((
+                std::time::Instant::now(),
+                nucleus::json::encoded_len(&request).map_err(|e| e.to_string())?,
+            ))
+        } else {
+            None
+        };
         let call = Call {
+            scene_enqueued,
             request,
             context,
             live,
@@ -605,6 +625,39 @@ impl Engine {
             .map_err(EngineError::Consequence)?;
         nucleus::canvas::bounded(&response).map_err(EngineError::Consequence)?;
         let response = match (expected, response) {
+            (ExpectedResponse::Scene(scene::Request::Inspect), Response::Scene { inspection })
+                if inspection.document.valid()
+                    && inspection.placements.len() <= nucleus::canvas::scene::MAX_SLOTS
+                    && inspection
+                        .placements
+                        .iter()
+                        .all(|p| p.handle.root.valid() && p.handle.slot.valid()) =>
+            {
+                Response::Scene { inspection }
+            }
+            (
+                ExpectedResponse::Scene(scene::Request::Submit { edit }),
+                Response::SceneReceipt { receipt },
+            ) if receipt.edit == edit
+                && receipt.revision != edit.expected
+                && receipt.handle.root.valid()
+                && receipt.handle.slot.valid()
+                && receipt.fiote == crate::operation_origin::component_origin() =>
+            {
+                Response::SceneReceipt { receipt }
+            }
+            (
+                ExpectedResponse::Scene(scene::Request::Receipt {
+                    document,
+                    request_id,
+                }),
+                Response::SceneReceipt { receipt },
+            ) if receipt.edit.document == document
+                && receipt.edit.request_id == request_id
+                && receipt.edit.validate().is_ok() =>
+            {
+                Response::SceneReceipt { receipt }
+            }
             (ExpectedResponse::Element { placement }, Response::Element { element })
                 if element.placement.id == placement =>
             {

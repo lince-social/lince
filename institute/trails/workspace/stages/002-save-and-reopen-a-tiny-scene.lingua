@@ -1,0 +1,29 @@
+Stage 002 — Save and reopen a tiny scene (@ws-stage-002: 0, is #chapter, #part-of @workspace-stages: 2, #done) { r_7YWS1ZXEFRAAAEWQXPWV983BVR
+**Status** Done on 2026-11-22. [Replay, sample directory and limits](../../../fixtures/workspace/stage02/README.md)
+
+## Capability
+
+Give two occurrences of one definition distinct stable handles. Expose create, edit, save and open through the native tree and inspector using atomic root publication.
+
+## Completion checks
+
+- [x] Move one occurrence, reopen the directory and identify both by their original handles. Interrupt a save and recover the last complete root.
+
+In the reopened tree, two screw placements should still point to the same screw definition. A local move belongs to one placement. If the interrupted save left a temporary payload on disk, the published root must still resolve every reference.
+
+## Implementation references
+
+**Provider handoffs** [001 · Baseline](001-re-establish-the-desktop-baseline.lingua)
+
+[Durable model and accepted-change foundation](../features/Model.lingua) · [02.T01](../features/Model.lingua#task-02t01) · [02.T02](../features/Model.lingua#task-02t02)
+
+Use the applicable fixture, tolerances and recovery cases in [02 · Durable model](../contracts/Durable-model-contracts.lingua#concrete-acceptance-replay).
+
+**Handoff** In Edit → Workspaces → Scene document, create a named part, place it twice, select one placement and edit its local coordinates in metres. The inspector also supports an optional Record UID, undo and redo. Save the directory and reopen it in a fresh Lince process. Both root/slot handles still resolve to the same pinned screw definition. The selected copy reopened at (0.125, −0.002, 0) m and the other at the origin. The crash replay exited a writer immediately before publishing its new head. A fresh reader recovered every reference from the prior root and a subsequent save succeeded.
+
+The pure scene model lives in [nucleus](../../../../crates/nucleus/src/canvas/scene.rs), directory publication in [store](../../../../crates/store/src/workspace_scene.rs), and the [native inspector](../../../../crates/interface/src/native/edit_mode/scene.rs) owns the local draft. Run `cargo run --locked -p lince-sandbox --example workspace_scene -- <fresh-directory>` in the interface development shell to exercise create, edit, save and a separate-process reopen automatically. Base revision `d46f719a7d8d` and the tested file hashes are recorded with the evidence. The local format admits 64 definitions, 128 placements and 64 KiB per structured file. Stage 003 owns the bridge from these handles to existing canvas items and Rooms. [Replay, sample directory and limits](../../../fixtures/workspace/stage02/README.md)
+
+**Laboratory showcase.** At the model workbench use **Edit → Workspaces → Scene document → Try the bracket example** to inspect two occurrences of one definition. Or use **New scene**, create a part and place a second copy. The cumulative replay takes both routes, saves the sample separately, saves the rebuilt scene and reopens its original handles in a new process. [Showcase guide and cumulative replay](../../../fixtures/workspace/showcase/README.md)
+
+[All stages](../Workspace-Stages.lingua) · [Previous · 001](001-re-establish-the-desktop-baseline.lingua) · [Next · 003](003-edit-an-existing-canvas-item-through-the-model.lingua)
+} r_7YWS1ZXEFRAAAEWQXPWV983BVR

@@ -64,15 +64,22 @@ pub(crate) fn handle(
     root: Entity,
     request: &api::Request,
 ) -> Result<api::Response, String> {
-    handle_checked(world, root, request, || false)
+    handle_checked(world, root, request, None, || false)
 }
 
 fn handle_checked(
     world: &mut World,
     root: Entity,
     request: &api::Request,
+    origin: Option<&nucleus::component::composition::Origin>,
     cancelled: impl Fn() -> bool,
 ) -> Result<api::Response, String> {
+    if let api::Request::Scene { workspace, query } = request {
+        request.validate()?;
+        return crate::native::edit_mode::scene::accepted::request(
+            world, root, *workspace, query, origin, cancelled,
+        );
+    }
     crate::native::topology::rooms::synchronize(world);
     let snapshot = capture(world, root)?;
     let existing = world
@@ -179,7 +186,13 @@ fn update(world: &mut World) {
                     crate::host::performance::Stage::NativeCanvasSync,
                 );
                 crate::host::performance::count(crate::host::performance::Count::NativeCanvasCalls);
-                let result = handle_checked(world, root, &call.request, || call.is_cancelled());
+                let result = handle_checked(
+                    world,
+                    root,
+                    &call.request,
+                    call.context.origin.as_ref(),
+                    || call.is_cancelled(),
+                );
                 let _ = call.complete(result);
             }
             if world

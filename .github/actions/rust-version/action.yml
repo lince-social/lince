@@ -1,0 +1,40 @@
+name: Select the Rust toolchain
+description: Read the shared Rust pin or select a stable compiler for candidate checks
+inputs:
+  candidate:
+    description: Optional stable release to check on main
+    default: ''
+outputs:
+  version:
+    description: Exact stable Rust version
+    value: ${{ steps.select.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - id: select
+      shell: bash
+      env:
+        RUST_CANDIDATE: ${{ inputs.candidate }}
+      run: |
+        python3 -B - <<'PYTHON'
+        import os
+        import re
+        import tomllib
+
+        with open("rust-toolchain.toml", "rb") as pin:
+            current = tomllib.load(pin)["toolchain"]["channel"]
+        candidate = os.environ["RUST_CANDIDATE"]
+        version = candidate or current
+        if not re.fullmatch(r"[0-9]+[.][0-9]+[.][0-9]+", version):
+            raise SystemExit("Expected an exact stable Rust version")
+        if candidate and os.environ["GITHUB_REF"] != "refs/heads/main":
+            raise SystemExit("Rust compiler candidates require main")
+        if candidate and tuple(map(int, version.split("."))) < tuple(map(int, current.split("."))):
+            raise SystemExit("Rust compiler candidates cannot downgrade the shared pin")
+        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+            print(f"version={version}", file=output)
+        # rustup otherwise prefers the checked-in pin when Cargo runs.
+        if candidate:
+            with open(os.environ["GITHUB_ENV"], "a") as environment:
+                print(f"RUSTUP_TOOLCHAIN={version}", file=environment)
+        PYTHON

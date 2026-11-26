@@ -218,7 +218,7 @@ impl Engine {
             }
         }
         Ok(
-            json!({"foods":foods,"references":references,"templates":templates,"offers":offers,"plans":plans,"vocabulary":vocabulary,"trails":{"entry":"institute/trails/health/Meal-preparation.lingua","needs":"institute/trails/health/Nutrition-needs.lingua","farming":"institute/trails/health/Farming.lingua"}}),
+            json!({"foods":foods,"references":references,"templates":templates,"offers":offers,"plans":plans,"vocabulary":vocabulary,"trails":{"entry":"institute/trails/ergon/gaia/nutrition/Meal-preparation.lingua","needs":"institute/trails/ergon/gaia/nutrition/Nutrition-needs.lingua","farming":"institute/trails/ergon/gaia/farming/Farming.lingua"}}),
         )
     }
 
@@ -234,25 +234,34 @@ impl Engine {
         let currency = store::vocabulary::resolve(&self.store.pool, &config.currency, actor)
             .await?
             .ok_or_else(|| invalid("Choose or create the plan's currency unit"))?;
-        let mut requirements = if let Some(profile) = &config.profile {
-            let refs = self
-                .demeter_references(&config.references, actor, &mut sources)
+        let linked_profile = if let Some(record) = &config.profile_record {
+            let (_, data) = self
+                .planning_data(record, PROFILE, actor, &mut sources)
                 .await?;
-            demeter::select_references(
-                &refs,
-                profile,
-                &config.overrides,
-                &config.disabled_nutrients,
-            )
-            .map_err(invalid)?
+            Some(serde_json::from_value::<Profile>(data)?)
         } else {
-            let mut req = config.manual.clone();
-            for bound in &config.overrides {
-                req.bounds.retain(|b| b.nutrient != bound.nutrient);
-                req.bounds.push(bound.clone());
-            }
-            req
+            None
         };
+        let mut requirements =
+            if let Some(profile) = linked_profile.as_ref().or(config.profile.as_ref()) {
+                let refs = self
+                    .demeter_references(&config.references, actor, &mut sources)
+                    .await?;
+                demeter::select_references(
+                    &refs,
+                    profile,
+                    &config.overrides,
+                    &config.disabled_nutrients,
+                )
+                .map_err(invalid)?
+            } else {
+                let mut req = config.manual.clone();
+                for bound in &config.overrides {
+                    req.bounds.retain(|b| b.nutrient != bound.nutrient);
+                    req.bounds.push(bound.clone());
+                }
+                req
+            };
         if let Some(shares) = &config.energy_share_overrides {
             requirements.energy_shares = shares.clone();
         }

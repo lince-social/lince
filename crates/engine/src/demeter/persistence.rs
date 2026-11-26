@@ -20,12 +20,12 @@ use crate::{
 };
 
 #[derive(Clone, Serialize, Deserialize)]
-struct ManagedTask {
-    controller: Option<String>,
-    plan: String,
+pub(super) struct ManagedTask {
+    pub(super) controller: Option<String>,
+    pub(super) plan: String,
     hash: String,
     state: String,
-    task: production::Task,
+    pub(super) task: production::Task,
 }
 
 impl ManagedTask {
@@ -109,6 +109,15 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
         config.validate().map_err(invalid)?;
+        if let Some(record) = &mut config.profile_record {
+            let (uid, data) = self
+                .planning_data(record, PROFILE, actor, &mut BTreeMap::new())
+                .await?;
+            serde_json::from_value::<Profile>(data)?
+                .energy()
+                .map_err(invalid)?;
+            *record = uid;
+        }
         for food in &mut config.foods {
             food.food = self.planning_read(&food.food, actor).await?;
         }
@@ -167,7 +176,11 @@ impl Engine {
         Ok(outcome)
     }
 
-    async fn demeter_term(&self, name: &str, actor: Option<&str>) -> Result<String, EngineError> {
+    pub(super) async fn demeter_term(
+        &self,
+        name: &str,
+        actor: Option<&str>,
+    ) -> Result<String, EngineError> {
         if name.trim() != name || name.is_empty() || name.len() > 128 {
             return Err(invalid("Choose a short vocabulary name"));
         }
@@ -330,7 +343,7 @@ impl Engine {
         self.require_permission(actor, "record:update").await?;
         let (uid, mut saved) = self.load_demeter(plan, actor).await?;
         let before = serde_json::to_value(&saved)?;
-        let (_, run) = self.load_optimization_run(run, actor).await?;
+        let (run_uid, run) = self.load_optimization_run(run, actor).await?;
         if run.kind != "demeter"
             || run.plan.as_deref() != Some(&uid)
             || !["optimal", "feasible"].contains(&run.state.as_str())
@@ -348,11 +361,13 @@ impl Engine {
                 ..Default::default()
             });
         }
+        let meal: demeter::Outcome = serde_json::from_value(
+            self.read_optimization_result(&run_uid)
+                .await?
+                .ok_or_else(|| invalid("The saved optimization result is unavailable"))?,
+        )?;
         let frozen = snapshot.clone();
         let (meal, projection) = tokio::task::spawn_blocking(move || {
-            let meal = frozen
-                .input
-                .solve(run.options, &std::sync::atomic::AtomicBool::new(false))?;
             let projection = production::project(
                 &frozen.input,
                 &meal,
@@ -388,6 +403,14 @@ impl Engine {
         if previous.len() > production::MAX_TASKS {
             return Err(invalid("Too many managed tasks for this plan"));
         }
+        let shopping_terms = if projection.tasks.iter().any(|task| task.kind == "buy") {
+            Some((
+                self.demeter_term("buy", actor).await?,
+                self.demeter_term("shopping-for", actor).await?,
+            ))
+        } else {
+            None
+        };
         let wanted: std::collections::BTreeSet<_> = projection
             .tasks
             .iter()
@@ -494,6 +517,34 @@ impl Engine {
                         .await?
                         .facts,
                 );
+            }
+            if task.kind == "buy"
+                && let Some((buy, shopping_for)) = &shopping_terms
+            {
+                let assertions = store::assertions::for_subjects(
+                    &self.store.pool,
+                    std::slice::from_ref(&task_uid),
+                )
+                .await?;
+                for (predicate, object) in [(buy, None), (shopping_for, Some(uid.clone()))] {
+                    if assertions.iter().any(|assertion| {
+                        assertion.predicate_uid == *predicate && assertion.object_uid == object
+                    }) {
+                        continue;
+                    }
+                    let action = Action::AssertRecord {
+                        subject: task_uid.clone(),
+                        predicate: predicate.clone(),
+                        object,
+                        quantity: None,
+                        unit: None,
+                    };
+                    outcome.facts.extend(
+                        self.act_at_with_authorship(action, actor.map(str::to_owned), now, None)
+                            .await?
+                            .facts,
+                    );
+                }
             }
             outcome.facts.extend(
                 self.change_record_scalar_as(

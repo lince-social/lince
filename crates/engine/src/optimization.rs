@@ -136,7 +136,10 @@ impl Engine {
         Ok(facts)
     }
 
-    async fn read_optimization_result(&self, uid: &str) -> Result<Option<Value>, EngineError> {
+    pub(crate) async fn read_optimization_result(
+        &self,
+        uid: &str,
+    ) -> Result<Option<Value>, EngineError> {
         let Some(value) = store::records::get_extension(&self.store.pool, uid, RESULT).await?
         else {
             return Ok(None);

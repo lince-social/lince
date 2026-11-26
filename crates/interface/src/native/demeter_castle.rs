@@ -44,9 +44,16 @@ pub const CREDITS: &[crate::native::credits::Attribution] = &[
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tab {
     #[default]
+    Plan,
+    Profile,
     Requirements,
     Foods,
+    Prices,
+    Stock,
+    Nutrition,
     Results,
+    Meals,
+    Shopping,
     Production,
 }
 
@@ -56,6 +63,18 @@ pub struct DemeterCastle {
     pub revision: u64,
     pub config: Config,
     pub tab: Tab,
+    #[serde(default)]
+    pub sidebar_collapsed: bool,
+    #[serde(skip)]
+    composition: Option<Arc<Value>>,
+    #[serde(skip)]
+    composition_expanded: bool,
+    #[serde(skip)]
+    shopping: Option<Arc<Value>>,
+    #[serde(skip)]
+    meal_day: usize,
+    #[serde(skip)]
+    food_picker_open: bool,
     pub selected_food: Option<String>,
     pub search: String,
     pub drafts: BTreeMap<String, String>,
@@ -93,7 +112,13 @@ impl Default for DemeterCastle {
             plan: None,
             revision: 0,
             config,
-            tab: Tab::Requirements,
+            tab: Tab::Plan,
+            sidebar_collapsed: false,
+            composition: None,
+            composition_expanded: false,
+            shopping: None,
+            meal_day: 0,
+            food_picker_open: false,
             selected_food: None,
             search: String::new(),
             drafts: BTreeMap::new(),
@@ -145,6 +170,7 @@ impl DemeterCastle {
 #[derive(Component)]
 struct View {
     ready: bool,
+    sidebar: Entity,
     body: Entity,
     status: Entity,
     fields: BTreeMap<String, Entity>,
@@ -160,6 +186,17 @@ enum Operation {
     Refresh,
     Open(String),
     Tab(Tab),
+    ToggleSidebar,
+    ToggleFoodPicker,
+    OpenShoppingRule(String),
+    MealDay(i8),
+    ExpandComposition,
+    ProfileRecord(bool),
+    UnlinkProfile,
+    AutoShopping(bool),
+    ShoppingReminder,
+    CompleteShopping(String),
+    OpenShoppingProtein,
     Search,
     Select(String),
     Remove(String),
@@ -198,6 +235,10 @@ enum Operation {
 #[derive(Clone)]
 enum Reply {
     Catalog,
+    Composition(String),
+    ProfileRecord(u64),
+    Shopping,
+    ShoppingReminder,
     Inspect(String),
     Save(bool, u64),
     Vocabulary,
@@ -256,52 +297,42 @@ pub fn spawn(
         .id();
     let frame = panel::frame(world, owner, "Demeter — meal preparation");
     let nav = panel::row(world, frame);
-    world.get_mut::<Node>(nav).unwrap().flex_wrap = FlexWrap::Wrap;
-    for (tab, label) in [
-        (Tab::Requirements, "Requirements"),
-        (Tab::Foods, "Foods / prices"),
-        (Tab::Results, "Results"),
-        (Tab::Production, "Acquire / grow"),
-    ] {
-        ui::button(world, nav, owner, label, Operation::Tab(tab));
+    ui::button(world, nav, owner, "Pages", Operation::ToggleSidebar);
+    let layout = panel::row(world, frame);
+    {
+        let mut node = world.get_mut::<Node>(layout).unwrap();
+        node.flex_wrap = FlexWrap::NoWrap;
+        node.align_items = AlignItems::Stretch;
+        node.flex_grow = 1.0;
+        node.flex_basis = px(0);
+        node.min_height = px(0);
     }
-    let body = panel::column(world, frame);
+    let sidebar = panel::column(world, layout);
+    {
+        let mut node = world.get_mut::<Node>(sidebar).unwrap();
+        node.width = percent(28);
+        node.max_width = px(154);
+        node.min_width = px(0);
+        node.flex_shrink = 0.0;
+        node.overflow = Overflow::scroll_y();
+    }
+    crate::native::scroll_sand::attach(world, sidebar);
+    let body = panel::column(world, layout);
     {
         let mut node = world.get_mut::<Node>(body).unwrap();
+        node.width = Val::Auto;
+        node.flex_shrink = 1.0;
         node.overflow = Overflow::scroll_y();
         node.flex_grow = 1.0;
-        node.flex_shrink = 1.0;
         node.flex_basis = px(0);
         node.min_width = px(0);
     }
     crate::native::scroll_sand::attach(world, body);
-    let controls = panel::row(world, frame);
-    world.get_mut::<Node>(controls).unwrap().flex_wrap = FlexWrap::Wrap;
-    ui::button(world, controls, owner, "Save", Operation::Save(false));
-    ui::button(
-        world,
-        controls,
-        owner,
-        "Save and solve",
-        Operation::Save(true),
-    );
-    ui::button(world, controls, owner, "Refresh", Operation::Refresh);
-    ui::button(
-        world,
-        controls,
-        owner,
-        "Meal preparation sources",
-        Operation::Sources,
-    );
-    panel::credits(world, controls, frame, CREDITS);
-    let status = crate::native::edit_mode::label(
-        world,
-        frame,
-        "Import Meal Preparation in Sync, refresh the catalogue, then edit the example profile.",
-        13.0,
-    );
+    let status =
+        crate::native::edit_mode::label(world, frame, "Choose a saved plan or create one.", 13.0);
     world.entity_mut(owner).insert(View {
         ready: false,
+        sidebar,
         body,
         status,
         fields: BTreeMap::new(),
@@ -468,6 +499,9 @@ impl Action for Operation {
             if !matches!(
                 self,
                 Self::Tab(_)
+                    | Self::ToggleSidebar
+                    | Self::ToggleFoodPicker
+                    | Self::OpenShoppingRule(_)
                     | Self::New
                     | Self::Refresh
                     | Self::Open(_)
@@ -480,8 +514,7 @@ impl Action for Operation {
         }
         if matches!(
             self,
-            Self::Select(_)
-                | Self::Remove(_)
+            Self::Remove(_)
                 | Self::Profile(_)
                 | Self::Group(_)
                 | Self::ResetOverrides
@@ -533,6 +566,13 @@ impl Action for Operation {
                 s.plan = Some(plan.clone());
                 s.session = nucleus::new_uid("demeter-editor");
                 s.drafts.clear();
+                s.shopping = None;
+                s.composition = None;
+                s.meal_day = 0;
+                s.selected_food = None;
+                s.food_picker_open = false;
+                s.result = None;
+                s.projection = None;
                 s.changed = false;
                 drop(s);
                 request(
@@ -542,6 +582,19 @@ impl Action for Operation {
                     Reply::Inspect(plan.clone()),
                 );
             }
+            Self::OpenShoppingRule(rule) => {
+                crate::native::karma_castle::open_rule(world, owner, rule)
+            }
+            Self::ToggleFoodPicker => {
+                let mut state = world.get_mut::<DemeterCastle>(owner).unwrap();
+                state.food_picker_open = !state.food_picker_open;
+                ui::render(world, owner);
+            }
+            Self::ToggleSidebar => {
+                let mut state = world.get_mut::<DemeterCastle>(owner).unwrap();
+                state.sidebar_collapsed = !state.sidebar_collapsed;
+                ui::render(world, owner);
+            }
             Self::Tab(tab) => {
                 world.get_mut::<DemeterCastle>(owner).unwrap().tab = *tab;
                 let body = world.get::<View>(owner).unwrap().body;
@@ -549,6 +602,159 @@ impl Action for Operation {
                     scroll.0 = Vec2::ZERO;
                 }
                 ui::render(world, owner);
+                refresh_page(world, owner);
+            }
+            Self::MealDay(step) => {
+                let mut state = world.get_mut::<DemeterCastle>(owner).unwrap();
+                state.meal_day = state
+                    .meal_day
+                    .saturating_add_signed(isize::from(*step))
+                    .min(
+                        state
+                            .result
+                            .as_ref()
+                            .map_or(0, |result| result.days.len().saturating_sub(1)),
+                    );
+                ui::render(world, owner);
+            }
+            Self::ExpandComposition => {
+                let mut state = world.get_mut::<DemeterCastle>(owner).unwrap();
+                state.composition_expanded = !state.composition_expanded;
+                ui::render(world, owner);
+            }
+            Self::ProfileRecord(write) => {
+                let state = world.get::<DemeterCastle>(owner).unwrap();
+                let token = editor::text(state, "profile-record").trim();
+                let record = (!token.is_empty())
+                    .then(|| token.to_owned())
+                    .or_else(|| state.config.profile_record.clone());
+                let profile = if *write {
+                    let Some(profile) = state.config.profile.clone() else {
+                        status(world, owner, "Choose an adult profile first.");
+                        return;
+                    };
+                    Some(profile)
+                } else {
+                    None
+                };
+                let version = state.edit_version;
+                request(
+                    world,
+                    owner,
+                    Command::ProfileRecord { record, profile },
+                    Reply::ProfileRecord(version),
+                );
+            }
+            Self::UnlinkProfile => {
+                let mut state = world.get_mut::<DemeterCastle>(owner).unwrap();
+                state.config.profile_record = None;
+                state.drafts.remove("profile-record");
+                state.changed = true;
+                state.stale = true;
+                state.edit_version = state.edit_version.saturating_add(1);
+                ui::render(world, owner);
+            }
+            Self::AutoShopping(enabled) => {
+                let mut state = world.get_mut::<DemeterCastle>(owner).unwrap();
+                if *enabled
+                    && (!state.config.forecasts.is_empty() || !state.config.production.is_empty())
+                {
+                    status(
+                        world,
+                        owner,
+                        "Choose a supermarket-only plan for live shopping.",
+                    );
+                    return;
+                }
+                state.config.auto_shopping = *enabled;
+                if *enabled {
+                    state.config.buy_all = true;
+                    state.config.horizon_days = state.config.days;
+                    state.drafts.remove("horizon");
+                }
+                let solve = *enabled
+                    && state.result.as_ref().is_some_and(|result| {
+                        matches!(
+                            result.solution.status,
+                            nucleus::optimization::Status::Optimal
+                                | nucleus::optimization::Status::Feasible
+                        )
+                    });
+                state.changed = true;
+                state.stale = true;
+                state.edit_version = state.edit_version.saturating_add(1);
+                ui::render(world, owner);
+                Operation::Save(solve).apply(world, owner);
+            }
+            Self::ShoppingReminder => {
+                let state = world.get::<DemeterCastle>(owner).unwrap();
+                let Some(plan) = state.plan.clone() else {
+                    status(world, owner, "Save the plan before scheduling a reminder.");
+                    return;
+                };
+                if state.changed {
+                    status(
+                        world,
+                        owner,
+                        "Save your changes before scheduling a reminder.",
+                    );
+                    return;
+                }
+                let first_at = match editor::reminder_time(state) {
+                    Ok(first_at) => first_at,
+                    Err(error) => {
+                        status(world, owner, error);
+                        return;
+                    }
+                };
+                request(
+                    world,
+                    owner,
+                    Command::ShoppingReminder { plan, first_at },
+                    Reply::ShoppingReminder,
+                );
+            }
+            Self::CompleteShopping(need) => {
+                if let Some(plan) = world
+                    .get::<DemeterCastle>(owner)
+                    .and_then(|state| state.plan.clone())
+                {
+                    request(
+                        world,
+                        owner,
+                        Command::CompleteShopping {
+                            plan,
+                            need: need.clone(),
+                        },
+                        Reply::Shopping,
+                    );
+                }
+            }
+            Self::OpenShoppingProtein => {
+                let state = world.get::<DemeterCastle>(owner).unwrap();
+                let Some(data) = &state.shopping else { return };
+                let Ok(query) = serde_json::from_value(data["query"].clone()) else {
+                    return;
+                };
+                let draft = crate::native::protein_castle::ProteinDraft::from_protein(
+                    format!("Shopping — {}", state.config.name),
+                    String::new(),
+                    query,
+                );
+                let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+                    return;
+                };
+                let workspace = world
+                    .get::<crate::native::workspace::WorkspaceMember>(owner)
+                    .map_or(1, |entry| entry.0);
+                let position = world
+                    .get::<crate::native::canvas::CanvasItem>(owner)
+                    .map_or(DVec2::ZERO, |item| {
+                        item.position + DVec2::new(f64::from(item.size.x) + 24.0, 0.0)
+                    });
+                let protein =
+                    crate::native::protein_castle::spawn(world, root, workspace, position, draft);
+                crate::native::protein_castle::ProteinAction::Run.apply(world, protein);
             }
             Self::Search => ui::render(world, owner),
             Self::Select(food) => {
@@ -562,9 +768,15 @@ impl Action for Operation {
                         volume_ml_per_g: None,
                     });
                     s.changed = true;
+                    s.stale = true;
+                    s.edit_version = s.edit_version.saturating_add(1);
                 }
+                s.composition = None;
+                s.composition_expanded = false;
+                s.food_picker_open = false;
                 drop(s);
                 ui::render(world, owner);
+                refresh_page(world, owner);
             }
             Self::Remove(food) => {
                 let mut s = world.get_mut::<DemeterCastle>(owner).unwrap();
@@ -830,7 +1042,7 @@ impl Action for Operation {
                 crate::native::sync_castle::open_source(
                     world,
                     parent,
-                    "institute/trails/health/Meal-preparation.lingua",
+                    "institute/trails/ergon/gaia/nutrition/Meal-preparation.lingua",
                 );
             }
             Self::Reference(reference) => {
@@ -839,6 +1051,28 @@ impl Action for Operation {
                 }
             }
         }
+    }
+}
+
+fn refresh_page(world: &mut World, owner: Entity) {
+    let state = world.get::<DemeterCastle>(owner).unwrap();
+    match state.tab {
+        Tab::Nutrition => {
+            if let Some(food) = state.selected_food.clone() {
+                request(
+                    world,
+                    owner,
+                    Command::FoodComposition { food: food.clone() },
+                    Reply::Composition(food),
+                );
+            }
+        }
+        Tab::Shopping => {
+            if let Some(plan) = state.plan.clone() {
+                request(world, owner, Command::Shopping { plan }, Reply::Shopping);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -897,7 +1131,60 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     };
     let mut state = world.get::<DemeterCastle>(owner).unwrap().clone();
     let mut followup = None;
+    let mut refresh_current_page = false;
     let message = match reply {
+        Reply::Composition(food) => {
+            if state.selected_food.as_deref() != Some(&food) {
+                return;
+            }
+            state.composition = Some(Arc::new(data["composition"].clone()));
+            "Food composition loaded.".into()
+        }
+        Reply::ProfileRecord(version) => {
+            if state.edit_version != version {
+                status(
+                    world,
+                    owner,
+                    "Profile reply received. Your newer editor changes are preserved.",
+                );
+                return;
+            }
+            let Some(record) = data["record"].as_str() else {
+                return;
+            };
+            let Ok(profile) = Profile::deserialize(&data["profile"]) else {
+                return;
+            };
+            state.config.profile_record = Some(record.into());
+            state.config.profile = Some(profile);
+            state.drafts.remove("profile-record");
+            for key in ["age", "height", "weight", "activity", "energy"] {
+                state.drafts.remove(key);
+            }
+            state.changed = true;
+            state.stale = true;
+            state.edit_version = state.edit_version.saturating_add(1);
+            if state.config.references.is_empty() {
+                state.config.references = state.catalog["references"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|entry| entry["uid"].as_str().map(str::to_owned))
+                    .collect();
+            }
+            "Profile linked. Save the plan to use this Record.".into()
+        }
+        Reply::Shopping => {
+            if data["plan"].as_str() != state.plan.as_deref() {
+                return;
+            }
+            state.shopping = Some(Arc::new(data.clone()));
+            "Shopping list updated.".into()
+        }
+        Reply::ShoppingReminder => {
+            refresh_current_page = true;
+            "Frequency, Karma rule, and shopping Protein saved.".into()
+        }
         Reply::Catalog => {
             world.get_mut::<View>(owner).unwrap().ready = true;
             state.catalog = data.clone().into();
@@ -1006,9 +1293,20 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                         return;
                     }
                 }
+                if let Ok(profile) = Profile::deserialize(&data["linked_profile"]) {
+                    state.config.profile = Some(profile);
+                }
+                if state
+                    .selected_food
+                    .as_ref()
+                    .is_none_or(|id| !state.config.foods.iter().any(|food| &food.food == id))
+                {
+                    state.selected_food = state.config.foods.first().map(|food| food.food.clone());
+                }
                 state.revision = data["saved"]["revision"].as_u64().unwrap_or(0);
                 editor::retain_auxiliary(&mut state.drafts);
             }
+            refresh_current_page = true;
             state.stale = data["last"]["stale"].as_bool().unwrap_or(true) || state.changed;
             state.managed_tasks = Arc::new(data["tasks"].as_array().cloned().unwrap_or_default());
             state.run = data["saved"]["last_run"].as_str().map(str::to_owned);
@@ -1029,6 +1327,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             state.stale = state.changed || state.revision != revision;
             state.result = None;
             state.projection = None;
+            state.meal_day = 0;
             state.tab = Tab::Results;
             world.get_mut::<View>(owner).unwrap().running = true;
             "Solving in the background. You can cancel this run.".into()
@@ -1046,7 +1345,20 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     }
                 }
             }
-            solve_status(data)
+            if let Some(tasks) = data["managed_tasks"].as_array() {
+                state.managed_tasks = Arc::new(tasks.clone());
+            }
+            if let Some(error) = data["shopping_error"].as_str() {
+                format!(
+                    "{} Shopping list update failed: {error}",
+                    solve_status(data)
+                )
+            } else if data["shopping_published"] == true {
+                refresh_current_page = true;
+                format!("{} Shopping list updated.", solve_status(data))
+            } else {
+                solve_status(data)
+            }
         }
         Reply::Project | Reply::Accept => {
             if let Some(tasks) = data["managed_tasks"].as_array() {
@@ -1076,5 +1388,8 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     status(world, owner, message);
     if let Some((command, reply)) = followup {
         request(world, owner, command, reply);
+    }
+    if refresh_current_page {
+        refresh_page(world, owner);
     }
 }

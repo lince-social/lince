@@ -554,3 +554,188 @@ async fn confirmed_existing_production_supplies_meals_only_from_its_harvest_date
             .any(|t| t["kind"] == "harvest" && t["on"] == "2026-10-26")
     );
 }
+
+#[tokio::test]
+async fn live_shopping_reuses_the_same_need_and_karma_reads_a_later_solve() {
+    let engine = support::karma::engine().await;
+    let (plan, _, mut config) = ready(&engine).await;
+    config.buy_all = true;
+    config.horizon_days = config.days;
+    config.auto_shopping = true;
+    config.manual.bounds[0].bounds.lower = Some(exact("110").unwrap());
+    command(
+        &engine,
+        Command::Save {
+            plan: Some(plan.clone()),
+            expected_revision: 1,
+            config: config.clone(),
+        },
+    )
+    .await;
+
+    let (_, first_solve) = solved(&engine, &plan).await;
+    assert_eq!(first_solve["shopping_published"], true, "{first_solve}");
+    let shopping = command(&engine, Command::Shopping { plan: plan.clone() }).await;
+    let rows = shopping["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 1, "{shopping}");
+    let need = rows[0]["uid"].as_str().unwrap().to_owned();
+    let record = store::records::get(&engine.store.pool, &need)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(record.quantity.to_string(), "-300");
+    assert!(record.head.starts_with("Buy "));
+    let assertions = store::assertions::for_subjects(&engine.store.pool, &[need.clone()])
+        .await
+        .unwrap();
+    assert!(assertions.iter().any(|row| row.predicate == "buy"));
+    assert!(
+        assertions
+            .iter()
+            .any(|row| row.object_uid.as_deref() == Some(&plan))
+    );
+
+    engine
+        .install_karma_runtime_config(
+            engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("shopping-test".into())
+                .unwrap(),
+        )
+        .unwrap();
+    let first = chrono::Utc::now() + chrono::TimeDelta::days(1);
+    let setup = Command::ShoppingReminder {
+        plan: plan.clone(),
+        first_at: first.to_rfc3339(),
+    };
+    let reminder = command(&engine, setup.clone()).await;
+    let again = command(&engine, setup).await;
+    assert_eq!(again["rule"], reminder["rule"]);
+
+    config.manual.bounds[0].bounds.lower = Some(exact("160").unwrap());
+    command(
+        &engine,
+        Command::Save {
+            plan: Some(plan.clone()),
+            expected_revision: 2,
+            config: config.clone(),
+        },
+    )
+    .await;
+    let (_, second_solve) = solved(&engine, &plan).await;
+    assert_eq!(second_solve["shopping_published"], true, "{second_solve}");
+    let live = command(&engine, Command::Shopping { plan: plan.clone() }).await;
+    let rows = live["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["uid"], need);
+    assert_eq!(rows[0]["quantity"], "-400");
+
+    engine
+        .advance_karma_time(first + chrono::TimeDelta::seconds(1))
+        .await
+        .unwrap();
+    let mut effects = Vec::new();
+    for _ in 0..4 {
+        effects.extend(engine.run_due_effects().await.unwrap());
+    }
+    assert!(
+        effects.iter().any(|effect| effect.kind == "notify"
+            && effect.ok
+            && effect.result.contains("Buy meal-food (400 g)")),
+        "{effects:?}"
+    );
+
+    command(
+        &engine,
+        Command::CompleteShopping {
+            plan: plan.clone(),
+            need,
+        },
+    )
+    .await;
+    config.manual.bounds[0].bounds.lower = Some(exact("180").unwrap());
+    command(
+        &engine,
+        Command::Save {
+            plan: Some(plan.clone()),
+            expected_revision: 3,
+            config,
+        },
+    )
+    .await;
+    let (_, third_solve) = solved(&engine, &plan).await;
+    assert_eq!(third_solve["shopping_published"], true);
+    let empty = command(&engine, Command::Shopping { plan }).await;
+    assert_eq!(empty["rows"], json!([]));
+}
+
+#[tokio::test]
+async fn updating_a_linked_profile_changes_the_plan_inputs() {
+    let engine = support::engine().await;
+    let (plan, _, mut config) = ready(&engine).await;
+    let ego = support::plain(&engine, "ego-for-demeter", 0.0).await;
+    let source = support::plain(&engine, "test-protein-reference", 0.0).await;
+    engine
+        .act(
+            Action::SetExtension {
+                target: source.clone(),
+                namespace: "demeter.reference".into(),
+                fds: json!({
+                    "nutrient": "protein_g", "unit": "g", "kind": "rda", "scope": "total",
+                    "source_url": "https://example.test",
+                    "cases": [{"sex":"male","age_min":19,"age_max":120}],
+                    "per_kg": "1"
+                }),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut profile = Profile {
+        age: 26,
+        group: ReferenceGroup::Male,
+        height_cm: exact("170").unwrap(),
+        weight_kg: exact("70").unwrap(),
+        activity_factor: exact("1.2").unwrap(),
+        energy_override_kcal: Some(exact("100").unwrap()),
+    };
+    command(
+        &engine,
+        Command::ProfileRecord {
+            record: Some(ego.clone()),
+            profile: Some(profile.clone()),
+        },
+    )
+    .await;
+    config.profile_record = Some(ego.clone());
+    config.references = vec![source];
+    command(
+        &engine,
+        Command::Save {
+            plan: Some(plan.clone()),
+            expected_revision: 1,
+            config,
+        },
+    )
+    .await;
+    let before = command(&engine, Command::Inspect { plan: plan.clone() }).await;
+    profile.weight_kg = exact("80").unwrap();
+    command(
+        &engine,
+        Command::ProfileRecord {
+            record: Some(ego),
+            profile: Some(profile),
+        },
+    )
+    .await;
+    let after = command(&engine, Command::Inspect { plan }).await;
+    assert!(after["error"].is_null());
+    assert_ne!(before["hash"], after["hash"]);
+    let requirements: Requirements =
+        serde_json::from_value(after["input"]["requirements"].clone()).unwrap();
+    assert!(
+        requirements
+            .bounds
+            .iter()
+            .any(|bound| bound.nutrient == "protein_g"
+                && bound.bounds.lower == Some(exact("80").unwrap()))
+    );
+}

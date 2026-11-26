@@ -271,6 +271,13 @@ impl Engine {
                     .to_string();
                 let delivered =
                     store::misc::notifies_delivered_since(&self.store.pool, &midnight).await?;
+                if delivered < budget
+                    && payload["demeter_shopping"] == true
+                    && payload["actor"].is_null()
+                    && let Some(message) = payload["message"].as_str()
+                {
+                    utils::diagnostics::Diagnostics::global().report("Demeter shopping", message);
+                }
                 Ok((
                     true,
                     if delivered >= budget {
@@ -284,9 +291,8 @@ impl Engine {
                 let action =
                     decode::<crate::actions::Action>(payload.get("action").ok_or_else(|| {
                         EngineError::Consequence("Action effect has no action".into())
-                    })?,
-                )
-                .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                    })?)
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
                 let outcome = Box::pin(self.act(action, actor.map(str::to_string))).await?;
                 Ok((true, format!("{} facts committed", outcome.facts.len())))
             }

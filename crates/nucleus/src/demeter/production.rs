@@ -258,6 +258,38 @@ pub fn project(
             return Err("Choose one production process per food".into());
         }
     }
+    if buy_all && choices.is_empty() && horizon_days == input.days {
+        let mut purchases = BTreeMap::<(&str, NaiveDate), f64>::new();
+        for item in &outcome.shopping {
+            let offer = input
+                .offers
+                .iter()
+                .find(|offer| offer.id == item.offer)
+                .ok_or("Shopping offer disappeared")?;
+            let on = date(&offer.available_on)?.max(start);
+            *purchases.entry((&item.food, on)).or_default() += item.bought_g;
+        }
+        for ((id, on), amount) in purchases {
+            let food = input
+                .foods
+                .iter()
+                .find(|food| food.choice.food == id)
+                .ok_or("Shopping food disappeared")?;
+            task(
+                &mut projection,
+                (id, "market"),
+                "buy",
+                format!("Buy {}", food.label),
+                on,
+                (amount, "g"),
+                format!("{id}:buy:{on}"),
+            )?;
+        }
+        projection
+            .tasks
+            .sort_by(|a, b| (&a.on, &a.key).cmp(&(&b.on, &b.key)));
+        return Ok(projection);
+    }
     for food in &input.foods {
         let id = &food.choice.food;
         let pattern: Vec<f64> = outcome

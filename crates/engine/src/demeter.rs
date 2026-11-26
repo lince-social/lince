@@ -17,6 +17,7 @@
 
 mod catalog;
 mod persistence;
+mod shopping;
 
 use crate::{
     Engine, EngineError,
@@ -38,6 +39,7 @@ use std::collections::BTreeMap;
 pub const PLAN: &str = "lince.demeter.plan";
 pub const OFFER: &str = "lince.demeter.offer";
 pub const TASK: &str = "lince.demeter.task";
+const PROFILE: &str = "lince.demeter.profile";
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -47,6 +49,12 @@ pub struct Config {
     pub days: u16,
     pub currency: String,
     pub profile: Option<Profile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile_record: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub meals: Vec<MealSlot>,
+    #[serde(default)]
+    pub auto_shopping: bool,
     pub manual: Requirements,
     #[serde(default)]
     pub energy_share_overrides: Option<Vec<demeter::EnergyShare>>,
@@ -63,6 +71,13 @@ pub struct Config {
     pub volume_ml_per_day: Option<DecimalValue>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MealSlot {
+    pub name: String,
+    pub percent: u8,
+}
+
 impl Config {
     pub fn new(start: String) -> Self {
         Self {
@@ -71,6 +86,9 @@ impl Config {
             days: 7,
             currency: "brl".into(),
             profile: None,
+            profile_record: None,
+            meals: Vec::new(),
+            auto_shopping: false,
             manual: Requirements::default(),
             energy_share_overrides: None,
             overrides: Vec::new(),
@@ -104,6 +122,38 @@ impl Config {
             || nucleus::json::encoded_len(self).map_err(|e| e.to_string())? > 500_000
         {
             return Err("Check plan name, dates, duration, and selection limits".into());
+        }
+        if self
+            .profile_record
+            .as_ref()
+            .is_some_and(|target| target.trim().is_empty() || target.len() > 256)
+        {
+            return Err("Choose one profile Record".into());
+        }
+        if self.meals.len() > 8
+            || self.meals.iter().any(|meal| {
+                meal.name.trim().is_empty()
+                    || meal.name.len() > 80
+                    || meal.name.contains([',', '='])
+                    || meal.percent == 0
+            })
+            || (!self.meals.is_empty()
+                && self
+                    .meals
+                    .iter()
+                    .map(|meal| u16::from(meal.percent))
+                    .sum::<u16>()
+                    != 100)
+        {
+            return Err("Use up to eight named meals with shares adding to 100%".into());
+        }
+        if self.auto_shopping
+            && (!self.buy_all
+                || self.horizon_days != self.days
+                || !self.production.is_empty()
+                || !self.forecasts.is_empty())
+        {
+            return Err("Automatic shopping requires a supermarket-only plan and a projection matching the food period".into());
         }
         if let Some(profile) = &self.profile {
             profile.energy()?;
@@ -139,6 +189,27 @@ pub struct OfferDraft {
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     Catalog,
+    FoodComposition {
+        food: String,
+    },
+    ProfileRecord {
+        record: Option<String>,
+        profile: Option<Profile>,
+    },
+    Shopping {
+        plan: String,
+    },
+    ShoppingDue {
+        plan: String,
+    },
+    ShoppingReminder {
+        plan: String,
+        first_at: String,
+    },
+    CompleteShopping {
+        plan: String,
+        need: String,
+    },
     Vocabulary {
         currency: String,
     },
@@ -188,13 +259,17 @@ impl Command {
     pub fn permission(&self) -> &'static str {
         match self {
             Self::Catalog
+            | Self::FoodComposition { .. }
+            | Self::ProfileRecord { profile: None, .. }
+            | Self::Shopping { .. }
             | Self::Recommend { .. }
             | Self::Inspect { .. }
             | Self::Project { .. } => "record:read",
             Self::Vocabulary { .. } => "permission:assign",
-            Self::Save { plan: None, .. } | Self::SaveOffer { .. } | Self::Solve { .. } => {
-                "record:create"
-            }
+            Self::Save { plan: None, .. }
+            | Self::SaveOffer { .. }
+            | Self::Solve { .. }
+            | Self::ProfileRecord { record: None, .. } => "record:create",
             _ => "record:update",
         }
     }
@@ -241,6 +316,29 @@ impl Engine {
         self.require_permission(actor, request.permission()).await?;
         let _gate = self.meal_runtime.gate.lock().await;
         match request {
+            Command::FoodComposition { food } => {
+                let (uid, composition) = self
+                    .planning_data(&food, "nutrition", actor, &mut BTreeMap::new())
+                    .await?;
+                Ok(ActionOutcome {
+                    data: Some(json!({"food":uid,"composition":composition})),
+                    ..Default::default()
+                })
+            }
+            Command::ProfileRecord { record, profile } => {
+                self.demeter_profile(record.as_deref(), profile, actor, now)
+                    .await
+            }
+            Command::Shopping { plan } => self.demeter_shopping(&plan, actor).await,
+            Command::ShoppingDue { plan } => self.demeter_shopping_due(&plan, actor, now).await,
+            Command::ShoppingReminder { plan, first_at } => {
+                self.demeter_shopping_reminder(&plan, &first_at, actor, now)
+                    .await
+            }
+            Command::CompleteShopping { plan, need } => {
+                self.complete_demeter_shopping(&plan, &need, actor, now)
+                    .await
+            }
             Command::Catalog => Ok(ActionOutcome {
                 data: Some(self.demeter_catalog(actor).await?),
                 ..Default::default()
@@ -274,6 +372,14 @@ impl Engine {
             Command::SaveOffer { offer } => self.save_demeter_offer(offer, actor, now).await,
             Command::Inspect { plan } => {
                 let (uid, saved) = self.load_demeter(&plan, actor).await?;
+                let linked_profile = if let Some(record) = &saved.config.profile_record {
+                    self.planning_data(record, PROFILE, actor, &mut BTreeMap::new())
+                        .await
+                        .ok()
+                        .map(|(_, value)| value)
+                } else {
+                    None
+                };
                 let snapshot = self.demeter_snapshot(&uid, &saved, actor).await;
                 let hash = snapshot
                     .as_ref()
@@ -289,7 +395,7 @@ impl Engine {
                 };
                 Ok(ActionOutcome {
                     data: Some(
-                        json!({"plan":uid,"saved":saved,"hash":hash,"last":last,"input":snapshot.as_ref().ok().map(|s|&s.input),"error":snapshot.as_ref().err().map(|e|e.to_string()),"tasks":self.demeter_tasks(&uid,actor).await?}),
+                        json!({"plan":uid,"saved":saved,"linked_profile":linked_profile,"hash":hash,"last":last,"input":snapshot.as_ref().ok().map(|s|&s.input),"error":snapshot.as_ref().err().map(|e|e.to_string()),"tasks":self.demeter_tasks(&uid,actor).await?}),
                     ),
                     ..Default::default()
                 })
@@ -332,12 +438,12 @@ impl Engine {
                 );
                 Ok(outcome)
             }
-            Command::Poll { run } => self.poll_optimization(&run, actor, now, false).await,
+            Command::Poll { run } => self.poll_demeter(&run, actor, now).await,
             Command::Cancel { run } => self.poll_optimization(&run, actor, now, true).await,
             Command::Accept { plan, run } => self.accept_demeter(&plan, &run, actor, now).await,
             Command::Project { plan, run } => {
                 let (uid, saved) = self.load_demeter(&plan, actor).await?;
-                let (_, run) = self.load_optimization_run(&run, actor).await?;
+                let (run_uid, run) = self.load_optimization_run(&run, actor).await?;
                 let snapshot = self.demeter_snapshot(&uid, &saved, actor).await?;
                 if run.kind != "demeter"
                     || run.plan.as_deref() != Some(&uid)
@@ -345,10 +451,12 @@ impl Engine {
                 {
                     return Err(invalid("Result is stale; solve again before projecting"));
                 }
+                let meal: demeter::Outcome = serde_json::from_value(
+                    self.read_optimization_result(&run_uid)
+                        .await?
+                        .ok_or_else(|| invalid("The saved optimization result is unavailable"))?,
+                )?;
                 let (meal, projection) = tokio::task::spawn_blocking(move || {
-                    let meal = snapshot
-                        .input
-                        .solve(run.options, &std::sync::atomic::AtomicBool::new(false))?;
                     let projection = production::project(
                         &snapshot.input,
                         &meal,

@@ -95,8 +95,9 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     let Some(view) = world.get::<View>(owner) else {
         return;
     };
-    let body = view.body;
+    let (body, sidebar) = (view.body, view.sidebar);
     panel::clear(world, body);
+    panel::clear(world, sidebar);
     {
         let mut view = world.get_mut::<View>(owner).unwrap();
         view.fields.clear();
@@ -104,6 +105,65 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         view.bounds = Requirements::default();
     }
     let state = world.get::<DemeterCastle>(owner).unwrap().clone();
+    let pages = [
+        (Tab::Plan, "Plan"),
+        (Tab::Profile, "Profile Record"),
+        (Tab::Requirements, "Nutrient targets"),
+        (Tab::Foods, "Food limits"),
+        (Tab::Prices, "Prices"),
+        (Tab::Stock, "Pantry"),
+        (Tab::Nutrition, "Food composition"),
+        (Tab::Results, "Optimization"),
+        (Tab::Meals, "Meal portions"),
+        (Tab::Shopping, "Shopping"),
+        (Tab::Production, "Production"),
+    ];
+    world.get_mut::<Node>(sidebar).unwrap().display = if state.sidebar_collapsed {
+        Display::None
+    } else {
+        Display::Flex
+    };
+    if !state.sidebar_collapsed {
+        for (tab, title) in pages {
+            choice_button(world, sidebar, owner, title, Operation::Tab(tab));
+        }
+    }
+    let title = pages
+        .iter()
+        .find(|(tab, _)| *tab == state.tab)
+        .map_or("Demeter", |(_, title)| title);
+    crate::native::edit_mode::label(world, body, title, 19.0);
+    if matches!(
+        state.tab,
+        Tab::Plan
+            | Tab::Profile
+            | Tab::Requirements
+            | Tab::Foods
+            | Tab::Prices
+            | Tab::Stock
+            | Tab::Meals
+            | Tab::Production
+    ) {
+        let actions = row(world, body);
+        button(world, actions, owner, "Save plan", Operation::Save(false));
+    }
+    match state.tab {
+        Tab::Plan => plan(world, owner, &state),
+        Tab::Profile => profile(world, owner, &state),
+        Tab::Requirements => requirements(world, owner, &state),
+        Tab::Foods => foods(world, owner, &state),
+        Tab::Prices => prices(world, owner, &state),
+        Tab::Stock => pantry(world, owner, &state),
+        Tab::Nutrition => composition(world, owner, &state),
+        Tab::Results => results(world, owner, &state),
+        Tab::Meals => meals(world, owner, &state),
+        Tab::Shopping => shopping(world, owner, &state),
+        Tab::Production => production(world, owner, &state),
+    }
+}
+
+fn plan(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
     let r = row(world, body);
     button(world, r, owner, "New plan", Operation::New);
     if let Some(plans) = state.catalog["plans"].as_array() {
@@ -113,29 +173,16 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             }
         }
     }
-    if state.changed {
-        label(
-            world,
-            body,
-            "Unsaved edits. Save and solve before accepting tasks.",
-        );
-    } else if state.stale {
-        label(
-            world,
-            body,
-            "The previous result is stale. Solve the current inputs.",
-        );
-    }
-    match state.tab {
-        Tab::Requirements => requirements(world, owner, &state),
-        Tab::Foods => foods(world, owner, &state),
-        Tab::Results => results(world, owner, &state),
-        Tab::Production => production(world, owner, &state),
-    }
-}
-
-fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
-    let body = world.get::<View>(owner).unwrap().body;
+    let actions = row(world, body);
+    button(world, actions, owner, "Refresh", Operation::Refresh);
+    button(
+        world,
+        actions,
+        owner,
+        "Open source files",
+        Operation::Sources,
+    );
+    panel::credits(world, actions, body, CREDITS);
     field(world, owner, "name", "Plan name", &state.config.name);
     field(
         world,
@@ -166,6 +213,35 @@ fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
         "Create local price/currency units",
         Operation::Vocabulary,
     );
+}
+
+fn profile(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    field(
+        world,
+        owner,
+        "profile-record",
+        "Existing Profile or Ego Record ID / slug",
+        state.config.profile_record.as_deref().unwrap_or_default(),
+    );
+    let actions = row(world, body);
+    button(
+        world,
+        actions,
+        owner,
+        "Load profile from Record",
+        Operation::ProfileRecord(false),
+    );
+    if let Some(record) = &state.config.profile_record {
+        button(
+            world,
+            actions,
+            owner,
+            "Open linked Record",
+            Operation::Reference(record.clone()),
+        );
+        button(world, actions, owner, "Unlink", Operation::UnlinkProfile);
+    }
     label(
         world,
         body,
@@ -180,13 +256,6 @@ fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
         Operation::Profile(true),
     );
     button(world, r, owner, "Manual targets", Operation::Profile(false));
-    button(
-        world,
-        r,
-        owner,
-        "Reset personal overrides",
-        Operation::ResetOverrides,
-    );
     if let Some(profile) = &state.config.profile {
         let r = row(world, body);
         button(
@@ -242,6 +311,35 @@ fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
             );
         }
     }
+    if state.config.profile_record.is_some() {
+        label(
+            world,
+            body,
+            "Use Save measurements to Record to update the linked profile.",
+        );
+    }
+    if state.config.profile.is_some() {
+        let actions = row(world, body);
+        button(
+            world,
+            actions,
+            owner,
+            "Save measurements to Record",
+            Operation::ProfileRecord(true),
+        );
+    }
+}
+
+fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    let actions = row(world, body);
+    button(
+        world,
+        actions,
+        owner,
+        "Reset personal overrides",
+        Operation::ResetOverrides,
+    );
     label(
         world,
         body,
@@ -395,86 +493,19 @@ fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
 
 fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
     let body = world.get::<View>(owner).unwrap().body;
-    field(
-        world,
-        owner,
-        "search",
-        "Search food preparations",
-        &state.search,
-    );
-    let r = row(world, body);
-    button(world, r, owner, "Search", Operation::Search);
-    label(world, body, "Selected foods");
-    for food in &state.config.foods {
-        let r = row(world, body);
-        choice_button(
-            world,
-            r,
-            owner,
-            food_label(state, &food.food),
-            Operation::Select(food.food.clone()),
-        );
-        button(
-            world,
-            r,
-            owner,
-            "Remove",
-            Operation::Remove(food.food.clone()),
-        );
-    }
-    if let Some(items) = state.catalog["foods"].as_array() {
-        let query = state.search.to_lowercase();
-        for item in items
-            .iter()
-            .filter(|v| {
-                v["label"]
-                    .as_str()
-                    .unwrap_or_default()
-                    .to_lowercase()
-                    .contains(&query)
-            })
-            .take(30)
-        {
-            if let Some(uid) = item["uid"].as_str() {
-                let r = row(world, body);
-                choice_button(
-                    world,
-                    r,
-                    owner,
-                    item["label"].as_str().unwrap_or(uid),
-                    Operation::Select(uid.into()),
-                );
-            }
-        }
-        label(
-            world,
-            body,
-            "Showing up to 30 matches. Search to narrow the catalogue.",
-        );
-    }
-    let Some(id) = &state.selected_food else {
-        label(
-            world,
-            body,
-            "Select a food to set its bounds, offers, and stock.",
-        );
+    let Some(id) = food_picker(world, owner, state, true) else {
         return;
     };
-    let Some(food) = state.config.foods.iter().find(|f| &f.food == id) else {
+    let Some(food) = state.config.foods.iter().find(|f| f.food == id) else {
         return;
     };
-    label(
-        world,
-        body,
-        format!("Preparation: {}", food_label(state, id)),
-    );
-    let r = row(world, body);
+    let actions = row(world, body);
     button(
         world,
-        r,
+        actions,
         owner,
-        "Food composition and source",
-        Operation::Reference(id.clone()),
+        "Remove from plan",
+        Operation::Remove(id.into()),
     );
     label(
         world,
@@ -514,22 +545,6 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
         "Measured volume (mL per usable g; optional)",
         number(food.volume_ml_per_g),
     );
-    let r = row(world, body);
-    button(
-        world,
-        r,
-        owner,
-        "Use supermarket",
-        Operation::Acquire(Acquisition::Buy),
-    );
-    button(
-        world,
-        r,
-        owner,
-        "Plan growing",
-        Operation::Acquire(Acquisition::Grow),
-    );
-    label(world, body, format!("Acquisition: {:?}", food.acquisition));
     let excluded = food
         .bounds
         .iter()
@@ -555,6 +570,103 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
     );
     let r = row(world, body);
     button(world, r, owner, "Fix daily amount", Operation::Fixed);
+}
+
+fn food_picker<'a>(
+    world: &mut World,
+    owner: Entity,
+    state: &'a DemeterCastle,
+    catalogue: bool,
+) -> Option<&'a str> {
+    let body = world.get::<View>(owner).unwrap().body;
+    let selected = state.selected_food.as_deref();
+    if let Some(id) = selected {
+        label(
+            world,
+            body,
+            format!("Preparation: {}", food_label(state, id)),
+        );
+        let actions = row(world, body);
+        button(
+            world,
+            actions,
+            owner,
+            if state.food_picker_open {
+                "Close food picker"
+            } else if catalogue {
+                "Choose or add food"
+            } else {
+                "Choose food"
+            },
+            Operation::ToggleFoodPicker,
+        );
+    }
+    if !state.food_picker_open && selected.is_some() {
+        return selected;
+    }
+    if !catalogue && state.config.foods.is_empty() {
+        label(world, body, "Add foods on the Food limits page.");
+        return None;
+    }
+    field(
+        world,
+        owner,
+        "search",
+        "Search food preparations",
+        &state.search,
+    );
+    let actions = row(world, body);
+    button(world, actions, owner, "Search", Operation::Search);
+    let search = state.search.to_lowercase();
+    let matches = |id: &str| food_label(state, id).to_lowercase().contains(&search);
+    if catalogue {
+        label(world, body, "Selected foods");
+    }
+    for food in state
+        .config
+        .foods
+        .iter()
+        .filter(|food| matches(&food.food))
+        .take(30)
+    {
+        choice_button(
+            world,
+            body,
+            owner,
+            food_label(state, &food.food),
+            Operation::Select(food.food.clone()),
+        );
+    }
+    if catalogue && let Some(items) = state.catalog["foods"].as_array() {
+        label(world, body, "Add from food catalogue");
+        for id in items
+            .iter()
+            .filter_map(|item| item["uid"].as_str())
+            .filter(|id| matches(id) && !state.config.foods.iter().any(|food| &food.food == id))
+            .take(30)
+        {
+            choice_button(
+                world,
+                body,
+                owner,
+                food_label(state, id),
+                Operation::Select(id.into()),
+            );
+        }
+        label(
+            world,
+            body,
+            "Narrow your search to see a specific preparation.",
+        );
+    }
+    None
+}
+
+fn prices(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    let Some(id) = food_picker(world, owner, state, false) else {
+        return;
+    };
     label(
         world,
         body,
@@ -691,6 +803,13 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
         "Save price assertion",
         Operation::SaveOffer,
     );
+}
+
+fn pantry(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    let Some(id) = food_picker(world, owner, state, false) else {
+        return;
+    };
     label(
         world,
         body,
@@ -713,7 +832,7 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
     );
     let r = row(world, body);
     button(world, r, owner, "Add inventory lot", Operation::AddStock);
-    for stock in state.config.stock.iter().filter(|s| &s.food == id) {
+    for stock in state.config.stock.iter().filter(|s| s.food == id) {
         label(
             world,
             body,
@@ -745,7 +864,18 @@ fn results(world: &mut World, owner: Entity, state: &DemeterCastle) {
         state.budget_ms / 1000,
     );
     let r = row(world, body);
-    button(world, r, owner, "Cancel solve", Operation::Cancel);
+    if world.get::<View>(owner).unwrap().running {
+        button(world, r, owner, "Cancel solve", Operation::Cancel);
+    } else {
+        button(world, r, owner, "Save and solve", Operation::Save(true));
+    }
+    if state.changed || state.stale {
+        label(
+            world,
+            body,
+            "Solve the current inputs to update the results.",
+        );
+    }
     let Some(result) = &state.result else {
         label(
             world,
@@ -926,9 +1056,313 @@ fn results(world: &mut World, owner: Entity, state: &DemeterCastle) {
         world,
         r,
         owner,
-        "Preview acquire / grow tasks",
+        "Preview acquisition tasks",
         Operation::Preview,
     );
+}
+
+fn composition(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    let Some(id) = food_picker(world, owner, state, false) else {
+        return;
+    };
+    let Some(data) = &state.composition else {
+        label(world, body, "Loading food composition.");
+        return;
+    };
+    label(
+        world,
+        body,
+        format!("Composition per {} g", data["basis_g"]),
+    );
+    let solved = state
+        .result
+        .as_ref()
+        .and_then(|result| result.days.get(state.meal_day))
+        .and_then(|day| day.foods_g.get(id).map(|grams| (&day.date, *grams)))
+        .filter(|(_, grams)| *grams > 1e-7);
+    if let Some((date, grams)) = solved {
+        let description = if state.changed || state.stale {
+            "Previous result"
+        } else {
+            "Solved contribution"
+        };
+        label(
+            world,
+            body,
+            format!("{description} on {date}, at {grams:.1} g"),
+        );
+    }
+    if let Some(source) = data["source"].as_str() {
+        label(world, body, source);
+    }
+    let actions = row(world, body);
+    button(
+        world,
+        actions,
+        owner,
+        "Open source Record",
+        Operation::Reference(id.into()),
+    );
+    button(
+        world,
+        actions,
+        owner,
+        if state.composition_expanded {
+            "Show key nutrients"
+        } else {
+            "Show all measurements"
+        },
+        Operation::ExpandComposition,
+    );
+    if let Some(nutrients) = data["nutrients"].as_object() {
+        for (field, amount) in nutrients {
+            if state.composition_expanded
+                || [
+                    "energy_kcal",
+                    "protein_g",
+                    "fiber_g",
+                    "fat_total_g",
+                    "carbohydrate_by_difference_g",
+                ]
+                .contains(&field.as_str())
+            {
+                let contribution = solved.and_then(|(_, grams)| {
+                    let basis = data["basis_g"].as_f64().filter(|basis| *basis > 0.0)?;
+                    Some(grams * amount.as_f64()? / basis)
+                });
+                let amount = amount.as_str().map(str::to_owned).unwrap_or_else(|| {
+                    if amount.is_null() {
+                        "unavailable".into()
+                    } else {
+                        amount.to_string()
+                    }
+                });
+                let daily = contribution
+                    .map(|value| format!(" · {value:.2} in the day"))
+                    .unwrap_or_default();
+                label(
+                    world,
+                    body,
+                    format!("{} — {amount}{daily}", field.replace('_', " ")),
+                );
+            }
+        }
+    }
+}
+
+fn meals(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    let shares = state
+        .config
+        .meals
+        .iter()
+        .map(|meal| format!("{}={}", meal.name, meal.percent))
+        .collect::<Vec<_>>()
+        .join(", ");
+    field(
+        world,
+        owner,
+        "meals",
+        "Meal percentages, for example Lunch=50, Dinner=50",
+        shares,
+    );
+    label(
+        world,
+        body,
+        "Each share divides that day’s solved grams and nutrients. Leave blank to use daily totals.",
+    );
+    let Some(result) = &state.result else {
+        label(world, body, "Solve the plan to see daily and meal amounts.");
+        return;
+    };
+    if state.changed || state.stale {
+        label(world, body, "Food amounts are from the previous solve.");
+    }
+    let Some(day) = result.days.get(state.meal_day) else {
+        return;
+    };
+    let nav = row(world, body);
+    if state.meal_day > 0 {
+        button(world, nav, owner, "Previous day", Operation::MealDay(-1));
+    }
+    label(world, nav, &day.date);
+    if state.meal_day + 1 < result.days.len() {
+        button(world, nav, owner, "Next day", Operation::MealDay(1));
+    }
+    if state.config.meals.is_empty() {
+        meal_portion(world, body, state, day, "Daily totals", 100);
+    } else {
+        for meal in &state.config.meals {
+            meal_portion(world, body, state, day, &meal.name, meal.percent);
+        }
+    }
+}
+
+fn meal_portion(
+    world: &mut World,
+    parent: Entity,
+    state: &DemeterCastle,
+    day: &demeter::DaySummary,
+    name: &str,
+    percent: u8,
+) {
+    crate::native::edit_mode::label(world, parent, name, 16.0);
+    let share = f64::from(percent) / 100.0;
+    for (id, grams) in day.foods_g.iter().filter(|(_, grams)| **grams > 1e-7) {
+        label(
+            world,
+            parent,
+            format!("{} — {:.1} g", food_label(state, id), grams * share),
+        );
+    }
+    for (nutrient, amount) in &day.nutrients {
+        label(
+            world,
+            parent,
+            format!("{} — {:.2}", nutrient.replace('_', " "), amount * share),
+        );
+    }
+}
+
+fn shopping(world: &mut World, owner: Entity, state: &DemeterCastle) {
+    let body = world.get::<View>(owner).unwrap().body;
+    let actions = row(world, body);
+    if !state.config.auto_shopping {
+        label(
+            world,
+            body,
+            "Publish shopping Needs automatically after each successful solve.",
+        );
+        button(
+            world,
+            actions,
+            owner,
+            "Enable live shopping",
+            Operation::AutoShopping(true),
+        );
+    } else {
+        label(
+            world,
+            body,
+            "Solves update this shopping list. Completed or started Needs are preserved.",
+        );
+        button(
+            world,
+            actions,
+            owner,
+            "Turn off automatic updates",
+            Operation::AutoShopping(false),
+        );
+    }
+    let reminder = state
+        .shopping
+        .as_ref()
+        .and_then(|data| data["reminder"].as_str());
+    if let Some(rule) = reminder {
+        let actions = row(world, body);
+        button(
+            world,
+            actions,
+            owner,
+            "Open Karma reminder",
+            Operation::OpenShoppingRule(rule.into()),
+        );
+    } else if state.config.auto_shopping {
+        let next = chrono::Local::now() + chrono::Duration::hours(1);
+        let next_date = demeter::date(&state.config.start)
+            .map_or(next.date_naive(), |start| start.max(next.date_naive()));
+        field(
+            world,
+            owner,
+            "shopping:date",
+            "First reminder date (YYYY-MM-DD)",
+            next_date,
+        );
+        field(
+            world,
+            owner,
+            "shopping:time",
+            "Local time (HH:MM)",
+            next.format("%H:%M"),
+        );
+        let actions = row(world, body);
+        button(
+            world,
+            actions,
+            owner,
+            "Create Karma reminder",
+            Operation::ShoppingReminder,
+        );
+        label(
+            world,
+            body,
+            format!(
+                "Set a reminder every {} days. It reads the current list. Change the dates in Plan for your next food period.",
+                state.config.days
+            ),
+        );
+    }
+    if state.changed || state.stale {
+        label(world, body, "The list reflects the last published solve.");
+        let actions = row(world, body);
+        button(
+            world,
+            actions,
+            owner,
+            "Save and solve",
+            Operation::Save(true),
+        );
+    }
+    let Some(shopping) = &state.shopping else {
+        return;
+    };
+    if shopping["query"].is_object() {
+        let actions = row(world, body);
+        button(
+            world,
+            actions,
+            owner,
+            "Open live shopping Protein",
+            Operation::OpenShoppingProtein,
+        );
+    }
+    let Some(rows) = shopping["rows"].as_array() else {
+        return;
+    };
+    if rows.is_empty() {
+        label(world, body, "No outstanding shopping Needs.");
+    }
+    let pages = rows.len().div_ceil(30).max(1);
+    let page = usize::from(state.task_page).min(pages - 1);
+    for item in rows.iter().skip(page * 30).take(30) {
+        if let (Some(uid), Some(head)) = (item["uid"].as_str(), item["head"].as_str()) {
+            let row = row(world, body);
+            let quantity = item["quantity"].as_str().unwrap_or_default();
+            let date = item["extension"]["task"]["on"].as_str().unwrap_or_default();
+            label(
+                world,
+                row,
+                format!("{head} — {} g   {date}", quantity.trim_start_matches('-')),
+            );
+            button(
+                world,
+                row,
+                owner,
+                "Bought",
+                Operation::CompleteShopping(uid.into()),
+            );
+        }
+    }
+    if pages > 1 {
+        let nav = row(world, body);
+        if page > 0 {
+            button(world, nav, owner, "Previous items", Operation::TaskPage(-1));
+        }
+        if page + 1 < pages {
+            button(world, nav, owner, "Next items", Operation::TaskPage(1));
+        }
+    }
 }
 
 fn production(world: &mut World, owner: Entity, state: &DemeterCastle) {

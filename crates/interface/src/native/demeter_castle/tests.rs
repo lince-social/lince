@@ -7,7 +7,10 @@
 use super::*;
 use nucleus::demeter::{NutrientBound, Unit};
 
-#[allow(dead_code, reason = "Each test target uses a different subset of the included authority fixtures")]
+#[allow(
+    dead_code,
+    reason = "Each test target uses a different subset of the included authority fixtures"
+)]
 mod authority {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -125,6 +128,7 @@ fn empty_zero_fixed_and_excluded_food_bounds_survive_native_controls() {
 #[test]
 fn drafts_are_specific_to_each_food_and_workspace_recovery_keeps_unfinished_values() {
     let mut state = fixture();
+    state.tab = Tab::Prices;
     let first = state.selected_food.clone().unwrap();
     let second = nucleus::new_uid("r");
     let saved_offer = nucleus::new_uid("r");
@@ -175,6 +179,7 @@ fn drafts_are_specific_to_each_food_and_workspace_recovery_keeps_unfinished_valu
     );
     Operation::Select(first.clone()).apply(app.world_mut(), owner);
     assert_eq!(value(app.world(), owner, "offer:price"), "1.25");
+    Operation::Tab(Tab::Foods).apply(app.world_mut(), owner);
     edit(
         app.world_mut(),
         owner,
@@ -199,6 +204,7 @@ fn drafts_are_specific_to_each_food_and_workspace_recovery_keeps_unfinished_valu
         value(app.world(), restored, &format!("food:{first}:day:upper")),
         "unfinished"
     );
+    Operation::Tab(Tab::Prices).apply(app.world_mut(), restored);
     assert_eq!(value(app.world(), restored, "offer:price"), "1.25");
 }
 
@@ -274,7 +280,7 @@ fn late_save_responses_preserve_edits_and_old_plan_responses_are_ignored() {
 }
 
 #[test]
-fn four_views_use_wrapping_controls_and_input_widths_at_narrow_and_wide_sizes() {
+fn sidebar_pages_use_available_width_and_can_collapse() {
     let (mut app, _, owner) = mounted(fixture());
     for width in [360.0, 720.0] {
         app.world_mut()
@@ -282,7 +288,19 @@ fn four_views_use_wrapping_controls_and_input_widths_at_narrow_and_wide_sizes() 
             .unwrap()
             .size
             .x = width;
-        for tab in [Tab::Requirements, Tab::Foods, Tab::Results, Tab::Production] {
+        for tab in [
+            Tab::Plan,
+            Tab::Profile,
+            Tab::Requirements,
+            Tab::Foods,
+            Tab::Prices,
+            Tab::Stock,
+            Tab::Nutrition,
+            Tab::Results,
+            Tab::Meals,
+            Tab::Shopping,
+            Tab::Production,
+        ] {
             let body = app.world().get::<View>(owner).unwrap().body;
             app.world_mut().get_mut::<ScrollPosition>(body).unwrap().0.y = 300.0;
             Operation::Tab(tab).apply(app.world_mut(), owner);
@@ -304,12 +322,24 @@ fn four_views_use_wrapping_controls_and_input_widths_at_narrow_and_wide_sizes() 
         .iter(app.world())
         .filter(|n| n.flex_wrap == FlexWrap::Wrap)
         .count();
-    assert!(wrapping >= 2);
+    assert!(wrapping >= 1);
+    let sidebar = app.world().get::<View>(owner).unwrap().sidebar;
+    Operation::ToggleSidebar.apply(app.world_mut(), owner);
+    assert_eq!(
+        app.world().get::<Node>(sidebar).unwrap().display,
+        Display::None
+    );
+    Operation::ToggleSidebar.apply(app.world_mut(), owner);
+    assert_eq!(
+        app.world().get::<Node>(sidebar).unwrap().display,
+        Display::Flex
+    );
 }
 
 #[test]
 fn failed_requests_leave_editor_values_available_for_retry() {
     let (mut app, _, owner) = mounted(fixture());
+    Operation::Tab(Tab::Prices).apply(app.world_mut(), owner);
     edit(app.world_mut(), owner, "offer:price", "7.50");
     let session = app
         .world()
@@ -392,6 +422,7 @@ async fn native_workflow_saves_prices_solves_previews_and_accepts_through_the_ce
         world.get::<DemeterCastle>(owner).unwrap().catalog["vocabulary"]["price"].is_string()
     })
     .await;
+    Operation::Tab(Tab::Prices).apply(app.world_mut(), owner);
     edit(app.world_mut(), owner, "offer:vendor", "Local test market");
     edit(app.world_mut(), owner, "offer:price", "2");
     edit(app.world_mut(), owner, "offer:package", "100");

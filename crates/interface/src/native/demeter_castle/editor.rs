@@ -48,6 +48,7 @@ pub(super) fn text<'a>(s: &'a DemeterCastle, name: &str) -> &'a str {
 pub(super) fn retain_auxiliary(drafts: &mut BTreeMap<String, String>) {
     drafts.retain(|key, _| {
         key == "search"
+            || key.starts_with("shopping:")
             || key.starts_with("new:")
             || key.ends_with(":fixed")
             || ["|offer:", "|stock:", "|forecast:", "|resource:"]
@@ -55,6 +56,18 @@ pub(super) fn retain_auxiliary(drafts: &mut BTreeMap<String, String>) {
                 .any(|part| key.contains(part))
     });
 }
+pub(super) fn reminder_time(state: &DemeterCastle) -> Result<String, String> {
+    use chrono::TimeZone;
+    let date = demeter::date(text(state, "shopping:date").trim())?;
+    let time = chrono::NaiveTime::parse_from_str(text(state, "shopping:time").trim(), "%H:%M")
+        .map_err(|_| "Enter a local reminder time as HH:MM".to_owned())?;
+    chrono::Local
+        .from_local_datetime(&date.and_time(time))
+        .single()
+        .map(|instant| instant.to_rfc3339())
+        .ok_or_else(|| "Choose an unambiguous local reminder time".into())
+}
+
 fn read_number(s: &DemeterCastle, key: &str) -> Result<DecimalValue, String> {
     required(text(s, key)).map_err(|e| format!("{key}: {e}"))
 }
@@ -147,7 +160,7 @@ pub(super) fn capture(world: &mut World, owner: Entity) -> Result<(), String> {
                     || key.contains("|production:")
                     || [
                         "name", "start", "days", "currency", "age", "weight", "height", "activity",
-                        "energy", "volume", "horizon",
+                        "energy", "volume", "horizon", "meals",
                     ]
                     .contains(&key.as_str()))
         });
@@ -302,7 +315,34 @@ pub(super) fn capture(world: &mut World, owner: Entity) -> Result<(), String> {
             }
         }
     }
-    if state.drafts.contains_key("horizon") {
+    if initial.contains_key("meals") {
+        let content = text(&state, "meals").trim();
+        state.config.meals = if content.is_empty() {
+            Vec::new()
+        } else {
+            content
+                .split(',')
+                .map(|entry| {
+                    let (name, percent) = entry
+                        .split_once('=')
+                        .ok_or("Use Name=percentage for each meal")?;
+                    let name = name.trim();
+                    let percent = percent
+                        .trim()
+                        .parse::<u8>()
+                        .map_err(|_| "Enter a whole percentage for each meal")?;
+                    Ok::<_, &str>(engine::demeter::MealSlot {
+                        name: name.into(),
+                        percent,
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()?
+        };
+        state.config.validate()?;
+    }
+    if state.config.auto_shopping {
+        state.config.horizon_days = state.config.days;
+    } else if state.drafts.contains_key("horizon") {
         state.config.horizon_days = integer(&state, "horizon")?
             .try_into()
             .map_err(|_| "Projection horizon is too long")?;
@@ -370,6 +410,8 @@ pub(super) fn profile_mode(world: &mut World, owner: Entity, enabled: bool) {
             );
         }
         state.config.profile = None;
+        state.config.profile_record = None;
+        state.drafts.remove("profile-record");
         state.config.overrides.clear();
         state.config.disabled_nutrients.clear();
     }
